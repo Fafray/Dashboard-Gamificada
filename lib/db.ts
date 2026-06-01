@@ -37,6 +37,12 @@ function init(): Promise<void> {
         xp_earned   INTEGER NOT NULL
       )
     `);
+    // Unique index prevents duplicate check-ins on the same day for daily activities.
+    // For weekly activities the API enforces the week constraint before inserting.
+    await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_checkin_day
+        ON checkins (activity_id, LEFT(checked_at, 10))
+    `);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS achievements (
         id          SERIAL PRIMARY KEY,
@@ -126,12 +132,14 @@ export async function createActivity(
   return (await getActivity(res.rows[0].id))!;
 }
 
+const ACTIVITY_ALLOWED_KEYS = new Set(["name", "frequency", "xp_base", "emoji", "color", "archived"]);
+
 export async function updateActivity(
   id: number,
   data: Partial<Omit<Activity, "id" | "created_at">>
 ): Promise<Activity | null> {
   await init();
-  const keys = Object.keys(data) as (keyof typeof data)[];
+  const keys = Object.keys(data).filter((k) => ACTIVITY_ALLOWED_KEYS.has(k)) as (keyof typeof data)[];
   if (keys.length === 0) return getActivity(id);
   const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
   const values = keys.map((k) => data[k]);

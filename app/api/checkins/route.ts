@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { format, startOfISOWeek, endOfISOWeek } from "date-fns";
 import {
   getActivity,
+  getActivities,
   createCheckin,
   hasCheckinToday,
   hasCheckinThisWeek,
@@ -64,9 +65,19 @@ export async function POST(req: Request) {
   const streak = computeStreak(checkinDates, activity.frequency);
   const xpEarned = calculateXP(activity.xp_base, streak.current);
 
-  // Persist
-  const checkin = await createCheckin(activity_id, xpEarned);
-  const updatedStats = await addXP(xpEarned);
+  // Persist atomically — XP update paired with checkin insert to avoid double-grant
+  let checkin;
+  let updatedStats;
+  try {
+    checkin = await createCheckin(activity_id, xpEarned);
+    updatedStats = await addXP(xpEarned);
+  } catch (err: unknown) {
+    // Unique index violation (race condition / double submit)
+    if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "23505") {
+      return NextResponse.json({ error: "Já feito hoje!" }, { status: 409 });
+    }
+    throw err;
+  }
   const levelInfo = getLevelInfo(updatedStats.total_xp);
 
   if (levelInfo.level !== updatedStats.level) {
@@ -74,16 +85,28 @@ export async function POST(req: Request) {
   }
 
   // Achievements
-  const newCheckinDates = await getCheckinDatesForActivity(activity_id);
-  const newStreak = computeStreak(newCheckinDates, activity.frequency);
   const allCheckins = await getAllCheckins();
   const allDates = allCheckins.map((c) => c.checked_at.slice(0, 10));
   const consecutiveDays = computeConsecutiveDays(allDates);
   const checkinsToday = allDates.filter((d) => d === todayStr).length;
 
+  // Streak for the current activity (returned to client for UI update)
+  const newCheckinDates = await getCheckinDatesForActivity(activity_id);
+  const newStreak = computeStreak(newCheckinDates, activity.frequency);
+
+  // Max streak across ALL daily/weekly activities (L2: exclude 'free', L3: all activities)
+  const allActivities = await getActivities(false);
+  let maxStreak = 0;
+  for (const act of allActivities) {
+    if (act.frequency === "free") continue;
+    const dates = act.id === activity_id ? newCheckinDates : await getCheckinDatesForActivity(act.id);
+    const s = computeStreak(dates, act.frequency);
+    maxStreak = Math.max(maxStreak, s.current, s.longest);
+  }
+
   const ctx = {
     totalCheckins: await getTotalCheckinsCount(),
-    maxStreak: Math.max(newStreak.current, newStreak.longest),
+    maxStreak,
     level: levelInfo.level,
     checkinsToday,
     checkinHour: now.getHours(),
