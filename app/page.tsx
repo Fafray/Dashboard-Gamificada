@@ -7,6 +7,7 @@ import {
   hasCheckinToday,
   hasCheckinThisWeek,
   getXpEarnedToday,
+  getTodayCheckinForActivity,
 } from "@/lib/db";
 import { getLevelInfo, computeStreak } from "@/lib/gamification";
 import { DashboardClient } from "@/components/DashboardClient";
@@ -29,16 +30,23 @@ export default async function DashboardPage() {
 
   const activitiesWithStatus = await Promise.all(
     activities.map(async (activity) => {
-      const [checkinDates, doneRaw] = await Promise.all([
+      const [checkinDates, doneRaw, todayCheckin] = await Promise.all([
         getCheckinDatesForActivity(activity.id),
         activity.frequency === "daily"
           ? hasCheckinToday(activity.id, todayStr)
           : activity.frequency === "weekly"
           ? hasCheckinThisWeek(activity.id, weekStart, weekEnd)
           : Promise.resolve(false),
+        getTodayCheckinForActivity(activity.id, todayStr),
       ]);
       const streak = computeStreak(checkinDates, activity.frequency);
-      return { ...activity, streak, doneToday: doneRaw };
+      return {
+        ...activity,
+        streak,
+        doneToday: doneRaw,
+        todayCheckinId: todayCheckin?.id ?? null,
+        todayCheckinXP: todayCheckin?.xp_earned ?? null,
+      };
     })
   );
 

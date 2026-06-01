@@ -7,6 +7,7 @@ const links = [
   { href: "/", label: "Hoje", icon: "⚔️" },
   { href: "/activities", label: "Atividades", icon: "📋" },
   { href: "/achievements", label: "Conquistas", icon: "🏆" },
+  { href: "/history", label: "Histórico", icon: "📊" },
 ];
 
 export function Nav() {

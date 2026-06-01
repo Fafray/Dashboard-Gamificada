@@ -14,6 +14,8 @@ interface Activity {
   color: string;
   streak: { current: number; longest: number };
   doneToday: boolean;
+  todayCheckinId: number | null;
+  todayCheckinXP: number | null;
 }
 
 interface LevelInfo {
@@ -32,10 +34,16 @@ interface Achievement {
 }
 
 interface CheckinResult {
+  checkin: { id: number; xp_earned: number };
   xpEarned: number;
   newStreak: number;
   levelInfo: LevelInfo;
   newlyUnlocked: Achievement[];
+}
+
+interface UndoResult {
+  xpSubtracted: number;
+  levelInfo: LevelInfo;
 }
 
 interface DashboardClientProps {
@@ -66,6 +74,16 @@ export function DashboardClient({
     if (result.newlyUnlocked.length > 0) {
       setPendingAchievements(result.newlyUnlocked);
     }
+  }, []);
+
+  const handleUndo = useCallback((activityId: number, result: UndoResult) => {
+    setDoneSet((prev) => {
+      const next = new Set(prev);
+      next.delete(activityId);
+      return next;
+    });
+    setLevelInfo(result.levelInfo);
+    setXpToday((prev) => Math.max(0, prev - result.xpSubtracted));
   }, []);
 
   const nonFreeActivities = initialActivities.filter((a) => a.frequency !== "free");
@@ -135,6 +153,7 @@ export function DashboardClient({
                   key={activity.id}
                   activity={activity}
                   onCheckin={(result) => handleCheckin(activity.id, result)}
+                  onUndo={(result) => handleUndo(activity.id, result)}
                 />
               ))}
             </div>

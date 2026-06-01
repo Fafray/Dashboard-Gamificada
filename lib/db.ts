@@ -251,6 +251,65 @@ export async function getXpEarnedToday(localDateStr: string): Promise<number> {
   return parseInt(res.rows[0].total);
 }
 
+export async function getTodayCheckinForActivity(
+  activityId: number,
+  localDateStr: string
+): Promise<{ id: number; xp_earned: number } | null> {
+  await init();
+  const res = await pool.query(
+    `SELECT id, xp_earned FROM checkins WHERE activity_id = $1 AND LEFT(checked_at, 10) = $2 ORDER BY checked_at DESC LIMIT 1`,
+    [activityId, localDateStr]
+  );
+  return res.rows[0] ?? null;
+}
+
+export async function deleteCheckin(id: number): Promise<number> {
+  await init();
+  const res = await pool.query(`SELECT xp_earned FROM checkins WHERE id = $1`, [id]);
+  if (res.rows.length === 0) return 0;
+  const xp = res.rows[0].xp_earned as number;
+  await pool.query(`DELETE FROM checkins WHERE id = $1`, [id]);
+  await pool.query(
+    `UPDATE user_stats SET total_xp = GREATEST(0, total_xp - $1) WHERE id = 1`,
+    [xp]
+  );
+  return xp;
+}
+
+export async function getCheckinsGroupedByDate(
+  days: number
+): Promise<{ date: string; count: number }[]> {
+  await init();
+  const res = await pool.query(
+    `SELECT LEFT(checked_at, 10) as date, COUNT(*) as count
+     FROM checkins
+     WHERE checked_at >= $1
+     GROUP BY LEFT(checked_at, 10)
+     ORDER BY date ASC`,
+    [localISOString(new Date(Date.now() - days * 86400000)).slice(0, 10)]
+  );
+  return res.rows.map((r: { date: string; count: string }) => ({
+    date: r.date,
+    count: parseInt(r.count),
+  }));
+}
+
+export async function getXpPerDay(days: number): Promise<{ date: string; xp: number }[]> {
+  await init();
+  const res = await pool.query(
+    `SELECT LEFT(checked_at, 10) as date, SUM(xp_earned) as xp
+     FROM checkins
+     WHERE checked_at >= $1
+     GROUP BY LEFT(checked_at, 10)
+     ORDER BY date ASC`,
+    [localISOString(new Date(Date.now() - days * 86400000)).slice(0, 10)]
+  );
+  return res.rows.map((r: { date: string; xp: string }) => ({
+    date: r.date,
+    xp: parseInt(r.xp),
+  }));
+}
+
 // ─── User Stats ───────────────────────────────────────────────────────────────
 
 export async function getUserStats(): Promise<UserStats> {
