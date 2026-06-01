@@ -17,40 +17,37 @@ export async function GET() {
   const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
   const weekEnd = format(endOfISOWeek(now), "yyyy-MM-dd");
 
-  const rawStats = getUserStats();
+  const [rawStats, activities, xpToday, unlockedAchievements] = await Promise.all([
+    getUserStats(),
+    getActivities(),
+    getXpEarnedToday(todayStr),
+    getAchievements(),
+  ]);
+
   const levelInfo = getLevelInfo(rawStats.total_xp);
-  const xpToday = getXpEarnedToday(todayStr);
 
-  const activities = getActivities();
-  const activitiesWithStatus = activities.map((activity) => {
-    const checkinDates = getCheckinDatesForActivity(activity.id);
-    const streak = computeStreak(checkinDates, activity.frequency);
+  const activitiesWithStatus = await Promise.all(
+    activities.map(async (activity) => {
+      const [checkinDates, doneToday] = await Promise.all([
+        getCheckinDatesForActivity(activity.id),
+        activity.frequency === "daily"
+          ? hasCheckinToday(activity.id, todayStr)
+          : activity.frequency === "weekly"
+          ? hasCheckinThisWeek(activity.id, weekStart, weekEnd)
+          : Promise.resolve(false),
+      ]);
+      const streak = computeStreak(checkinDates, activity.frequency);
+      return { ...activity, streak, doneToday };
+    })
+  );
 
-    let doneToday = false;
-    if (activity.frequency === "daily") {
-      doneToday = hasCheckinToday(activity.id, todayStr);
-    } else if (activity.frequency === "weekly") {
-      doneToday = hasCheckinThisWeek(activity.id, weekStart, weekEnd);
-    }
-
-    return {
-      ...activity,
-      streak,
-      doneToday,
-    };
-  });
-
-  const unlockedAchievements = getAchievements();
   const achievementsWithDef = unlockedAchievements.map((a) => ({
     ...a,
     ...getAchievementDef(a.key),
   }));
 
   return NextResponse.json({
-    stats: {
-      ...rawStats,
-      ...levelInfo,
-    },
+    stats: { ...rawStats, ...levelInfo },
     xpToday,
     activities: activitiesWithStatus,
     achievements: achievementsWithDef,

@@ -26,12 +26,7 @@ import {
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date");
-
-  if (date) {
-    const checkins = getCheckinsByDate(date);
-    return NextResponse.json(checkins);
-  }
-
+  if (date) return NextResponse.json(await getCheckinsByDate(date));
   return NextResponse.json([]);
 }
 
@@ -43,7 +38,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "activity_id is required" }, { status: 400 });
   }
 
-  const activity = getActivity(activity_id);
+  const activity = await getActivity(activity_id);
   if (!activity) {
     return NextResponse.json({ error: "Activity not found" }, { status: 404 });
   }
@@ -53,44 +48,41 @@ export async function POST(req: Request) {
 
   // Duplicate check
   if (activity.frequency === "daily") {
-    if (hasCheckinToday(activity_id, todayStr)) {
+    if (await hasCheckinToday(activity_id, todayStr)) {
       return NextResponse.json({ error: "Já feito hoje!" }, { status: 409 });
     }
   } else if (activity.frequency === "weekly") {
     const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
     const weekEnd = format(endOfISOWeek(now), "yyyy-MM-dd");
-    if (hasCheckinThisWeek(activity_id, weekStart, weekEnd)) {
+    if (await hasCheckinThisWeek(activity_id, weekStart, weekEnd)) {
       return NextResponse.json({ error: "Já feito essa semana!" }, { status: 409 });
     }
   }
 
-  // Compute current streak to determine XP bonus
-  const checkinDates = getCheckinDatesForActivity(activity_id);
+  // Streak → XP
+  const checkinDates = await getCheckinDatesForActivity(activity_id);
   const streak = computeStreak(checkinDates, activity.frequency);
   const xpEarned = calculateXP(activity.xp_base, streak.current);
 
-  // Create check-in
-  const checkin = createCheckin(activity_id, xpEarned);
-
-  // Update total XP
-  const updatedStats = addXP(xpEarned);
+  // Persist
+  const checkin = await createCheckin(activity_id, xpEarned);
+  const updatedStats = await addXP(xpEarned);
   const levelInfo = getLevelInfo(updatedStats.total_xp);
 
-  // Update level in DB if it changed
   if (levelInfo.level !== updatedStats.level) {
-    updateLevel(levelInfo.level);
+    await updateLevel(levelInfo.level);
   }
 
-  // Check achievements
-  const newCheckinDates = getCheckinDatesForActivity(activity_id);
+  // Achievements
+  const newCheckinDates = await getCheckinDatesForActivity(activity_id);
   const newStreak = computeStreak(newCheckinDates, activity.frequency);
-  const allCheckins = getAllCheckins();
-  const allDates = allCheckins.map((c) => format(new Date(c.checked_at), "yyyy-MM-dd"));
+  const allCheckins = await getAllCheckins();
+  const allDates = allCheckins.map((c) => c.checked_at.slice(0, 10));
   const consecutiveDays = computeConsecutiveDays(allDates);
   const checkinsToday = allDates.filter((d) => d === todayStr).length;
 
   const ctx = {
-    totalCheckins: getTotalCheckinsCount(),
+    totalCheckins: await getTotalCheckinsCount(),
     maxStreak: Math.max(newStreak.current, newStreak.longest),
     level: levelInfo.level,
     checkinsToday,
@@ -102,20 +94,12 @@ export async function POST(req: Request) {
   const newlyUnlocked: { key: string; name: string; description: string; emoji: string }[] = [];
 
   for (const key of earnedKeys) {
-    const result = unlockAchievement(key);
+    const result = await unlockAchievement(key);
     if (result) {
       const def = getAchievementDef(key);
-      if (def) {
-        newlyUnlocked.push(def);
-      }
+      if (def) newlyUnlocked.push(def);
     }
   }
 
-  return NextResponse.json({
-    checkin,
-    xpEarned,
-    newStreak: newStreak.current,
-    levelInfo,
-    newlyUnlocked,
-  });
+  return NextResponse.json({ checkin, xpEarned, newStreak: newStreak.current, levelInfo, newlyUnlocked });
 }

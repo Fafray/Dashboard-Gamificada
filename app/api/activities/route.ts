@@ -4,7 +4,7 @@ import { getActivities, createActivity } from "@/lib/db";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const includeArchived = searchParams.get("include_archived") === "true";
-  const activities = getActivities(includeArchived);
+  const activities = await getActivities(includeArchived);
   return NextResponse.json(activities);
 }
 
@@ -15,13 +15,11 @@ export async function POST(req: Request) {
   if (!name || !frequency) {
     return NextResponse.json({ error: "name and frequency are required" }, { status: 400 });
   }
-
-  const validFrequencies = ["daily", "weekly", "free"];
-  if (!validFrequencies.includes(frequency)) {
+  if (!["daily", "weekly", "free"].includes(frequency)) {
     return NextResponse.json({ error: "frequency must be daily, weekly, or free" }, { status: 400 });
   }
 
-  const activity = createActivity({
+  const activity = await createActivity({
     name,
     frequency,
     xp_base: xp_base ?? 10,

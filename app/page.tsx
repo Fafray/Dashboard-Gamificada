@@ -13,34 +13,34 @@ import { DashboardClient } from "@/components/DashboardClient";
 
 export const dynamic = "force-dynamic";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const now = new Date();
   const todayStr = format(now, "yyyy-MM-dd");
   const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
   const weekEnd = format(endOfISOWeek(now), "yyyy-MM-dd");
 
-  const rawStats = getUserStats();
+  const [rawStats, activities, xpToday] = await Promise.all([
+    getUserStats(),
+    getActivities(),
+    getXpEarnedToday(todayStr),
+  ]);
+
   const levelInfo = getLevelInfo(rawStats.total_xp);
-  const xpToday = getXpEarnedToday(todayStr);
 
-  const activities = getActivities();
-  const activitiesWithStatus = activities.map((activity) => {
-    const checkinDates = getCheckinDatesForActivity(activity.id);
-    const streak = computeStreak(checkinDates, activity.frequency);
-
-    let doneToday = false;
-    if (activity.frequency === "daily") {
-      doneToday = hasCheckinToday(activity.id, todayStr);
-    } else if (activity.frequency === "weekly") {
-      doneToday = hasCheckinThisWeek(activity.id, weekStart, weekEnd);
-    }
-
-    return {
-      ...activity,
-      streak,
-      doneToday,
-    };
-  });
+  const activitiesWithStatus = await Promise.all(
+    activities.map(async (activity) => {
+      const [checkinDates, doneRaw] = await Promise.all([
+        getCheckinDatesForActivity(activity.id),
+        activity.frequency === "daily"
+          ? hasCheckinToday(activity.id, todayStr)
+          : activity.frequency === "weekly"
+          ? hasCheckinThisWeek(activity.id, weekStart, weekEnd)
+          : Promise.resolve(false),
+      ]);
+      const streak = computeStreak(checkinDates, activity.frequency);
+      return { ...activity, streak, doneToday: doneRaw };
+    })
+  );
 
   const dateLabel = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
   const capitalizedDate = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);

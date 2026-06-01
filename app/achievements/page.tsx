@@ -1,5 +1,4 @@
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   getAchievements,
   getTotalCheckinsCount,
@@ -19,44 +18,35 @@ import { AchievementsGrid } from "./AchievementsGrid";
 
 export const dynamic = "force-dynamic";
 
-export default function AchievementsPage() {
+export default async function AchievementsPage() {
   const now = new Date();
   const todayStr = format(now, "yyyy-MM-dd");
 
-  // Unlocked achievements (keys)
-  const unlocked = getAchievements();
-  const unlockedMap = new Map(unlocked.map((a) => [a.key, a.unlocked_at]));
+  const [unlocked, totalCheckins, rawStats, activities, allDates, checkinsToday] =
+    await Promise.all([
+      getAchievements(),
+      getTotalCheckinsCount(),
+      getUserStats(),
+      getActivities(false),
+      getAllCheckinDatesFlat(),
+      getCheckinsCountToday(todayStr),
+    ]);
 
-  // Current stats for progress
-  const totalCheckins = getTotalCheckinsCount();
-  const rawStats = getUserStats();
+  const unlockedMap = new Map(unlocked.map((a) => [a.key, a.unlocked_at]));
   const { level } = getLevelInfo(rawStats.total_xp);
 
-  // Max streak across all activities
-  const activities = getActivities(false);
+  // Max streak across all active activities
   let maxStreak = 0;
   for (const act of activities) {
-    const dates = getCheckinDatesForActivity(act.id);
+    const dates = await getCheckinDatesForActivity(act.id);
     const { current, longest } = computeStreak(dates, act.frequency);
     maxStreak = Math.max(maxStreak, current, longest);
   }
 
-  // Consecutive days with at least 1 activity
-  const allDates = getAllCheckinDatesFlat();
   const consecutiveDays = computeConsecutiveDays(allDates);
 
-  // Distinct activities checked today (multitask)
-  const checkinsToday = getCheckinsCountToday(todayStr);
+  const progressCtx = { totalCheckins, maxStreak, level, consecutiveDays, checkinsToday };
 
-  const progressCtx = {
-    totalCheckins,
-    maxStreak,
-    level,
-    consecutiveDays,
-    checkinsToday,
-  };
-
-  // Build enriched achievement list
   const enriched = ACHIEVEMENTS.map((def) => ({
     ...def,
     unlocked: unlockedMap.has(def.key),
@@ -67,11 +57,7 @@ export default function AchievementsPage() {
   const unlockedCount = enriched.filter((a) => a.unlocked).length;
 
   return (
-    <AchievementsGrid
-      achievements={enriched}
-      unlockedCount={unlockedCount}
-      total={enriched.length}
-    />
+    <AchievementsGrid achievements={enriched} unlockedCount={unlockedCount} total={enriched.length} />
   );
 }
 
@@ -98,6 +84,6 @@ function getProgress(key: string, ctx: Ctx): { current: number; target: number }
     case "level_20":      return { current: ctx.level, target: 20 };
     case "multitask_3":   return { current: ctx.checkinsToday, target: 3 };
     case "consistent_7":  return { current: ctx.consecutiveDays, target: 7 };
-    default:              return null; // early_bird, night_owl, first_checkin — no progress bar
+    default:              return null;
   }
 }
