@@ -11,6 +11,8 @@ import {
   getTodayCheckinForActivity,
 } from "@/lib/db";
 import { getLevelInfo, computeStreak } from "@/lib/gamification";
+import { derivarClasse } from "@/lib/attributes";
+import type { Atributos } from "@/lib/attributes";
 import { DashboardClient } from "@/components/DashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +28,9 @@ export default async function DashboardPage() {
     getActivities(),
     getXpEarnedToday(todayStr),
   ]);
+  const atributos = (rawStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
+  const classeInfo = derivarClasse(atributos);
+  const pontosDisponiveis = rawStats.pontos_disponiveis ?? 0;
 
   const levelInfo = getLevelInfo(rawStats.total_xp);
 
@@ -78,6 +83,9 @@ export default async function DashboardPage() {
       levelInfo={levelInfo}
       xpToday={xpToday}
       dateLabel={capitalizedDate}
+      atributos={atributos}
+      pontosDisponiveis={pontosDisponiveis}
+      classeInfo={classeInfo}
     />
   );
 }

@@ -18,6 +18,14 @@ const FREQ_OPTIONS = [
 
 const UNIT_OPTIONS = ["L", "h", "min", "km", "páginas", "vezes", "ml"];
 
+const CATEGORIA_OPTIONS = [
+  { value: "saude",      label: "Saúde",      attr: "VIT", emoji: "❤️" },
+  { value: "treino",     label: "Treino",      attr: "FOR", emoji: "💪" },
+  { value: "estudo",     label: "Estudo",      attr: "INT", emoji: "📚" },
+  { value: "disciplina", label: "Disciplina",  attr: "AGI", emoji: "⚡" },
+  { value: "foco",       label: "Foco",        attr: "PER", emoji: "🎯" },
+] as const;
+
 interface FormValues {
   name: string;
   frequency: "daily" | "weekly" | "free" | "nx_week";
@@ -27,6 +35,7 @@ interface FormValues {
   weekly_target: number;
   target_value: number | null;
   target_unit: string;
+  categoria: string | null;
 }
 
 interface ActivityFormProps {
@@ -51,6 +60,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
     weekly_target: activity?.weekly_target ?? 3,
     target_value:  activity?.target_value ?? null,
     target_unit:   activity?.target_unit ?? "L",
+    categoria:     (activity as Activity & { categoria?: string | null })?.categoria ?? null,
   });
   const [hasTarget, setHasTarget] = useState(!!activity?.target_value);
   const [saving, setSaving] = useState(false);
@@ -70,6 +80,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
         ...values,
         target_value: hasTarget && values.target_value ? values.target_value : null,
         target_unit:  hasTarget ? values.target_unit : "",
+        categoria:    values.categoria ?? null,
       });
     } catch {
       setError("Erro ao salvar. Tente novamente.");
@@ -178,6 +189,44 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Categoria / Atributo */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+              Categoria <span style={{ color: "var(--text-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— amplifica atributo</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => set("categoria", null)}
+                className="py-2 rounded-lg text-xs font-medium transition-all"
+                style={!values.categoria
+                  ? { background: "rgba(0,168,232,.15)", border: "1px solid rgba(0,168,232,.4)", color: "var(--accent-violet-bright)" }
+                  : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }
+                }
+              >
+                Nenhuma
+              </button>
+              {CATEGORIA_OPTIONS.map((opt) => {
+                const active = values.categoria === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => set("categoria", opt.value)}
+                    className="py-2 rounded-lg text-xs font-medium transition-all"
+                    style={active
+                      ? { background: "rgba(0,168,232,.15)", border: "1px solid rgba(0,168,232,.4)", color: "var(--accent-violet-bright)" }
+                      : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }
+                    }
+                  >
+                    {opt.emoji} {opt.label}
+                    <div style={{ fontSize: "10px", opacity: .6, marginTop: "1px" }}>+{opt.attr}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Meta diária (opcional) */}

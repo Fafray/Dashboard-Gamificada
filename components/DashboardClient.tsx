@@ -5,7 +5,9 @@ import { ActivityCard } from "./ActivityCard";
 import { HeroSection } from "./HeroSection";
 import { LevelUpOverlay } from "./LevelUpOverlay";
 import { AchievementToast } from "./AchievementToast";
+import { PainelAtributos } from "./PainelAtributos";
 import { getDailyCompletionBonus } from "@/lib/gamification";
+import type { Atributos, ClasseInfo } from "@/lib/attributes";
 
 interface Activity {
   id: number;
@@ -57,6 +59,9 @@ interface DashboardClientProps {
   levelInfo: LevelInfo;
   xpToday: number;
   dateLabel: string;
+  atributos: Atributos;
+  pontosDisponiveis: number;
+  classeInfo: ClasseInfo;
 }
 
 export function DashboardClient({
@@ -64,7 +69,11 @@ export function DashboardClient({
   levelInfo: initialLevelInfo,
   xpToday: initialXpToday,
   dateLabel,
+  atributos,
+  pontosDisponiveis,
+  classeInfo: initialClasse,
 }: DashboardClientProps) {
+  const [classeInfo, setClasseInfo] = useState(initialClasse);
   const [levelInfo, setLevelInfo] = useState(initialLevelInfo);
   const [xpToday, setXpToday] = useState(initialXpToday);
   const [pendingAchievements, setPendingAchievements] = useState<Achievement[]>([]);
@@ -163,9 +172,19 @@ export function DashboardClient({
         </div>
 
         {/* Hero */}
-        <HeroSection levelInfo={levelInfo} xpToday={xpToday} />
+        <HeroSection levelInfo={levelInfo} xpToday={xpToday} classeCor={classeInfo.cor} />
 
-        {/* Atividades */}
+        {/* Atributos */}
+        <div className="section">
+          <PainelAtributos
+            initialAtributos={atributos}
+            initialPontos={pontosDisponiveis}
+            initialClasse={classeInfo}
+            onClasseChange={setClasseInfo}
+          />
+        </div>
+
+        {/* Missões */}
         <div className="section">
           <div className="section-head">
             <h2>Missões do Dia</h2>

@@ -74,6 +74,16 @@ function init(): Promise<void> {
       ALTER TABLE activities ADD CONSTRAINT activities_frequency_check
         CHECK(frequency IN ('daily', 'weekly', 'free', 'nx_week'))
     `);
+    // Atributos + Classe
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS categoria TEXT`);
+    await pool.query(`
+      ALTER TABLE user_stats
+        ADD COLUMN IF NOT EXISTS atributos JSONB NOT NULL DEFAULT '{"FOR":0,"VIT":0,"AGI":0,"INT":0,"PER":0}'
+    `);
+    await pool.query(`
+      ALTER TABLE user_stats
+        ADD COLUMN IF NOT EXISTS pontos_disponiveis INTEGER NOT NULL DEFAULT 0
+    `);
   })();
   return schemaReady;
 }
@@ -94,6 +104,7 @@ export interface Activity {
   target_value: number | null;
   target_unit: string | null;
   weekly_target: number | null;
+  categoria: string | null;
 }
 
 export interface Checkin {
@@ -115,6 +126,8 @@ export interface UserStats {
   total_xp: number;
   level: number;
   last_seen: string;
+  atributos: { FOR: number; VIT: number; AGI: number; INT: number; PER: number };
+  pontos_disponiveis: number;
 }
 
 // ─── Activities ───────────────────────────────────────────────────────────────
@@ -139,18 +152,18 @@ export async function createActivity(
 ): Promise<Activity> {
   await init();
   const res = await pool.query(
-    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
     [data.name, data.frequency, data.xp_base, data.emoji, data.color,
      data.target_value ?? null, data.target_unit ?? null, data.weekly_target ?? null,
-     localISOString()]
+     data.categoria ?? null, localISOString()]
   );
   return (await getActivity(res.rows[0].id))!;
 }
 
 const ACTIVITY_ALLOWED_KEYS = new Set([
   "name", "frequency", "xp_base", "emoji", "color", "archived",
-  "target_value", "target_unit", "weekly_target",
+  "target_value", "target_unit", "weekly_target", "categoria",
 ]);
 
 export async function updateActivity(
@@ -371,4 +384,26 @@ export async function unlockAchievement(key: string): Promise<Achievement | null
     [key, now]
   );
   return res.rows[0];
+}
+
+// ─── Player Attributes ────────────────────────────────────────────────────────
+
+export async function investirPonto(attr: string): Promise<UserStats> {
+  await init();
+  await pool.query(
+    `UPDATE user_stats
+     SET atributos = jsonb_set(atributos, $1, ((atributos->$2)::int + 1)::text::jsonb),
+         pontos_disponiveis = GREATEST(0, pontos_disponiveis - 1)
+     WHERE id = 1 AND pontos_disponiveis > 0`,
+    [`{${attr}}`, attr]
+  );
+  return getUserStats();
+}
+
+export async function addPontosDisponiveis(count: number): Promise<void> {
+  await init();
+  await pool.query(
+    `UPDATE user_stats SET pontos_disponiveis = pontos_disponiveis + $1 WHERE id = 1`,
+    [count]
+  );
 }

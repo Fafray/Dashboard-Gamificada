@@ -14,6 +14,8 @@ import {
   updateLevel,
   unlockAchievement,
   getCheckinsByDate,
+  getUserStats,
+  addPontosDisponiveis,
 } from "@/lib/db";
 import {
   computeStreak,
@@ -23,6 +25,8 @@ import {
   computeConsecutiveDays,
   getAchievementDef,
 } from "@/lib/gamification";
+import { xpComBonus } from "@/lib/attributes";
+import type { Atributos } from "@/lib/attributes";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -68,10 +72,13 @@ export async function POST(req: Request) {
     }
   }
 
-  // Streak → XP
+  // Streak → XP (com bônus de atributo por categoria)
   const checkinDates = await getCheckinDatesForActivity(activity_id);
-  const streak   = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
-  const xpEarned = calculateXP(activity.xp_base, streak.current);
+  const streak      = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
+  const playerStats = await getUserStats();
+  const atributos   = (playerStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
+  const xpBase      = calculateXP(activity.xp_base, streak.current);
+  const xpEarned    = xpComBonus(xpBase, activity.categoria, atributos);
 
   let checkin;
   let updatedStats;
@@ -86,7 +93,11 @@ export async function POST(req: Request) {
   }
 
   const levelInfo = getLevelInfo(updatedStats.total_xp);
-  if (levelInfo.level !== updatedStats.level) await updateLevel(levelInfo.level);
+  if (levelInfo.level !== updatedStats.level) {
+    const levelsGained = levelInfo.level - updatedStats.level;
+    await updateLevel(levelInfo.level);
+    if (levelsGained > 0) await addPontosDisponiveis(levelsGained * 3);
+  }
 
   // Achievements
   const allCheckins   = await getAllCheckins();

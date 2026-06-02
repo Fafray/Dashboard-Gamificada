@@ -14,6 +14,7 @@ interface LevelInfo {
 interface HeroSectionProps {
   levelInfo: LevelInfo;
   xpToday: number;
+  classeCor?: string;
 }
 
 function getLevelTitle(level: number): string {
@@ -52,10 +53,11 @@ const RANK_GLOW: Record<string, string> = {
   "REI DAS SOMBRAS": "rgba(100,0,200,1)",
 };
 
-function CharPortrait({ rank, level }: { rank: string; level: number }) {
+function CharPortrait({ rank, level, classeCor }: { rank: string; level: number; classeCor?: string }) {
   const [imgError, setImgError] = useState(false);
   const imgSrc = RANK_IMAGE[rank];
-  const glow = RANK_GLOW[rank] ?? "rgba(0,150,200,.6)";
+  const rankGlow = RANK_GLOW[rank] ?? "rgba(0,150,200,.6)";
+  const glow = classeCor ? `${classeCor}99` : rankGlow;
 
   return (
     <div style={{
@@ -140,7 +142,7 @@ function CharPortrait({ rank, level }: { rank: string; level: number }) {
   );
 }
 
-export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
+export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps) {
   const { level, currentLevelXP, nextLevelXP, progress, totalXP } = levelInfo;
   const xpRemaining = nextLevelXP - currentLevelXP;
   const nearLevel = progress >= 80;
@@ -203,9 +205,9 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
       </div>
 
       {/* Right: Character portrait */}
-      <div className="hero-char" style={{ padding: "16px", gap: "0" }}>
+      <div className="hero-char" style={{ padding: "16px", gap: "0", borderColor: classeCor ? `${classeCor}40` : undefined }}>
         <span className="eyebrow" style={{ marginBottom: "10px" }}>[ JOGADOR ]</span>
-        <CharPortrait rank={rank} level={level} />
+        <CharPortrait rank={rank} level={level} classeCor={classeCor} />
       </div>
     </div>
   );
