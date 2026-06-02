@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "frequency must be daily, weekly, free, or nx_week" }, { status: 400 });
   }
 
-  const { weekly_target, target_value, target_unit } = body;
+  const { weekly_target, target_value, target_unit, categoria } = body;
 
   const activity = await createActivity({
     name,
@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     weekly_target: weekly_target ?? null,
     target_value:  target_value ?? null,
     target_unit:   target_unit ?? null,
+    categoria:     categoria ?? null,
   });
 
   return NextResponse.json(activity, { status: 201 });
