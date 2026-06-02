@@ -88,6 +88,16 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS nivel_maximo_atingido INTEGER NOT NULL DEFAULT 1`);
     await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS titulo_ativo_id TEXT`);
     await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS ultima_atividade TEXT`);
+    // Sistema de eventos (timeline / gráfico de nível)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS events (
+        id    SERIAL  PRIMARY KEY,
+        tipo  TEXT    NOT NULL,
+        texto TEXT    NOT NULL,
+        data  TEXT    NOT NULL,
+        extra JSONB
+      )
+    `);
   })();
   return schemaReady;
 }
@@ -473,4 +483,52 @@ export async function subtrairXP(amount: number): Promise<UserStats> {
     [amount, localISOString()]
   );
   return getUserStats();
+}
+
+// ─── Events ───────────────────────────────────────────────────────────────────
+
+export interface SystemEvent {
+  id: number;
+  tipo: string;
+  texto: string;
+  data: string;
+  extra: Record<string, unknown> | null;
+}
+
+export async function registrarEvento(
+  tipo: string,
+  texto: string,
+  extra?: Record<string, unknown>
+): Promise<void> {
+  await init();
+  await pool.query(
+    `INSERT INTO events (tipo, texto, data, extra) VALUES ($1, $2, $3, $4)`,
+    [tipo, texto, localISOString(), extra ? JSON.stringify(extra) : null]
+  );
+}
+
+export async function getEvents(limit = 60): Promise<SystemEvent[]> {
+  await init();
+  const res = await pool.query(
+    `SELECT * FROM events ORDER BY data DESC LIMIT $1`,
+    [limit]
+  );
+  return res.rows;
+}
+
+// Returns level-per-day history built from nivel_up/nivel_down events.
+// Falls back to [{ date: today, nivel: currentLevel }] if no history yet.
+export async function getLevelHistory(currentLevel: number): Promise<{ date: string; nivel: number }[]> {
+  await init();
+  const res = await pool.query(`
+    SELECT LEFT(data, 10) as date, (extra->>'nivel')::int as nivel
+    FROM events
+    WHERE tipo IN ('nivel_up', 'nivel_down') AND extra->>'nivel' IS NOT NULL
+    ORDER BY data ASC
+  `);
+  if (res.rows.length === 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    return [{ date: today, nivel: currentLevel }];
+  }
+  return res.rows;
 }

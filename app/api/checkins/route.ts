@@ -17,6 +17,7 @@ import {
   getUserStats,
   sincronizarNivelMaximo,
   setUltimaAtividade,
+  registrarEvento,
 } from "@/lib/db";
 import {
   computeStreak,
@@ -24,6 +25,7 @@ import {
   getLevelInfo,
   computeConsecutiveDays,
   nivelDoXp,
+  rankDoNivel,
 } from "@/lib/gamification";
 import { xpComBonus } from "@/lib/attributes";
 import type { Atributos } from "@/lib/attributes";
@@ -97,10 +99,27 @@ export async function POST(req: Request) {
 
   const levelInfo = getLevelInfo(updatedStats.total_xp);
   await updateLevel(levelInfo.level);
-  // Pontos de atributo: concedidos apenas por recorde de nível (anti-farm)
   await sincronizarNivelMaximo(levelInfo.level);
-  // Registrar última atividade para decay
   await setUltimaAtividade(now.toISOString());
+
+  // Eventos de mudança de nível / rank
+  const oldLevel = nivelDoXp(playerStats.total_xp);
+  const newLevel = levelInfo.level;
+  if (newLevel !== oldLevel) {
+    const oldRank = rankDoNivel(oldLevel);
+    const newRank = rankDoNivel(newLevel);
+    if (newLevel > oldLevel) {
+      await registrarEvento("nivel_up", `Subiu para Nível ${newLevel}`, { nivel: newLevel, rank: newRank });
+      if (newRank !== oldRank) {
+        await registrarEvento("rank_up", `Promovido para ${newRank}-RANK`, { nivel: newLevel, rank: newRank });
+      }
+    } else {
+      await registrarEvento("nivel_down", `Caiu para Nível ${newLevel}`, { nivel: newLevel, rank: newRank });
+      if (newRank !== oldRank) {
+        await registrarEvento("rank_down", `Rebaixado para ${newRank}-RANK`, { nivel: newLevel, rank: newRank });
+      }
+    }
+  }
 
   // Verificar títulos
   const allCheckins     = await getAllCheckins();
@@ -145,7 +164,10 @@ export async function POST(req: Request) {
     const result = await unlockAchievement(key);
     if (result) {
       const def = getTituloDef(key);
-      if (def) newlyUnlocked.push({ key: def.id, name: def.nome, description: def.desc, emoji: def.emoji });
+      if (def) {
+        newlyUnlocked.push({ key: def.id, name: def.nome, description: def.desc, emoji: def.emoji });
+        await registrarEvento("titulo", `${def.emoji} Título desbloqueado: ${def.nome}`, { titulo_id: key });
+      }
     }
   }
 

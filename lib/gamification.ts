@@ -264,6 +264,13 @@ export function getStreakMilestone(streak: number): StreakMilestone | null {
 
 // ─── Daily Completion Bonus ───────────────────────────────────────────────────
 
+export const COMBO_BASE = 15;
+
+// Combo XP: base + AGI contributes +1 per 3 points invested
+export function computeComboXP(agi: number): number {
+  return COMBO_BASE + Math.floor(agi / 3);
+}
+
 export function getDailyCompletionBonus(activitiesCount: number): number {
   if (activitiesCount < 2) return 0;
   return activitiesCount * 10;

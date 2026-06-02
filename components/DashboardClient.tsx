@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ActivityCard } from "./ActivityCard";
 import { HeroSection } from "./HeroSection";
 import { LevelUpOverlay } from "./LevelUpOverlay";
 import { AchievementToast } from "./AchievementToast";
 import { PainelAtributos } from "./PainelAtributos";
 import { PainelStatus } from "./PainelStatus";
-import { getDailyCompletionBonus } from "@/lib/gamification";
+import { MissaoDoSistema } from "./MissaoDoSistema";
+import { computeComboXP } from "@/lib/gamification";
 import type { Atributos, ClasseInfo } from "@/lib/attributes";
 
 interface Activity {
@@ -17,6 +18,7 @@ interface Activity {
   xp_base: number;
   emoji: string | null;
   color: string;
+  categoria: string | null;
   streak: { current: number; longest: number };
   doneToday: boolean;
   todayCheckinId: number | null;
@@ -78,10 +80,9 @@ export function DashboardClient({
   const [levelInfo, setLevelInfo] = useState(initialLevelInfo);
   const [xpToday, setXpToday] = useState(initialXpToday);
   const [pendingAchievements, setPendingAchievements] = useState<Achievement[]>([]);
-  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
-  const [bonusAwarded, setBonusAwarded] = useState(false);
-  const [bonusPop, setBonusPop] = useState<number | null>(null);
-  const allDoneBannerRef = useRef<HTMLDivElement>(null);
+  const [levelUpLevel, setLevelUpLevel]   = useState<number | null>(null);
+  const [bonusAwarded, setBonusAwarded]   = useState(false);
+  const [bonusPop, setBonusPop]           = useState<number | null>(null);
 
   const [doneSet, setDoneSet] = useState<Set<number>>(
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
@@ -117,16 +118,16 @@ export function DashboardClient({
   const totalCount = nonFreeActivities.length;
   const allDone = totalCount > 0 && doneCount === totalCount;
 
+  const comboXp = computeComboXP(atributos.AGI ?? 0);
+
   // Award daily completion bonus once when all activities are done
   useEffect(() => {
     if (!allDone || bonusAwarded) return;
-    const bonus = getDailyCompletionBonus(totalCount);
-    if (bonus <= 0) return;
     setBonusAwarded(true);
-    setXpToday((prev) => prev + bonus);
-    setBonusPop(bonus);
+    setXpToday((prev) => prev + comboXp);
+    setBonusPop(comboXp);
     setTimeout(() => setBonusPop(null), 1200);
-  }, [allDone, bonusAwarded, totalCount]);
+  }, [allDone, bonusAwarded, comboXp]);
 
   return (
     <>
@@ -195,6 +196,17 @@ export function DashboardClient({
           />
         </div>
 
+        {/* Missão do Sistema */}
+        {totalCount > 0 && (
+          <div className="section">
+            <MissaoDoSistema
+              doneCount={doneCount}
+              totalCount={totalCount}
+              comboXp={comboXp}
+            />
+          </div>
+        )}
+
         {/* Missões */}
         <div className="section">
           <div className="section-head">
@@ -209,6 +221,7 @@ export function DashboardClient({
                 <ActivityCard
                   key={activity.id}
                   activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
+                  atributos={atributos}
                   onCheckin={(result) => handleCheckin(activity.id, result)}
                   onUndo={(result) => handleUndo(activity.id, result)}
                 />
@@ -217,42 +230,13 @@ export function DashboardClient({
           )}
         </div>
 
-        {/* Banner de missão completa */}
-        {allDone && (
-          <div className="section">
-            <div
-              ref={allDoneBannerRef}
-              className="card all-done-banner"
-              style={{
-                padding: "28px",
-                textAlign: "center",
-                background: "linear-gradient(160deg, rgba(0,150,200,.14), rgba(0,80,180,.03))",
-                borderColor: "rgba(0,180,232,.4)",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              {bonusPop !== null && (
-                <div
-                  className="bonus-pop go"
-                  style={{ left: "50%", top: "12px", transform: "translateX(-50%)" }}
-                >
-                  🎯 +{bonusPop} XP bônus!
-                </div>
-              )}
-              <p style={{ fontSize: "32px", marginBottom: "10px" }}>🏆</p>
-              <p style={{ fontWeight: 700, color: "var(--accent-violet-bright)", fontSize: "15px", marginBottom: "4px", letterSpacing: ".1em", fontFamily: "var(--font-space-grotesk), sans-serif", textTransform: "uppercase", textShadow: "0 0 20px rgba(0,180,232,.5)" }}>
-                ✓ Todas as Missões Concluídas
-              </p>
-              <p style={{ fontSize: "13px", color: "var(--text-muted)", letterSpacing: ".04em" }}>
-                +{xpToday} XP GANHOS HOJE
-                {bonusAwarded && (
-                  <span style={{ color: "var(--accent-teal)", marginLeft: "6px" }}>
-                    (inclui bônus de conclusão 🎯)
-                  </span>
-                )}
-              </p>
-            </div>
+        {/* XP pop quando todas as missões são concluídas */}
+        {bonusPop !== null && (
+          <div
+            className="bonus-pop go"
+            style={{ position: "fixed", bottom: "80px", left: "50%", transform: "translateX(-50%)", zIndex: 50 }}
+          >
+            ⚡ +{bonusPop} XP combo!
           </div>
         )}
       </div>

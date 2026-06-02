@@ -5,21 +5,29 @@ import {
   getUserStats,
   getActivities,
   getCheckinDatesForActivity,
+  getEvents,
+  getLevelHistory,
 } from "@/lib/db";
-import { computeStreak } from "@/lib/gamification";
+import { computeStreak, getLevelInfo } from "@/lib/gamification";
 import { Heatmap } from "@/components/Heatmap";
 import { XPChart } from "@/components/XPChart";
+import { EvolucaoNivel } from "@/components/EvolucaoNivel";
+import { RegistroSistema } from "@/components/RegistroSistema";
 
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  const [heatmapData, xpData, totalCheckins, , activities] = await Promise.all([
+  const [heatmapData, xpData, totalCheckins, rawStats, activities, eventos] = await Promise.all([
     getCheckinsGroupedByDate(365),
     getXpPerDay(30),
     getTotalCheckinsCount(),
     getUserStats(),
     getActivities(false),
+    getEvents(60),
   ]);
+
+  const { level: currentLevel } = getLevelInfo(rawStats.total_xp);
+  const levelHistory = await getLevelHistory(currentLevel);
 
 
   let bestStreak = 0;
@@ -115,6 +123,16 @@ export default async function HistoryPage() {
           </div>
           <XPChart data={xpData} />
         </div>
+      </div>
+
+      {/* Evolução de nível */}
+      <div className="section">
+        <EvolucaoNivel historico={levelHistory} />
+      </div>
+
+      {/* Registro do sistema */}
+      <div className="section">
+        <RegistroSistema eventos={eventos} />
       </div>
     </div>
   );

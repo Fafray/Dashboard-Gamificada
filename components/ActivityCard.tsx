@@ -2,6 +2,12 @@
 
 import { useState, useRef } from "react";
 import { getStreakMilestone } from "@/lib/gamification";
+import { CATEGORIA_ATRIBUTO, CATEGORIA_LABELS, xpComBonus } from "@/lib/attributes";
+import type { Atributos } from "@/lib/attributes";
+
+const COR_ATTR: Record<string, string> = {
+  FOR: "#e24b4a", VIT: "#1d9e75", AGI: "#efa527", INT: "#9b8bff", PER: "#3b82f6",
+};
 
 interface LevelInfo {
   level: number;
@@ -32,6 +38,7 @@ interface Activity {
   xp_base: number;
   emoji: string | null;
   color: string;
+  categoria: string | null;
   streak: { current: number; longest: number };
   doneToday: boolean;
   todayCheckinId: number | null;
@@ -44,6 +51,7 @@ interface Activity {
 
 interface ActivityCardProps {
   activity: Activity;
+  atributos?: Atributos;
   onCheckin: (result: CheckinResult) => void;
   onUndo: (result: UndoResult) => void;
 }
@@ -52,7 +60,7 @@ const FREQ_LABEL: Record<string, string> = {
   daily: "DIÁRIA", weekly: "SEMANAL", free: "LIVRE", nx_week: "/ SEM.",
 };
 
-export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps) {
+export function ActivityCard({ activity, atributos, onCheckin, onUndo }: ActivityCardProps) {
   const [done, setDone] = useState(activity.doneToday);
   const [checkinId, setCheckinId] = useState<number | null>(activity.todayCheckinId);
   const [streak, setStreak] = useState(activity.streak.current);
@@ -69,6 +77,13 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
 
   const isNxWeek    = activity.frequency === "nx_week";
   const hasTarget   = !!activity.target_value;
+
+  // Categoria / atributo
+  const attrKey      = activity.categoria ? CATEGORIA_ATRIBUTO[activity.categoria] : null;
+  const attrCor      = attrKey ? COR_ATTR[attrKey] : "var(--accent-teal)";
+  const xpEfetivo    = atributos && activity.categoria
+    ? xpComBonus(activity.xp_base, activity.categoria, atributos)
+    : activity.xp_base;
   const weekTarget  = activity.weekly_target ?? 1;
   const weeklyDone  = isNxWeek && weeklyCount >= weekTarget;
   const numParsed   = parseFloat(numValue) || 0;
@@ -174,6 +189,19 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
                 · META: {activity.target_value}{activity.target_unit}
               </span>
             )}
+            {activity.categoria && attrKey && (
+              <span style={{
+                marginLeft: "6px",
+                fontSize: "9px", letterSpacing: ".1em", fontWeight: 600,
+                color: attrCor,
+                background: `${attrCor}18`,
+                borderRadius: "4px", padding: "1px 5px",
+                textTransform: "uppercase",
+                fontFamily: "var(--font-space-grotesk), sans-serif",
+              }}>
+                {CATEGORIA_LABELS[activity.categoria]} · {attrKey}
+              </span>
+            )}
           </div>
         </div>
 
@@ -267,7 +295,7 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
             ? `REGISTRAR ${numValue} ${activity.target_unit ?? ""}`
             : isNxWeek
             ? `EXECUTAR ${weeklyCount + 1}/${weekTarget}`
-            : "COMPLETAR MISSÃO"}
+            : `COMPLETAR · +${xpEfetivo} XP`}
         </button>
 
         {checkinId && (
