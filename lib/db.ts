@@ -84,6 +84,10 @@ function init(): Promise<void> {
       ALTER TABLE user_stats
         ADD COLUMN IF NOT EXISTS pontos_disponiveis INTEGER NOT NULL DEFAULT 0
     `);
+    // Hardcore / Títulos
+    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS nivel_maximo_atingido INTEGER NOT NULL DEFAULT 1`);
+    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS titulo_ativo_id TEXT`);
+    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS ultima_atividade TEXT`);
   })();
   return schemaReady;
 }
@@ -128,6 +132,9 @@ export interface UserStats {
   last_seen: string;
   atributos: { FOR: number; VIT: number; AGI: number; INT: number; PER: number };
   pontos_disponiveis: number;
+  nivel_maximo_atingido: number;
+  titulo_ativo_id: string | null;
+  ultima_atividade: string | null;
 }
 
 // ─── Activities ───────────────────────────────────────────────────────────────
@@ -406,4 +413,64 @@ export async function addPontosDisponiveis(count: number): Promise<void> {
     `UPDATE user_stats SET pontos_disponiveis = pontos_disponiveis + $1 WHERE id = 1`,
     [count]
   );
+}
+
+// Sincroniza nivelMaximoAtingido e concede pontos por recordes (anti-farm)
+export async function sincronizarNivelMaximo(nivelAtual: number): Promise<number> {
+  await init();
+  const stats = await getUserStats();
+  const nivelMax = stats.nivel_maximo_atingido ?? 1;
+  if (nivelAtual > nivelMax) {
+    const ganhos = (nivelAtual - nivelMax) * 3;
+    await pool.query(
+      `UPDATE user_stats SET nivel_maximo_atingido = $1, pontos_disponiveis = pontos_disponiveis + $2 WHERE id = 1`,
+      [nivelAtual, ganhos]
+    );
+    return ganhos;
+  }
+  return 0;
+}
+
+export async function setUltimaAtividade(isoStr: string): Promise<void> {
+  await init();
+  await pool.query(`UPDATE user_stats SET ultima_atividade = $1 WHERE id = 1`, [isoStr]);
+}
+
+// Aplica decay de XP por inatividade (3% por dia, mínimo 0)
+export async function aplicarDecaySeNecessario(tituloAtivoId: string | null): Promise<number> {
+  await init();
+  const stats = await getUserStats();
+  if (!stats.ultima_atividade) return 0;
+
+  const ultima = new Date(stats.ultima_atividade);
+  const agora  = new Date();
+  const diasParado = Math.floor((agora.getTime() - ultima.getTime()) / 86400000);
+  if (diasParado < 1) return 0;
+
+  // Título "renascido" reduz decay pela metade
+  const multiplicador = tituloAtivoId === "renascido" ? 0.5 : 1;
+  const taxaPorDia    = 0.03 * multiplicador;
+  const perda         = Math.round(stats.total_xp * taxaPorDia * diasParado);
+  if (perda <= 0) return 0;
+
+  const novoXP = Math.max(0, stats.total_xp - perda);
+  await pool.query(
+    `UPDATE user_stats SET total_xp = $1, ultima_atividade = $2 WHERE id = 1`,
+    [novoXP, localISOString()]
+  );
+  return perda;
+}
+
+export async function equiparTitulo(id: string | null): Promise<void> {
+  await init();
+  await pool.query(`UPDATE user_stats SET titulo_ativo_id = $1 WHERE id = 1`, [id]);
+}
+
+export async function subtrairXP(amount: number): Promise<UserStats> {
+  await init();
+  await pool.query(
+    `UPDATE user_stats SET total_xp = GREATEST(0, total_xp - $1), last_seen = $2 WHERE id = 1`,
+    [amount, localISOString()]
+  );
+  return getUserStats();
 }

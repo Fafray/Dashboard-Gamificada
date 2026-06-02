@@ -9,6 +9,8 @@ import {
   getWeeklyCheckinCount,
   getXpEarnedToday,
   getTodayCheckinForActivity,
+  aplicarDecaySeNecessario,
+  updateLevel,
 } from "@/lib/db";
 import { getLevelInfo, computeStreak } from "@/lib/gamification";
 import { derivarClasse } from "@/lib/attributes";
@@ -23,11 +25,21 @@ export default async function DashboardPage() {
   const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
   const weekEnd   = format(endOfISOWeek(now),   "yyyy-MM-dd");
 
+  // Aplica decay antes de renderizar (XP cai se ficou inativo)
+  const statsPreDecay = await getUserStats();
+  await aplicarDecaySeNecessario(statsPreDecay.titulo_ativo_id);
+
   const [rawStats, activities, xpToday] = await Promise.all([
     getUserStats(),
     getActivities(),
     getXpEarnedToday(todayStr),
   ]);
+
+  // Re-derivar nível após decay (pode ter caído)
+  const { nivelDoXp: calcNivel } = await import("@/lib/gamification");
+  const nivelAtual = calcNivel(rawStats.total_xp);
+  if (nivelAtual !== rawStats.level) await updateLevel(nivelAtual);
+
   const atributos = (rawStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
   const classeInfo = derivarClasse(atributos);
   const pontosDisponiveis = rawStats.pontos_disponiveis ?? 0;

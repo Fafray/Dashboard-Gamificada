@@ -6,6 +6,7 @@ import { HeroSection } from "./HeroSection";
 import { LevelUpOverlay } from "./LevelUpOverlay";
 import { AchievementToast } from "./AchievementToast";
 import { PainelAtributos } from "./PainelAtributos";
+import { PainelStatus } from "./PainelStatus";
 import { getDailyCompletionBonus } from "@/lib/gamification";
 import type { Atributos, ClasseInfo } from "@/lib/attributes";
 
@@ -173,6 +174,16 @@ export function DashboardClient({
 
         {/* Hero */}
         <HeroSection levelInfo={levelInfo} xpToday={xpToday} classeCor={classeInfo.cor} />
+
+        {/* Status do dia */}
+        <div className="section">
+          <PainelStatus
+            maxStreak={maxStreak}
+            doneCount={doneCount}
+            totalCount={totalCount}
+            totalXP={levelInfo.totalXP}
+          />
+        </div>
 
         {/* Atributos */}
         <div className="section">

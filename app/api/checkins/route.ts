@@ -15,18 +15,20 @@ import {
   unlockAchievement,
   getCheckinsByDate,
   getUserStats,
-  addPontosDisponiveis,
+  sincronizarNivelMaximo,
+  setUltimaAtividade,
 } from "@/lib/db";
 import {
   computeStreak,
   calculateXP,
   getLevelInfo,
-  evaluateAchievements,
   computeConsecutiveDays,
-  getAchievementDef,
+  nivelDoXp,
 } from "@/lib/gamification";
 import { xpComBonus } from "@/lib/attributes";
 import type { Atributos } from "@/lib/attributes";
+import { verificarTitulos, bonusXpDoTitulo, getTituloDef } from "@/lib/titulos";
+import type { TituloStats } from "@/lib/titulos";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -72,13 +74,14 @@ export async function POST(req: Request) {
     }
   }
 
-  // Streak → XP (com bônus de atributo por categoria)
+  // Streak → XP (multStreak + bônus de atributo + bônus de título)
   const checkinDates = await getCheckinDatesForActivity(activity_id);
-  const streak      = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
-  const playerStats = await getUserStats();
-  const atributos   = (playerStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
-  const xpBase      = calculateXP(activity.xp_base, streak.current);
-  const xpEarned    = xpComBonus(xpBase, activity.categoria, atributos);
+  const streak       = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
+  const playerStats  = await getUserStats();
+  const atributos    = (playerStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
+  const tituloBonus  = bonusXpDoTitulo(playerStats.titulo_ativo_id, activity.categoria);
+  const xpBase       = calculateXP(activity.xp_base, streak.current);
+  const xpEarned     = Math.round(xpComBonus(xpBase, activity.categoria, atributos) * (1 + tituloBonus));
 
   let checkin;
   let updatedStats;
@@ -93,17 +96,17 @@ export async function POST(req: Request) {
   }
 
   const levelInfo = getLevelInfo(updatedStats.total_xp);
-  if (levelInfo.level !== updatedStats.level) {
-    const levelsGained = levelInfo.level - updatedStats.level;
-    await updateLevel(levelInfo.level);
-    if (levelsGained > 0) await addPontosDisponiveis(levelsGained * 3);
-  }
+  await updateLevel(levelInfo.level);
+  // Pontos de atributo: concedidos apenas por recorde de nível (anti-farm)
+  await sincronizarNivelMaximo(levelInfo.level);
+  // Registrar última atividade para decay
+  await setUltimaAtividade(now.toISOString());
 
-  // Achievements
-  const allCheckins   = await getAllCheckins();
-  const allDates      = allCheckins.map((c) => c.checked_at.slice(0, 10));
+  // Verificar títulos
+  const allCheckins     = await getAllCheckins();
+  const allDates        = allCheckins.map((c) => c.checked_at.slice(0, 10));
   const consecutiveDays = computeConsecutiveDays(allDates);
-  const checkinsToday = allDates.filter((d) => d === todayStr).length;
+  const checkinsToday   = allDates.filter((d) => d === todayStr).length;
 
   const newCheckinDates = await getCheckinDatesForActivity(activity_id);
   const newStreak       = computeStreak(newCheckinDates, activity.frequency, now, activity.weekly_target ?? undefined);
@@ -117,27 +120,32 @@ export async function POST(req: Request) {
     maxStreak = Math.max(maxStreak, s.current, s.longest);
   }
 
-  // Weekly count for nx_week (returned so client can update the counter)
+  // Weekly count for nx_week
   const weeklyCount = activity.frequency === "nx_week"
     ? await getWeeklyCheckinCount(activity_id, weekStart, weekEnd)
     : null;
 
-  const ctx = {
-    totalCheckins: await getTotalCheckinsCount(),
+  const totalCheckins = await getTotalCheckinsCount();
+  const desbloqueados = (await import("@/lib/db").then((m) => m.getAchievements()))
+    .map((a) => a.key);
+
+  const tituloStats: TituloStats = {
+    totalCheckins,
     maxStreak,
     level: levelInfo.level,
     checkinsToday,
     checkinHour: now.getHours(),
     consecutiveDays,
+    atributos: atributos as Record<string, number>,
   };
 
-  const earnedKeys = evaluateAchievements(ctx);
+  const earnedKeys = verificarTitulos(desbloqueados, tituloStats);
   const newlyUnlocked: { key: string; name: string; description: string; emoji: string }[] = [];
   for (const key of earnedKeys) {
     const result = await unlockAchievement(key);
     if (result) {
-      const def = getAchievementDef(key);
-      if (def) newlyUnlocked.push(def);
+      const def = getTituloDef(key);
+      if (def) newlyUnlocked.push({ key: def.id, name: def.nome, description: def.desc, emoji: def.emoji });
     }
   }
 

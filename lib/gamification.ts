@@ -1,40 +1,77 @@
 import { format, subDays, subWeeks, startOfISOWeek, parseISO, differenceInCalendarDays, differenceInCalendarWeeks } from "date-fns";
 import type { Frequency } from "./db";
 
-// ─── Level System ─────────────────────────────────────────────────────────────
-// XP needed to advance from level N to N+1: 100 + (N-1)*50
-// Cumulative threshold to reach level N:
-//   sum_{i=1}^{N-1} (100 + (i-1)*50) = (N-1)*100 + 50*(N-1)*(N-2)/2
+// ─── Level System (curva: degrau N → N+1 = floor(100 * N^1.5)) ──────────────
 
-export function getLevelThreshold(level: number): number {
-  if (level <= 1) return 0;
-  const n = level - 1;
-  return n * 100 + (50 * n * (n - 1)) / 2;
+export function xpDoDegrau(n: number): number {
+  return Math.floor(100 * Math.pow(n, 1.5));
 }
 
+export function xpAcumuladoAteNivel(n: number): number {
+  if (n <= 1) return 0;
+  let total = 0;
+  for (let k = 1; k < n; k++) total += xpDoDegrau(k);
+  return total;
+}
+
+export function nivelDoXp(xpTotal: number): number {
+  let n = 1;
+  while (xpTotal >= xpAcumuladoAteNivel(n + 1)) n++;
+  return n;
+}
+
+// Rank derivado do nível
+const RANKS_CONFIG = [
+  { rank: "E", ate: 5 },  { rank: "D", ate: 10 }, { rank: "C", ate: 18 },
+  { rank: "B", ate: 28 }, { rank: "A", ate: 40 }, { rank: "S", ate: Infinity },
+] as const;
+
+export function rankDoNivel(n: number): string {
+  return RANKS_CONFIG.find((r) => n <= r.ate)?.rank ?? "S";
+}
+
+// Quanto XP falta perder pra cair de rank
+export function xpAteRebaixar(xpTotal: number): { rankAbaixo: string; xp: number } | null {
+  const nivel = nivelDoXp(xpTotal);
+  const rankAtual = rankDoNivel(nivel);
+  let nivelMin = nivel;
+  while (nivelMin > 1 && rankDoNivel(nivelMin - 1) === rankAtual) nivelMin--;
+  if (nivelMin <= 1) return null;
+  const xpLimite = xpAcumuladoAteNivel(nivelMin);
+  if (xpTotal <= xpLimite) return null;
+  return { rankAbaixo: rankDoNivel(nivelMin - 1), xp: xpTotal - xpLimite };
+}
+
+// Streak multiplier
+export function multStreak(streak: number): number {
+  if (streak >= 14) return 2.0;
+  if (streak >= 7)  return 1.5;
+  if (streak >= 3)  return 1.25;
+  return 1.0;
+}
+
+// getLevelThreshold / getXpToNextLevel mantidos p/ compatibilidade
+export function getLevelThreshold(level: number): number {
+  return xpAcumuladoAteNivel(level);
+}
 export function getXpToNextLevel(level: number): number {
-  return getLevelThreshold(level + 1) - getLevelThreshold(level);
+  return xpDoDegrau(level);
 }
 
 export interface LevelInfo {
   level: number;
   totalXP: number;
-  currentLevelXP: number;  // XP within this level
-  nextLevelXP: number;     // XP needed to complete this level
-  progress: number;        // 0-100 percentage
+  currentLevelXP: number;
+  nextLevelXP: number;
+  progress: number;
 }
 
 export function getLevelInfo(totalXP: number): LevelInfo {
-  let level = 1;
-  while (getLevelThreshold(level + 1) <= totalXP) {
-    level++;
-  }
-  const currentThreshold = getLevelThreshold(level);
-  const nextThreshold = getLevelThreshold(level + 1);
+  const level = nivelDoXp(totalXP);
+  const currentThreshold = xpAcumuladoAteNivel(level);
+  const nextLevelXP = xpDoDegrau(level);
   const currentLevelXP = totalXP - currentThreshold;
-  const nextLevelXP = nextThreshold - currentThreshold;
   const progress = Math.min(100, Math.floor((currentLevelXP / nextLevelXP) * 100));
-
   return { level, totalXP, currentLevelXP, nextLevelXP, progress };
 }
 
@@ -202,15 +239,7 @@ export function computeStreak(
 // ─── XP Calculation ───────────────────────────────────────────────────────────
 
 export function calculateXP(baseXP: number, currentStreak: number): number {
-  // Linear bonus: +5% per streak day, capped at +50% (day 10)
-  const linearBonus = Math.min(0.5, currentStreak * 0.05);
-  // Milestone bonuses stack on top for meaningful jumps at key streaks
-  let milestoneBonus = 0;
-  if (currentStreak >= 100) milestoneBonus = 1.0;
-  else if (currentStreak >= 30) milestoneBonus = 0.5;
-  else if (currentStreak >= 14) milestoneBonus = 0.25;
-  else if (currentStreak >= 7)  milestoneBonus = 0.15;
-  return Math.ceil(baseXP * (1 + linearBonus + milestoneBonus));
+  return Math.ceil(baseXP * multStreak(currentStreak));
 }
 
 // ─── Streak Milestones ────────────────────────────────────────────────────────
