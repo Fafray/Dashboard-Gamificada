@@ -97,12 +97,30 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Right: Character stage */}
+      {/* Right: Player status */}
       <div className="hero-char">
-        <span className="eyebrow">[ JOGADOR ]</span>
-        <div className="char-stage">
-          <div className="char-silhouette">{getCharEmoji(level)}</div>
-          <div className="char-ring" />
+        <span className="eyebrow">[ STATUS ]</span>
+        <div className="char-stage" style={{ flexDirection: "column", gap: "10px", padding: "20px 16px" }}>
+          <div style={{
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "28px", fontWeight: 700, letterSpacing: ".18em",
+            color: "var(--accent-violet-bright)",
+            textShadow: "0 0 28px rgba(0,180,232,.6), 0 0 60px rgba(0,100,200,.3)",
+            textTransform: "uppercase",
+          }}>
+            Fabricio
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", textAlign: "left" }}>
+            {[
+              { label: "JOB", value: "CAÇADOR" },
+              { label: "RANK", value: getLevelTitle(level) },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontFamily: "var(--font-space-grotesk), sans-serif" }}>
+                <span style={{ color: "var(--text-muted)", letterSpacing: ".1em" }}>{label}</span>
+                <span style={{ color: "var(--text-secondary)", letterSpacing: ".08em", fontWeight: 700 }}>{value}</span>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="char-cap">
           LV.<b>{level}</b> · {getLevelTitle(level)}
