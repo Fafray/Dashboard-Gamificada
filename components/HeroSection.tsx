@@ -14,22 +14,26 @@ interface HeroSectionProps {
 }
 
 function getLevelTitle(level: number): string {
-  if (level < 5)  return "Iniciante";
-  if (level < 10) return "Aprendiz";
-  if (level < 15) return "Aventureiro";
-  if (level < 20) return "Veterano";
-  if (level < 30) return "Especialista";
-  if (level < 50) return "Mestre";
-  return "Lendário";
+  if (level < 5)   return "E-RANK";
+  if (level < 10)  return "D-RANK";
+  if (level < 15)  return "C-RANK";
+  if (level < 20)  return "B-RANK";
+  if (level < 30)  return "A-RANK";
+  if (level < 50)  return "S-RANK";
+  if (level < 80)  return "NACIONAL";
+  if (level < 100) return "MONARCA";
+  return "REI DAS SOMBRAS";
 }
 
 function getCharEmoji(level: number): string {
-  if (level < 5)  return "🌱";
+  if (level < 5)  return "👤";
   if (level < 10) return "⚔️";
-  if (level < 15) return "🛡️";
-  if (level < 20) return "🔮";
-  if (level < 30) return "👑";
-  return "🌟";
+  if (level < 15) return "🗡️";
+  if (level < 20) return "🛡️";
+  if (level < 30) return "🏹";
+  if (level < 50) return "⚡";
+  if (level < 80) return "🌀";
+  return "👁️";
 }
 
 export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
@@ -46,7 +50,7 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
             className="level-badge"
             style={{ "--p": progress } as React.CSSProperties}
           >
-            <span className="lv-label">nível</span>
+            <span className="lv-label">LV</span>
             <span className="lv-num num">{level}</span>
           </div>
 
@@ -55,11 +59,11 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
               <b>{getLevelTitle(level)}</b>
             </div>
             <div className="hero-sub">
-              {totalXP.toLocaleString("pt-BR")} XP no total
+              {totalXP.toLocaleString("pt-BR")} XP ACUMULADO
             </div>
             {nearLevel && (
               <div className="near-level-hint" style={{ marginTop: "6px" }}>
-                ⚡ Faltam {xpRemaining.toLocaleString("pt-BR")} XP para o nível {level + 1}!
+                ⚡ FALTAM {xpRemaining.toLocaleString("pt-BR")} XP → LV.{level + 1}
               </div>
             )}
           </div>
@@ -67,7 +71,7 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
           {xpToday > 0 && (
             <div className="hero-xptoday">
               <div className="big num num-pop">+{xpToday}</div>
-              <div className="lbl">XP hoje</div>
+              <div className="lbl">XP HOJE</div>
             </div>
           )}
         </div>
@@ -80,8 +84,8 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
             </span>
             <span className="next num">
               {nearLevel
-                ? `⚡ ${xpRemaining.toLocaleString("pt-BR")} XP restantes`
-                : `${nextLevelXP.toLocaleString("pt-BR")} para nível ${level + 1}`}
+                ? `⚡ ${xpRemaining.toLocaleString("pt-BR")} XP RESTANTES`
+                : `${nextLevelXP.toLocaleString("pt-BR")} → LV.${level + 1}`}
             </span>
           </div>
           <div className="xp-track">
@@ -95,13 +99,13 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
 
       {/* Right: Character stage */}
       <div className="hero-char">
-        <span className="eyebrow">Personagem</span>
+        <span className="eyebrow">[ JOGADOR ]</span>
         <div className="char-stage">
           <div className="char-silhouette">{getCharEmoji(level)}</div>
           <div className="char-ring" />
         </div>
         <div className="char-cap">
-          Nível <b>{level}</b> · {getLevelTitle(level)}
+          LV.<b>{level}</b> · {getLevelTitle(level)}
         </div>
       </div>
     </div>

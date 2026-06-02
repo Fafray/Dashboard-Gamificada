@@ -140,8 +140,8 @@ export function DashboardClient({
         {/* Cabeçalho */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
           <div>
-            <p className="eyebrow">Dashboard</p>
-            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "2px" }}>
+            <p className="eyebrow">[ PAINEL DO SISTEMA ]</p>
+            <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px", letterSpacing: ".06em" }}>
               {dateLabel}
             </p>
           </div>
@@ -168,7 +168,7 @@ export function DashboardClient({
         {/* Atividades */}
         <div className="section">
           <div className="section-head">
-            <h2>Atividades de Hoje</h2>
+            <h2>Missões do Dia</h2>
           </div>
 
           {initialActivities.length === 0 ? (
@@ -211,11 +211,11 @@ export function DashboardClient({
                 </div>
               )}
               <p style={{ fontSize: "32px", marginBottom: "10px" }}>🏆</p>
-              <p style={{ fontWeight: 700, color: "var(--accent-green)", fontSize: "16px", marginBottom: "4px" }}>
-                Missão do dia completa!
+              <p style={{ fontWeight: 700, color: "var(--accent-green)", fontSize: "15px", marginBottom: "4px", letterSpacing: ".1em", fontFamily: "var(--font-space-grotesk), sans-serif", textTransform: "uppercase" }}>
+                ✓ Todas as Missões Concluídas
               </p>
-              <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-                +{xpToday} XP ganhos hoje
+              <p style={{ fontSize: "13px", color: "var(--text-muted)", letterSpacing: ".04em" }}>
+                +{xpToday} XP GANHOS HOJE
                 {bonusAwarded && (
                   <span style={{ color: "var(--accent-teal)", marginLeft: "6px" }}>
                     (inclui bônus de conclusão 🎯)
@@ -233,12 +233,12 @@ export function DashboardClient({
 function EmptyState() {
   return (
     <div className="card" style={{ padding: "40px", textAlign: "center" }}>
-      <p style={{ fontSize: "40px", marginBottom: "12px" }}>⚔️</p>
-      <p style={{ fontWeight: 600, color: "var(--text-primary)", marginBottom: "6px" }}>
-        Nenhuma atividade ainda
+      <p style={{ fontSize: "40px", marginBottom: "12px" }}>◈</p>
+      <p style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px", letterSpacing: ".1em", fontFamily: "var(--font-space-grotesk), sans-serif", textTransform: "uppercase" }}>
+        Nenhuma Missão Registrada
       </p>
-      <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
-        Adicione suas primeiras atividades para começar a ganhar XP
+      <p style={{ fontSize: "12.5px", color: "var(--text-muted)", letterSpacing: ".04em" }}>
+        Registre suas primeiras missões para iniciar sua jornada
       </p>
     </div>
   );

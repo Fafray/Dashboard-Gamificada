@@ -49,7 +49,7 @@ interface ActivityCardProps {
 }
 
 const FREQ_LABEL: Record<string, string> = {
-  daily: "Diário", weekly: "Semanal", free: "Livre", nx_week: "por semana",
+  daily: "DIÁRIA", weekly: "SEMANAL", free: "LIVRE", nx_week: "/ SEM.",
 };
 
 export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps) {
@@ -171,7 +171,7 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
               : FREQ_LABEL[activity.frequency]}
             {hasTarget && (
               <span style={{ marginLeft: "6px", color: "var(--accent-teal)" }}>
-                · meta {activity.target_value}{activity.target_unit}
+                · META: {activity.target_value}{activity.target_unit}
               </span>
             )}
           </div>
@@ -190,7 +190,7 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
               ))}
             </div>
             <span className={`week-count-text ${weeklyDone ? "done" : weeklyCount > 0 ? "progress" : "empty"}`}>
-              {weeklyDone ? "✓ semana completa" : `${weeklyCount}/${weekTarget} esta semana`}
+              {weeklyDone ? "✓ SEMANA OK" : `${weeklyCount}/${weekTarget} ESTA SEM.`}
             </span>
           </div>
         ) : (
@@ -209,11 +209,13 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
       {/* Milestone strip */}
       {milestone && streak > 0 && !isNxWeek && (
         <div style={{
-          margin: "10px 0 0", padding: "6px 10px", borderRadius: "8px",
-          background: "rgba(247,183,51,.12)", border: "1px solid rgba(247,183,51,.3)",
-          fontSize: "11.5px", color: "var(--accent-gold)", fontWeight: 600,
+          margin: "10px 0 0", padding: "6px 10px", borderRadius: "6px",
+          background: "rgba(255,215,0,.08)", border: "1px solid rgba(255,215,0,.25)",
+          fontSize: "11px", color: "var(--accent-gold)", fontWeight: 700,
+          letterSpacing: ".06em", fontFamily: "var(--font-space-grotesk), sans-serif",
+          textTransform: "uppercase",
         }}>
-          {milestone.emoji} {milestone.name} — {streak} dias seguidos!
+          {milestone.emoji} {milestone.name} — {streak} DIAS CONSECUTIVOS
         </div>
       )}
 
@@ -246,7 +248,7 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
         <div className="hud-done-badge">
           <span>✓</span>
           <span className="hud-done-value">{numValue || "—"} {activity.target_unit}</span>
-          <span style={{ color: "var(--text-muted)" }}>registrado</span>
+          <span style={{ color: "var(--text-muted)", letterSpacing: ".06em", fontSize: "11px" }}>REGISTRADO</span>
         </div>
       )}
 
@@ -260,12 +262,12 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
           {loading
             ? "..."
             : isDone
-            ? (isNxWeek ? `✓ Semana completa` : "✓ Concluído hoje")
+            ? (isNxWeek ? `✓ SEMANA COMPLETA` : "✓ MISSÃO CONCLUÍDA")
             : hasTarget && numValue
-            ? `Registrar ${numValue} ${activity.target_unit ?? ""}`
+            ? `REGISTRAR ${numValue} ${activity.target_unit ?? ""}`
             : isNxWeek
-            ? `Check-in ${weeklyCount + 1}/${weekTarget}`
-            : "Fazer check-in"}
+            ? `EXECUTAR ${weeklyCount + 1}/${weekTarget}`
+            : "COMPLETAR MISSÃO"}
         </button>
 
         {checkinId && (

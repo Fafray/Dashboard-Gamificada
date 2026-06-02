@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const links = [
-  { href: "/", label: "Hoje", icon: "⚔️" },
-  { href: "/activities", label: "Atividades", icon: "📋" },
-  { href: "/achievements", label: "Conquistas", icon: "🏆" },
-  { href: "/history", label: "Histórico", icon: "📊" },
+  { href: "/", label: "Sistema", icon: "◈" },
+  { href: "/activities", label: "Missões", icon: "⚡" },
+  { href: "/achievements", label: "Títulos", icon: "◆" },
+  { href: "/history", label: "Registros", icon: "▣" },
 ];
 
 export function Nav() {
@@ -47,10 +47,10 @@ export function Nav() {
         <div className="topbar" style={{ marginBottom: 0, height: "60px" }}>
           {/* Brand */}
           <div className="brand">
-            <div className="mark">⚔️</div>
+            <div className="mark">◈</div>
             <div>
-              <div className="brand-title num">Daily Quest</div>
-              <div className="brand-tag">RPG Habit Tracker</div>
+              <div className="brand-title">[ SISTEMA ]</div>
+              <div className="brand-tag">RPG · Vida Real</div>
             </div>
           </div>
 
@@ -72,9 +72,15 @@ export function Nav() {
                     fontWeight: 500,
                     textDecoration: "none",
                     transition: "all .18s",
-                    background: active ? "rgba(124,92,255,.15)" : "transparent",
+                    background: active ? "rgba(0,150,200,.12)" : "transparent",
                     color: active ? "var(--accent-violet-bright)" : "var(--text-muted)",
-                    border: active ? "1px solid rgba(124,92,255,.25)" : "1px solid transparent",
+                    border: active ? "1px solid rgba(0,180,232,.25)" : "1px solid transparent",
+                    letterSpacing: ".08em",
+                    fontFamily: "var(--font-space-grotesk), sans-serif",
+                    fontWeight: active ? 700 : 500,
+                    fontSize: "12.5px",
+                    textTransform: "uppercase" as const,
+                    textShadow: active ? "0 0 16px rgba(0,180,232,.5)" : "none",
                   }}
                 >
                   <span>{l.icon}</span>

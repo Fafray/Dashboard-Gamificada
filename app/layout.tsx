@@ -1,28 +1,30 @@
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { Exo_2, Rajdhani } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import "./globals.css";
 
-const manrope = Manrope({
+const exo2 = Exo_2({
   subsets: ["latin"],
   variable: "--font-manrope",
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
+const rajdhani = Rajdhani({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Daily Quest",
-  description: "Gamified activity tracker",
+  title: "Sistema — Daily Quest",
+  description: "RPG de hábitos — vire o protagonista da sua vida",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} h-full`}>
+    <html lang="pt-BR" className={`${exo2.variable} ${rajdhani.variable} h-full`}>
       <body className="h-full flex flex-col">
         <div className="aurora-bg" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
