@@ -67,10 +67,14 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
   );
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const isNxWeek   = activity.frequency === "nx_week";
-  const hasTarget  = !!activity.target_value;
-  const weekTarget = activity.weekly_target ?? 1;
-  const weeklyDone = isNxWeek && weeklyCount >= weekTarget;
+  const isNxWeek    = activity.frequency === "nx_week";
+  const hasTarget   = !!activity.target_value;
+  const weekTarget  = activity.weekly_target ?? 1;
+  const weeklyDone  = isNxWeek && weeklyCount >= weekTarget;
+  const numParsed   = parseFloat(numValue) || 0;
+  const targetVal   = activity.target_value ?? 0;
+  const barPct      = targetVal > 0 ? Math.min(120, (numParsed / targetVal) * 100) : 0;
+  const barStatus   = numParsed >= targetVal * 1.05 ? "over" : numParsed >= targetVal ? "at" : "below";
 
   function addXpPop(xp: number, newStreak: number) {
     const milestone = getStreakMilestone(newStreak);
@@ -173,13 +177,21 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
           </div>
         </div>
 
-        {/* Streak ou contador semanal */}
+        {/* Streak ou pips semanais */}
         {isNxWeek ? (
-          <div
-            className={`act-streak${milestoneFiring ? " streak-milestone" : ""}`}
-            style={{ color: weeklyDone ? "var(--accent-green)" : "var(--accent-gold)" }}
-          >
-            <span>{weeklyDone ? "✓" : `${weeklyCount}/${weekTarget}`}</span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
+            <div className="week-pips">
+              {Array.from({ length: weekTarget }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`week-pip${i < weeklyCount ? (weeklyDone ? " all-done" : " filled") : ""}`}
+                  style={{ animationDelay: `${i * 60}ms` }}
+                />
+              ))}
+            </div>
+            <span className={`week-count-text ${weeklyDone ? "done" : weeklyCount > 0 ? "progress" : "empty"}`}>
+              {weeklyDone ? "✓ semana completa" : `${weeklyCount}/${weekTarget} esta semana`}
+            </span>
           </div>
         ) : (
           streak > 0 && (
@@ -205,36 +217,36 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
         </div>
       )}
 
-      {/* Numeric input */}
+      {/* HUD — Numeric input */}
       {hasTarget && !isDone && (
-        <div style={{ marginTop: "14px", display: "flex", alignItems: "center", gap: "8px" }}>
-          <input
-            type="number"
-            value={numValue}
-            onChange={(e) => setNumValue(e.target.value)}
-            min={0}
-            step={0.1}
-            placeholder={`Meta: ${activity.target_value}`}
-            style={{
-              flex: 1, height: "38px", borderRadius: "9px", padding: "0 10px",
-              background: "var(--bg-surface)", border: "1px solid var(--border-light)",
-              color: "var(--text-primary)", fontSize: "14px", fontFamily: "var(--font-space-grotesk)",
-              outline: "none",
-            }}
-          />
-          <span style={{ fontSize: "13px", color: "var(--text-muted)", flexShrink: 0 }}>
-            {activity.target_unit}
-          </span>
+        <div className="hud-input-wrap">
+          <div className="hud-input-row">
+            <input
+              type="number"
+              value={numValue}
+              onChange={(e) => setNumValue(e.target.value)}
+              min={0}
+              step={0.1}
+              placeholder={String(activity.target_value)}
+            />
+            <span className="hud-unit">{activity.target_unit}</span>
+            <span className="hud-target-label">/ {activity.target_value}</span>
+          </div>
+          <div className="hud-bar-track">
+            <div
+              className={`hud-bar-fill ${barStatus}`}
+              style={{ width: `${Math.min(100, barPct)}%` }}
+            />
+          </div>
         </div>
       )}
 
-      {/* Value registered (done state) */}
-      {hasTarget && isDone && activity.todayCheckinXP !== null && (
-        <div style={{
-          marginTop: "10px", fontSize: "12px", color: "var(--accent-green)",
-          display: "flex", alignItems: "center", gap: "5px",
-        }}>
-          ✓ Registrado hoje
+      {/* HUD — Value registered */}
+      {hasTarget && isDone && (
+        <div className="hud-done-badge">
+          <span>✓</span>
+          <span className="hud-done-value">{numValue || "—"} {activity.target_unit}</span>
+          <span style={{ color: "var(--text-muted)" }}>registrado</span>
         </div>
       )}
 
@@ -248,11 +260,11 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
           {loading
             ? "..."
             : isDone
-            ? (isNxWeek ? `✓ ${weeklyCount}/${weekTarget} esta semana` : "✓ Concluído hoje")
-            : hasTarget
-            ? `Registrar ${numValue || "—"} ${activity.target_unit ?? ""}`
+            ? (isNxWeek ? `✓ Semana completa` : "✓ Concluído hoje")
+            : hasTarget && numValue
+            ? `Registrar ${numValue} ${activity.target_unit ?? ""}`
             : isNxWeek
-            ? `Check-in (${weeklyCount}/${weekTarget})`
+            ? `Check-in ${weeklyCount + 1}/${weekTarget}`
             : "Fazer check-in"}
         </button>
 
