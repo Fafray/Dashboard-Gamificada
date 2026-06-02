@@ -38,6 +38,10 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
     xp_base: number;
     emoji: string;
     color: string;
+    weekly_target?: number;
+    target_value?: number | null;
+    target_unit?: string;
+    categoria?: string | null;
   }) {
     if (formMode?.kind === "edit") {
       await fetch(`/api/activities/${formMode.activity.id}`, {

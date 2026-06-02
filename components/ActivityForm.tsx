@@ -60,7 +60,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
     weekly_target: activity?.weekly_target ?? 3,
     target_value:  activity?.target_value ?? null,
     target_unit:   activity?.target_unit ?? "L",
-    categoria:     (activity as Activity & { categoria?: string | null })?.categoria ?? null,
+    categoria:     activity?.categoria ?? null,
   });
   const [hasTarget, setHasTarget] = useState(!!activity?.target_value);
   const [saving, setSaving] = useState(false);
