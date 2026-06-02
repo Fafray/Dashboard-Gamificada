@@ -445,17 +445,17 @@ button { font-family: inherit; cursor: pointer; }
 .btn-checkin:disabled { opacity: .7; cursor: default; }
 
 .act.done {
-  background: linear-gradient(160deg, rgba(0,229,153,.10), rgba(0,229,153,.02));
-  border-color: rgba(0,229,153,.3);
+  background: linear-gradient(160deg, rgba(0,150,200,.12), rgba(0,100,180,.03));
+  border-color: rgba(0,180,232,.3);
 }
 .act.done::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  box-shadow: 0 0 28px rgba(0,229,153,.10) inset;
+  box-shadow: 0 0 28px rgba(0,168,232,.10) inset;
 }
-.act.done .act-emoji { border-color: rgba(0,229,153,.4); box-shadow: var(--glow-green); }
+.act.done .act-emoji { border-color: rgba(0,180,232,.45); box-shadow: var(--glow-violet); }
 .act.done .btn-checkin {
-  background: rgba(0,229,153,.12); border-color: rgba(0,229,153,.4);
-  color: var(--accent-green); cursor: default;
+  background: rgba(0,140,200,.14); border-color: rgba(0,180,232,.4);
+  color: var(--accent-violet-bright); cursor: default;
 }
 
 .btn-undo {
@@ -468,7 +468,7 @@ button { font-family: inherit; cursor: pointer; }
 /* Pulse ring on check-in */
 .pulse-ring {
   position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; border-radius: 50%;
-  border: 2px solid var(--accent-green); transform: translate(-50%,-50%); pointer-events: none; opacity: 0;
+  border: 2px solid var(--accent-violet-bright); transform: translate(-50%,-50%); pointer-events: none; opacity: 0;
 }
 .act.justdone .pulse-ring { animation: pulse-expand 0.7s ease-out; }
 
@@ -666,11 +666,11 @@ button { font-family: inherit; cursor: pointer; }
 .hud-done-badge {
   margin-top: 10px; display: flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 600;
-  color: var(--accent-green);
+  color: var(--accent-violet-bright);
 }
 .hud-done-value {
   font-family: var(--font-space-grotesk), sans-serif;
-  font-size: 15px; color: var(--accent-teal);
+  font-size: 15px; color: var(--accent-violet-bright);
 }
 
 /* =========================================================
@@ -691,9 +691,9 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 0 8px rgba(34,211,238,.6);
 }
 .week-pip.all-done {
-  background: var(--accent-green);
-  border-color: var(--accent-green);
-  box-shadow: 0 0 10px rgba(47,224,166,.7);
+  background: var(--accent-violet-bright);
+  border-color: var(--accent-violet-bright);
+  box-shadow: 0 0 10px rgba(0,184,232,.7);
   animation: pip-pulse .5s ease-out;
 }
 @keyframes pip-pulse {
@@ -707,7 +707,7 @@ button { font-family: inherit; cursor: pointer; }
   font-family: var(--font-space-grotesk), sans-serif;
   font-size: 11px; font-weight: 700; letter-spacing: .04em;
 }
-.week-count-text.done { color: var(--accent-green); }
+.week-count-text.done { color: var(--accent-violet-bright); }
 .week-count-text.progress { color: var(--accent-teal); }
 .week-count-text.empty { color: var(--text-muted); }
 

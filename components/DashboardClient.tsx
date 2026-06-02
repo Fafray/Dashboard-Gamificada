@@ -196,8 +196,8 @@ export function DashboardClient({
               style={{
                 padding: "28px",
                 textAlign: "center",
-                background: "linear-gradient(160deg, rgba(47,224,166,.14), rgba(47,224,166,.03))",
-                borderColor: "rgba(47,224,166,.45)",
+                background: "linear-gradient(160deg, rgba(0,150,200,.14), rgba(0,80,180,.03))",
+                borderColor: "rgba(0,180,232,.4)",
                 position: "relative",
                 overflow: "hidden",
               }}
@@ -211,7 +211,7 @@ export function DashboardClient({
                 </div>
               )}
               <p style={{ fontSize: "32px", marginBottom: "10px" }}>🏆</p>
-              <p style={{ fontWeight: 700, color: "var(--accent-green)", fontSize: "15px", marginBottom: "4px", letterSpacing: ".1em", fontFamily: "var(--font-space-grotesk), sans-serif", textTransform: "uppercase" }}>
+              <p style={{ fontWeight: 700, color: "var(--accent-violet-bright)", fontSize: "15px", marginBottom: "4px", letterSpacing: ".1em", fontFamily: "var(--font-space-grotesk), sans-serif", textTransform: "uppercase", textShadow: "0 0 20px rgba(0,180,232,.5)" }}>
                 ✓ Todas as Missões Concluídas
               </p>
               <p style={{ fontSize: "13px", color: "var(--text-muted)", letterSpacing: ".04em" }}>
