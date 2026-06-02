@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Daily Quest",
@@ -13,10 +22,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
-      <body className="h-full flex flex-col" style={{ background: "var(--bg-base)", color: "var(--text-primary)" }}>
+    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} h-full`}>
+      <body className="h-full flex flex-col">
+        <div className="aurora-bg" aria-hidden="true" />
+        <div className="grain" aria-hidden="true" />
         <Nav />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto" style={{ position: "relative", zIndex: 2 }}>
+          {children}
+        </main>
       </body>
     </html>
   );

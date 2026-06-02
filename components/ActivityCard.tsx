@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface LevelInfo {
   level: number;
@@ -42,14 +42,23 @@ interface ActivityCardProps {
   onUndo: (result: UndoResult) => void;
 }
 
+const FREQ_LABEL: Record<string, string> = { daily: "Diário", weekly: "Semanal", free: "Livre" };
+
 export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps) {
   const [done, setDone] = useState(activity.doneToday);
   const [checkinId, setCheckinId] = useState<number | null>(activity.todayCheckinId);
-  const [currentStreak, setCurrentStreak] = useState(activity.streak.current);
+  const [streak, setStreak] = useState(activity.streak.current);
   const [loading, setLoading] = useState(false);
-  const [justChecked, setJustChecked] = useState(false);
+  const [justDone, setJustDone] = useState(false);
+  const [xpPops, setXpPops] = useState<number[]>([]);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  const frequencyLabel = { daily: "Diário", weekly: "Semanal", free: "Livre" }[activity.frequency];
+  function addXpPop(amount: number) {
+    const id = Date.now();
+    setXpPops((prev) => [...prev, id]);
+    setTimeout(() => setXpPops((prev) => prev.filter((x) => x !== id)), 1000);
+    return id;
+  }
 
   async function handleCheckin() {
     if (done || loading) return;
@@ -68,9 +77,10 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
       const result: CheckinResult = await res.json();
       setDone(true);
       setCheckinId(result.checkin.id);
-      setCurrentStreak(result.newStreak);
-      setJustChecked(true);
-      setTimeout(() => setJustChecked(false), 600);
+      setStreak(result.newStreak);
+      setJustDone(true);
+      addXpPop(result.xpEarned);
+      setTimeout(() => setJustDone(false), 720);
       onCheckin(result);
     } finally {
       setLoading(false);
@@ -86,7 +96,7 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
       const result: UndoResult = await res.json();
       setDone(false);
       setCheckinId(null);
-      setCurrentStreak(Math.max(0, currentStreak - 1));
+      setStreak((s) => Math.max(0, s - 1));
       onUndo(result);
     } finally {
       setLoading(false);
@@ -95,100 +105,58 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
 
   return (
     <div
-      className="activity-card rounded-xl p-4 flex items-center gap-4"
-      style={{
-        background: "var(--bg-card)",
-        border: `1px solid ${done ? activity.color + "40" : "var(--border)"}`,
-      }}
+      ref={cardRef}
+      className={`act${done ? " done" : ""}${justDone ? " justdone" : ""}`}
     >
-      {/* Emoji */}
-      <div
-        className="flex items-center justify-center w-12 h-12 rounded-xl text-2xl flex-shrink-0"
-        style={{
-          background: activity.color + "20",
-          border: `1px solid ${activity.color}40`,
-        }}
-      >
-        {activity.emoji || "⚡"}
-      </div>
+      {/* Pulse ring */}
+      <div className="pulse-ring" />
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <p
-            className="font-semibold truncate"
-            style={{ color: done ? "var(--text-secondary)" : "var(--text-primary)" }}
-          >
-            {activity.name}
-          </p>
-          <span
-            className="text-xs px-1.5 py-0.5 rounded flex-shrink-0"
-            style={{ background: "var(--bg-surface)", color: "var(--text-muted)", fontSize: "10px" }}
-          >
-            {frequencyLabel}
-          </span>
+      {/* Floating XP pops */}
+      {xpPops.map((id) => (
+        <div key={id} className="xp-pop go">
+          +{activity.xp_base} XP
         </div>
+      ))}
 
-        <div className="flex items-center gap-3">
-          {currentStreak > 0 && (
-            <div className="flex items-center gap-1">
-              <span className="streak-glow">🔥</span>
-              <span className="text-sm font-medium" style={{ color: "var(--accent-gold)" }}>
-                {currentStreak}d
-              </span>
-            </div>
-          )}
-          {activity.streak.longest > 0 && activity.streak.longest !== currentStreak && (
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-              melhor: {activity.streak.longest}d
-            </span>
-          )}
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-            +{activity.xp_base} XP
-          </span>
-        </div>
-      </div>
-
-      {/* Undo button (only when done) */}
-      {done && checkinId && (
-        <button
-          onClick={handleUndo}
-          disabled={loading}
-          className="text-xs px-2 py-1 rounded-lg flex-shrink-0"
-          style={{
-            background: "var(--bg-surface)",
-            border: "1px solid var(--border)",
-            color: "var(--text-muted)",
-          }}
-          title="Desfazer check-in"
+      {/* Header */}
+      <div className="act-head">
+        <div
+          className="act-emoji"
+          style={{ borderColor: done ? "rgba(47,224,166,.4)" : undefined }}
         >
-          ↩
-        </button>
-      )}
+          {activity.emoji || "⚡"}
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="act-name">{activity.name}</div>
+          <div className="act-freq">
+            <span className="freq-dot" />
+            {FREQ_LABEL[activity.frequency]}
+          </div>
+        </div>
+        {streak > 0 && (
+          <div className="act-streak">
+            <span style={{ animation: "flicker 2.4s ease-in-out infinite" }}>🔥</span>
+            <span className="num">{streak}</span>
+          </div>
+        )}
+      </div>
 
-      {/* Check-in button */}
-      <button
-        onClick={handleCheckin}
-        disabled={done || loading}
-        className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg transition-all duration-200 ${justChecked ? "check-pulse" : ""}`}
-        style={
-          done
-            ? {
-                background: "var(--accent-green)" + "20",
-                border: `1px solid var(--accent-green)`,
-                color: "var(--accent-green)",
-                cursor: "default",
-              }
-            : {
-                background: activity.color + "20",
-                border: `1px solid ${activity.color}60`,
-                color: activity.color,
-                cursor: "pointer",
-              }
-        }
-      >
-        {loading ? <span className="animate-spin text-sm">⟳</span> : done ? "✓" : "○"}
-      </button>
+      {/* Footer */}
+      <div className="act-foot">
+        <button
+          className="btn-checkin"
+          onClick={handleCheckin}
+          disabled={done || loading}
+        >
+          {loading ? "..." : done ? "✓ Concluído hoje" : "Fazer check-in"}
+        </button>
+
+        {done && checkinId && (
+          <button className="btn-undo" onClick={handleUndo} title="Desfazer check-in">
+            ↩
+          </button>
+        )}
+      </div>
     </div>
   );
 }
