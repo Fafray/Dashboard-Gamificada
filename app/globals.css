@@ -519,6 +519,68 @@ button { font-family: inherit; cursor: pointer; }
 ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
 
 /* =========================================================
+   Animações de Gamificação
+   ========================================================= */
+
+/* Streak milestone — bounce when hitting 3/7/14/30/100 */
+@keyframes streak-milestone {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.22); filter: brightness(1.5); }
+  55%  { transform: scale(0.92); }
+  80%  { transform: scale(1.08); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+.streak-milestone {
+  animation: streak-milestone 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Near level-up — XP bar pulses gold */
+@keyframes xp-urgency {
+  0%, 100% { box-shadow: 0 0 18px rgba(56,189,248,.5), 0 0 6px rgba(124,92,255,.6) inset; }
+  50%       { box-shadow: 0 0 32px rgba(247,183,51,.8), 0 0 14px rgba(247,183,51,.5) inset; }
+}
+.xp-fill.near-level {
+  background: linear-gradient(90deg, var(--xp-bar-from), var(--accent-gold) 55%, var(--accent-gold));
+  animation: sweep 2.8s ease-in-out infinite, xp-urgency 1.2s ease-in-out infinite;
+}
+
+/* Near level label */
+.near-level-hint {
+  font-size: 11px;
+  color: var(--accent-gold);
+  font-weight: 700;
+  letter-spacing: .04em;
+  animation: flicker 1.8s ease-in-out infinite;
+}
+
+/* Daily completion burst */
+@keyframes completion-burst {
+  0%   { transform: scale(0.88); opacity: 0; }
+  65%  { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+.all-done-banner {
+  animation: completion-burst 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Number pop-in (XP ganhos hoje, bônus) */
+@keyframes num-pop {
+  0%   { transform: scale(0.6) translateY(6px); opacity: 0; }
+  65%  { transform: scale(1.12) translateY(-2px); opacity: 1; }
+  100% { transform: scale(1) translateY(0);      opacity: 1; }
+}
+.num-pop { animation: num-pop 0.38s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+/* Milestone toast — bônus de conclusão diária */
+.bonus-pop {
+  position: absolute; font-family: var(--font-space-grotesk), sans-serif;
+  font-weight: 700; font-size: 13px; color: var(--accent-teal);
+  text-shadow: var(--glow-teal); pointer-events: none; opacity: 0;
+  white-space: nowrap;
+}
+.bonus-pop.go { animation: xppop 1.1s ease-out forwards; }
+
+/* =========================================================
    Links
    ========================================================= */
 a { color: var(--accent-blue); text-decoration: none; }

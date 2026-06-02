@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { getStreakMilestone } from "@/lib/gamification";
 
 interface LevelInfo {
   level: number;
@@ -50,14 +51,22 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
   const [streak, setStreak] = useState(activity.streak.current);
   const [loading, setLoading] = useState(false);
   const [justDone, setJustDone] = useState(false);
-  const [xpPops, setXpPops] = useState<number[]>([]);
+  const [xpPops, setXpPops] = useState<{ id: number; text: string }[]>([]);
+  const [milestoneFiring, setMilestoneFiring] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  function addXpPop(amount: number) {
+  function addXpPop(xp: number, newStreak: number): void {
+    const milestone = getStreakMilestone(newStreak);
+    const text = milestone
+      ? `+${xp} XP ${milestone.emoji}`
+      : `+${xp} XP`;
     const id = Date.now();
-    setXpPops((prev) => [...prev, id]);
-    setTimeout(() => setXpPops((prev) => prev.filter((x) => x !== id)), 1000);
-    return id;
+    setXpPops((prev) => [...prev, { id, text }]);
+    setTimeout(() => setXpPops((prev) => prev.filter((x) => x.id !== id)), 1100);
+    if (milestone) {
+      setMilestoneFiring(true);
+      setTimeout(() => setMilestoneFiring(false), 700);
+    }
   }
 
   async function handleCheckin() {
@@ -79,7 +88,7 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
       setCheckinId(result.checkin.id);
       setStreak(result.newStreak);
       setJustDone(true);
-      addXpPop(result.xpEarned);
+      addXpPop(result.xpEarned, result.newStreak);
       setTimeout(() => setJustDone(false), 720);
       onCheckin(result);
     } finally {
@@ -103,22 +112,21 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
     }
   }
 
+  const milestone = getStreakMilestone(streak);
+
   return (
     <div
       ref={cardRef}
       className={`act${done ? " done" : ""}${justDone ? " justdone" : ""}`}
     >
-      {/* Pulse ring */}
       <div className="pulse-ring" />
 
-      {/* Floating XP pops */}
-      {xpPops.map((id) => (
-        <div key={id} className="xp-pop go">
-          +{activity.xp_base} XP
+      {xpPops.map((pop) => (
+        <div key={pop.id} className="xp-pop go">
+          {pop.text}
         </div>
       ))}
 
-      {/* Header */}
       <div className="act-head">
         <div
           className="act-emoji"
@@ -134,14 +142,35 @@ export function ActivityCard({ activity, onCheckin, onUndo }: ActivityCardProps)
           </div>
         </div>
         {streak > 0 && (
-          <div className="act-streak">
+          <div className={`act-streak${milestoneFiring ? " streak-milestone" : ""}`}>
             <span style={{ animation: "flicker 2.4s ease-in-out infinite" }}>🔥</span>
             <span className="num">{streak}</span>
+            {milestone && (
+              <span style={{ fontSize: "11px", color: "var(--accent-gold)", marginLeft: "3px" }}>
+                {milestone.emoji}
+              </span>
+            )}
           </div>
         )}
       </div>
 
-      {/* Footer */}
+      {milestone && streak > 0 && (
+        <div
+          style={{
+            margin: "10px 0 0",
+            padding: "6px 10px",
+            borderRadius: "8px",
+            background: "rgba(247,183,51,.12)",
+            border: "1px solid rgba(247,183,51,.3)",
+            fontSize: "11.5px",
+            color: "var(--accent-gold)",
+            fontWeight: 600,
+          }}
+        >
+          {milestone.emoji} {milestone.name} — {streak} dias seguidos!
+        </div>
+      )}
+
       <div className="act-foot">
         <button
           className="btn-checkin"

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { ActivityCard } from "./ActivityCard";
 import { HeroSection } from "./HeroSection";
 import { LevelUpOverlay } from "./LevelUpOverlay";
 import { AchievementToast } from "./AchievementToast";
+import { getDailyCompletionBonus } from "@/lib/gamification";
 
 interface Activity {
   id: number;
@@ -64,6 +65,10 @@ export function DashboardClient({
   const [xpToday, setXpToday] = useState(initialXpToday);
   const [pendingAchievements, setPendingAchievements] = useState<Achievement[]>([]);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
+  const [bonusAwarded, setBonusAwarded] = useState(false);
+  const [bonusPop, setBonusPop] = useState<number | null>(null);
+  const allDoneBannerRef = useRef<HTMLDivElement>(null);
+
   const [doneSet, setDoneSet] = useState<Set<number>>(
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
   );
@@ -98,6 +103,17 @@ export function DashboardClient({
   const totalCount = nonFreeActivities.length;
   const allDone = totalCount > 0 && doneCount === totalCount;
 
+  // Award daily completion bonus once when all activities are done
+  useEffect(() => {
+    if (!allDone || bonusAwarded) return;
+    const bonus = getDailyCompletionBonus(totalCount);
+    if (bonus <= 0) return;
+    setBonusAwarded(true);
+    setXpToday((prev) => prev + bonus);
+    setBonusPop(bonus);
+    setTimeout(() => setBonusPop(null), 1200);
+  }, [allDone, bonusAwarded, totalCount]);
+
   return (
     <>
       {levelUpLevel !== null && (
@@ -117,15 +133,8 @@ export function DashboardClient({
       )}
 
       <div className="page">
-        {/* Cabeçalho da página */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "24px",
-          }}
-        >
+        {/* Cabeçalho */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
           <div>
             <p className="eyebrow">Dashboard</p>
             <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "2px" }}>
@@ -149,7 +158,7 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* Hero: nível + XP */}
+        {/* Hero */}
         <HeroSection levelInfo={levelInfo} xpToday={xpToday} />
 
         {/* Atividades */}
@@ -165,10 +174,7 @@ export function DashboardClient({
               {initialActivities.map((activity) => (
                 <ActivityCard
                   key={activity.id}
-                  activity={{
-                    ...activity,
-                    doneToday: doneSet.has(activity.id),
-                  }}
+                  activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
                   onCheckin={(result) => handleCheckin(activity.id, result)}
                   onUndo={(result) => handleUndo(activity.id, result)}
                 />
@@ -181,20 +187,36 @@ export function DashboardClient({
         {allDone && (
           <div className="section">
             <div
-              className="card"
+              ref={allDoneBannerRef}
+              className="card all-done-banner"
               style={{
-                padding: "24px",
+                padding: "28px",
                 textAlign: "center",
-                background: "linear-gradient(160deg, rgba(47,224,166,.12), rgba(47,224,166,.03))",
-                borderColor: "rgba(47,224,166,.4)",
+                background: "linear-gradient(160deg, rgba(47,224,166,.14), rgba(47,224,166,.03))",
+                borderColor: "rgba(47,224,166,.45)",
+                position: "relative",
+                overflow: "hidden",
               }}
             >
-              <p style={{ fontSize: "30px", marginBottom: "8px" }}>🏆</p>
-              <p style={{ fontWeight: 700, color: "var(--accent-green)", fontSize: "15px", marginBottom: "4px" }}>
-                Todas as atividades concluídas!
+              {bonusPop !== null && (
+                <div
+                  className="bonus-pop go"
+                  style={{ left: "50%", top: "12px", transform: "translateX(-50%)" }}
+                >
+                  🎯 +{bonusPop} XP bônus!
+                </div>
+              )}
+              <p style={{ fontSize: "32px", marginBottom: "10px" }}>🏆</p>
+              <p style={{ fontWeight: 700, color: "var(--accent-green)", fontSize: "16px", marginBottom: "4px" }}>
+                Missão do dia completa!
               </p>
               <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>
                 +{xpToday} XP ganhos hoje
+                {bonusAwarded && (
+                  <span style={{ color: "var(--accent-teal)", marginLeft: "6px" }}>
+                    (inclui bônus de conclusão 🎯)
+                  </span>
+                )}
               </p>
             </div>
           </div>

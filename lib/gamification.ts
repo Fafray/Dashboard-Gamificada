@@ -142,9 +142,42 @@ export function computeStreak(checkinDates: string[], frequency: Frequency, now:
 // ─── XP Calculation ───────────────────────────────────────────────────────────
 
 export function calculateXP(baseXP: number, currentStreak: number): number {
-  // Streak bonus: +5% per streak day, capped at +100%
-  const bonus = Math.min(1.0, currentStreak * 0.05);
-  return Math.ceil(baseXP * (1 + bonus));
+  // Linear bonus: +5% per streak day, capped at +50% (day 10)
+  const linearBonus = Math.min(0.5, currentStreak * 0.05);
+  // Milestone bonuses stack on top for meaningful jumps at key streaks
+  let milestoneBonus = 0;
+  if (currentStreak >= 100) milestoneBonus = 1.0;
+  else if (currentStreak >= 30) milestoneBonus = 0.5;
+  else if (currentStreak >= 14) milestoneBonus = 0.25;
+  else if (currentStreak >= 7)  milestoneBonus = 0.15;
+  return Math.ceil(baseXP * (1 + linearBonus + milestoneBonus));
+}
+
+// ─── Streak Milestones ────────────────────────────────────────────────────────
+
+export interface StreakMilestone {
+  days: number;
+  name: string;
+  emoji: string;
+}
+
+const STREAK_MILESTONES: StreakMilestone[] = [
+  { days: 3,   name: "Aquecendo",      emoji: "🔥" },
+  { days: 7,   name: "Uma Semana!",    emoji: "⚡" },
+  { days: 14,  name: "Duas Semanas!",  emoji: "💫" },
+  { days: 30,  name: "Um Mês!",        emoji: "💎" },
+  { days: 100, name: "Centurião!",     emoji: "👑" },
+];
+
+export function getStreakMilestone(streak: number): StreakMilestone | null {
+  return STREAK_MILESTONES.find((m) => m.days === streak) ?? null;
+}
+
+// ─── Daily Completion Bonus ───────────────────────────────────────────────────
+
+export function getDailyCompletionBonus(activitiesCount: number): number {
+  if (activitiesCount < 2) return 0;
+  return activitiesCount * 10;
 }
 
 // ─── Achievements ─────────────────────────────────────────────────────────────

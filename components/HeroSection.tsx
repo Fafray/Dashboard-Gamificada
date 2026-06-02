@@ -34,13 +34,14 @@ function getCharEmoji(level: number): string {
 
 export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
   const { level, currentLevelXP, nextLevelXP, progress, totalXP } = levelInfo;
+  const xpRemaining = nextLevelXP - currentLevelXP;
+  const nearLevel = progress >= 80;
 
   return (
     <div className="hero-grid">
       {/* Left: XP + Level */}
       <div className="hero">
         <div className="hero-top">
-          {/* Circular level badge */}
           <div
             className="level-badge"
             style={{ "--p": progress } as React.CSSProperties}
@@ -56,11 +57,16 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
             <div className="hero-sub">
               {totalXP.toLocaleString("pt-BR")} XP no total
             </div>
+            {nearLevel && (
+              <div className="near-level-hint" style={{ marginTop: "6px" }}>
+                ⚡ Faltam {xpRemaining.toLocaleString("pt-BR")} XP para o nível {level + 1}!
+              </div>
+            )}
           </div>
 
           {xpToday > 0 && (
             <div className="hero-xptoday">
-              <div className="big num">+{xpToday}</div>
+              <div className="big num num-pop">+{xpToday}</div>
               <div className="lbl">XP hoje</div>
             </div>
           )}
@@ -73,12 +79,14 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
               <b className="num">{currentLevelXP.toLocaleString("pt-BR")}</b> XP
             </span>
             <span className="next num">
-              {nextLevelXP.toLocaleString("pt-BR")} para nível {level + 1}
+              {nearLevel
+                ? `⚡ ${xpRemaining.toLocaleString("pt-BR")} XP restantes`
+                : `${nextLevelXP.toLocaleString("pt-BR")} para nível ${level + 1}`}
             </span>
           </div>
           <div className="xp-track">
             <div
-              className="xp-fill"
+              className={`xp-fill${nearLevel ? " near-level" : ""}`}
               style={{ "--xp": `${progress}%` } as React.CSSProperties}
             />
           </div>
