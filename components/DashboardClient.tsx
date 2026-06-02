@@ -10,7 +10,7 @@ import { getDailyCompletionBonus } from "@/lib/gamification";
 interface Activity {
   id: number;
   name: string;
-  frequency: "daily" | "weekly" | "free";
+  frequency: "daily" | "weekly" | "free" | "nx_week";
   xp_base: number;
   emoji: string | null;
   color: string;
@@ -18,6 +18,10 @@ interface Activity {
   doneToday: boolean;
   todayCheckinId: number | null;
   todayCheckinXP: number | null;
+  target_value: number | null;
+  target_unit: string | null;
+  weekly_target: number | null;
+  weeklyCount: number | null;
 }
 
 interface LevelInfo {

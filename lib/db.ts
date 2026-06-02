@@ -1,6 +1,5 @@
 import { Pool } from "pg";
 
-// Store local datetime (no timezone suffix) so date extraction is timezone-safe.
 function localISOString(d = new Date()): string {
   const p = (n: number, len = 2) => String(n).padStart(len, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
@@ -11,7 +10,6 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : undefined,
 });
 
-// One-time schema init — idempotent (IF NOT EXISTS everywhere)
 let schemaReady: Promise<void> | null = null;
 
 function init(): Promise<void> {
@@ -19,14 +17,14 @@ function init(): Promise<void> {
   schemaReady = (async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS activities (
-        id         SERIAL  PRIMARY KEY,
-        name       TEXT    NOT NULL,
-        frequency  TEXT    NOT NULL CHECK(frequency IN ('daily', 'weekly', 'free')),
-        xp_base    INTEGER NOT NULL DEFAULT 10,
-        emoji      TEXT,
-        color      TEXT    NOT NULL DEFAULT '#7c3aed',
-        archived   INTEGER NOT NULL DEFAULT 0,
-        created_at TEXT    NOT NULL
+        id           SERIAL  PRIMARY KEY,
+        name         TEXT    NOT NULL,
+        frequency    TEXT    NOT NULL DEFAULT 'daily',
+        xp_base      INTEGER NOT NULL DEFAULT 10,
+        emoji        TEXT,
+        color        TEXT    NOT NULL DEFAULT '#7c3aed',
+        archived     INTEGER NOT NULL DEFAULT 0,
+        created_at   TEXT    NOT NULL
       )
     `);
     await pool.query(`
@@ -37,8 +35,6 @@ function init(): Promise<void> {
         xp_earned   INTEGER NOT NULL
       )
     `);
-    // Unique index prevents duplicate check-ins on the same day for daily activities.
-    // For weekly activities the API enforces the week constraint before inserting.
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS uq_checkin_day
         ON checkins (activity_id, LEFT(checked_at, 10))
@@ -64,13 +60,27 @@ function init(): Promise<void> {
        ON CONFLICT (id) DO NOTHING`,
       [1, 0, 1, localISOString()]
     );
+
+    // ── Migrations ────────────────────────────────────────────────────────────
+    // Rastreio numérico
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS target_value NUMERIC`);
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS target_unit  VARCHAR(20)`);
+    await pool.query(`ALTER TABLE checkins   ADD COLUMN IF NOT EXISTS actual_value NUMERIC`);
+    // Frequência Nx por semana
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS weekly_target INTEGER`);
+    // Expand frequency constraint to include nx_week
+    await pool.query(`ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_frequency_check`);
+    await pool.query(`
+      ALTER TABLE activities ADD CONSTRAINT activities_frequency_check
+        CHECK(frequency IN ('daily', 'weekly', 'free', 'nx_week'))
+    `);
   })();
   return schemaReady;
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type Frequency = "daily" | "weekly" | "free";
+export type Frequency = "daily" | "weekly" | "free" | "nx_week";
 
 export interface Activity {
   id: number;
@@ -81,6 +91,9 @@ export interface Activity {
   color: string;
   archived: number;
   created_at: string;
+  target_value: number | null;
+  target_unit: string | null;
+  weekly_target: number | null;
 }
 
 export interface Checkin {
@@ -88,6 +101,7 @@ export interface Checkin {
   activity_id: number;
   checked_at: string;
   xp_earned: number;
+  actual_value: number | null;
 }
 
 export interface Achievement {
@@ -125,14 +139,19 @@ export async function createActivity(
 ): Promise<Activity> {
   await init();
   const res = await pool.query(
-    `INSERT INTO activities (name, frequency, xp_base, emoji, color, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-    [data.name, data.frequency, data.xp_base, data.emoji, data.color, localISOString()]
+    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+    [data.name, data.frequency, data.xp_base, data.emoji, data.color,
+     data.target_value ?? null, data.target_unit ?? null, data.weekly_target ?? null,
+     localISOString()]
   );
   return (await getActivity(res.rows[0].id))!;
 }
 
-const ACTIVITY_ALLOWED_KEYS = new Set(["name", "frequency", "xp_base", "emoji", "color", "archived"]);
+const ACTIVITY_ALLOWED_KEYS = new Set([
+  "name", "frequency", "xp_base", "emoji", "color", "archived",
+  "target_value", "target_unit", "weekly_target",
+]);
 
 export async function updateActivity(
   id: number,
@@ -143,10 +162,7 @@ export async function updateActivity(
   if (keys.length === 0) return getActivity(id);
   const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
   const values = keys.map((k) => data[k]);
-  await pool.query(`UPDATE activities SET ${setClause} WHERE id = $${keys.length + 1}`, [
-    ...values,
-    id,
-  ]);
+  await pool.query(`UPDATE activities SET ${setClause} WHERE id = $${keys.length + 1}`, [...values, id]);
   return getActivity(id);
 }
 
@@ -176,30 +192,39 @@ export async function hasCheckinToday(activityId: number, localDateStr: string):
 }
 
 export async function hasCheckinThisWeek(
-  activityId: number,
-  weekStart: string,
-  weekEnd: string
+  activityId: number, weekStart: string, weekEnd: string
 ): Promise<boolean> {
   await init();
   const res = await pool.query(
     `SELECT COUNT(*) as cnt FROM checkins
-     WHERE activity_id = $1
-       AND LEFT(checked_at, 10) >= $2
-       AND LEFT(checked_at, 10) <= $3`,
+     WHERE activity_id = $1 AND LEFT(checked_at, 10) >= $2 AND LEFT(checked_at, 10) <= $3`,
     [activityId, weekStart, weekEnd]
   );
   return parseInt(res.rows[0].cnt) > 0;
 }
 
+export async function getWeeklyCheckinCount(
+  activityId: number, weekStart: string, weekEnd: string
+): Promise<number> {
+  await init();
+  const res = await pool.query(
+    `SELECT COUNT(*) as cnt FROM checkins
+     WHERE activity_id = $1 AND LEFT(checked_at, 10) >= $2 AND LEFT(checked_at, 10) <= $3`,
+    [activityId, weekStart, weekEnd]
+  );
+  return parseInt(res.rows[0].cnt);
+}
+
 export async function createCheckin(
   activityId: number,
   xpEarned: number,
+  actualValue?: number | null,
   at?: Date
 ): Promise<Checkin> {
   await init();
   const res = await pool.query(
-    `INSERT INTO checkins (activity_id, checked_at, xp_earned) VALUES ($1, $2, $3) RETURNING *`,
-    [activityId, localISOString(at), xpEarned]
+    `INSERT INTO checkins (activity_id, checked_at, xp_earned, actual_value) VALUES ($1, $2, $3, $4) RETURNING *`,
+    [activityId, localISOString(at), xpEarned, actualValue ?? null]
   );
   return res.rows[0];
 }
@@ -221,9 +246,7 @@ export async function getAllCheckins(): Promise<Checkin[]> {
 
 export async function getAllCheckinDatesFlat(): Promise<string[]> {
   await init();
-  const res = await pool.query(
-    `SELECT LEFT(checked_at, 10) as d FROM checkins ORDER BY d DESC`
-  );
+  const res = await pool.query(`SELECT LEFT(checked_at, 10) as d FROM checkins ORDER BY d DESC`);
   return res.rows.map((r: { d: string }) => r.d);
 }
 
@@ -252,8 +275,7 @@ export async function getXpEarnedToday(localDateStr: string): Promise<number> {
 }
 
 export async function getTodayCheckinForActivity(
-  activityId: number,
-  localDateStr: string
+  activityId: number, localDateStr: string
 ): Promise<{ id: number; xp_earned: number } | null> {
   await init();
   const res = await pool.query(
@@ -282,15 +304,12 @@ export async function getCheckinsGroupedByDate(
   await init();
   const res = await pool.query(
     `SELECT LEFT(checked_at, 10) as date, COUNT(*) as count
-     FROM checkins
-     WHERE checked_at >= $1
-     GROUP BY LEFT(checked_at, 10)
-     ORDER BY date ASC`,
+     FROM checkins WHERE checked_at >= $1
+     GROUP BY LEFT(checked_at, 10) ORDER BY date ASC`,
     [localISOString(new Date(Date.now() - days * 86400000)).slice(0, 10)]
   );
   return res.rows.map((r: { date: string; count: string }) => ({
-    date: r.date,
-    count: parseInt(r.count),
+    date: r.date, count: parseInt(r.count),
   }));
 }
 
@@ -298,15 +317,12 @@ export async function getXpPerDay(days: number): Promise<{ date: string; xp: num
   await init();
   const res = await pool.query(
     `SELECT LEFT(checked_at, 10) as date, SUM(xp_earned) as xp
-     FROM checkins
-     WHERE checked_at >= $1
-     GROUP BY LEFT(checked_at, 10)
-     ORDER BY date ASC`,
+     FROM checkins WHERE checked_at >= $1
+     GROUP BY LEFT(checked_at, 10) ORDER BY date ASC`,
     [localISOString(new Date(Date.now() - days * 86400000)).slice(0, 10)]
   );
   return res.rows.map((r: { date: string; xp: string }) => ({
-    date: r.date,
-    xp: parseInt(r.xp),
+    date: r.date, xp: parseInt(r.xp),
   }));
 }
 

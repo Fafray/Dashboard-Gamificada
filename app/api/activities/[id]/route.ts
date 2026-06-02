@@ -11,7 +11,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const body = await req.json();
 
-  if (body.frequency && !["daily", "weekly", "free"].includes(body.frequency)) {
+  if (body.frequency && !["daily", "weekly", "free", "nx_week"].includes(body.frequency)) {
     return NextResponse.json({ error: "Invalid frequency" }, { status: 400 });
   }
   if (body.xp_base !== undefined && (typeof body.xp_base !== "number" || body.xp_base < 1)) {

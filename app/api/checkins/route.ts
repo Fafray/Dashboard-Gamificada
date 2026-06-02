@@ -6,12 +6,12 @@ import {
   createCheckin,
   hasCheckinToday,
   hasCheckinThisWeek,
+  getWeeklyCheckinCount,
   getCheckinDatesForActivity,
   getAllCheckins,
   getTotalCheckinsCount,
   addXP,
   updateLevel,
-  getUserStats,
   unlockAchievement,
   getCheckinsByDate,
 } from "@/lib/db";
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { activity_id } = body;
+  const { activity_id, actual_value } = body;
 
   if (!activity_id) {
     return NextResponse.json({ error: "activity_id is required" }, { status: 400 });
@@ -46,63 +46,70 @@ export async function POST(req: Request) {
 
   const now = new Date();
   const todayStr = format(now, "yyyy-MM-dd");
+  const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
+  const weekEnd   = format(endOfISOWeek(now),   "yyyy-MM-dd");
 
-  // Duplicate check
+  // Duplicate / quota check per frequency
   if (activity.frequency === "daily") {
     if (await hasCheckinToday(activity_id, todayStr)) {
       return NextResponse.json({ error: "Já feito hoje!" }, { status: 409 });
     }
   } else if (activity.frequency === "weekly") {
-    const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
-    const weekEnd = format(endOfISOWeek(now), "yyyy-MM-dd");
     if (await hasCheckinThisWeek(activity_id, weekStart, weekEnd)) {
       return NextResponse.json({ error: "Já feito essa semana!" }, { status: 409 });
+    }
+  } else if (activity.frequency === "nx_week") {
+    if (await hasCheckinToday(activity_id, todayStr)) {
+      return NextResponse.json({ error: "Já registrado hoje!" }, { status: 409 });
+    }
+    const count = await getWeeklyCheckinCount(activity_id, weekStart, weekEnd);
+    if (count >= (activity.weekly_target ?? 1)) {
+      return NextResponse.json({ error: "Meta semanal já atingida!" }, { status: 409 });
     }
   }
 
   // Streak → XP
   const checkinDates = await getCheckinDatesForActivity(activity_id);
-  const streak = computeStreak(checkinDates, activity.frequency);
+  const streak   = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
   const xpEarned = calculateXP(activity.xp_base, streak.current);
 
-  // Persist atomically — XP update paired with checkin insert to avoid double-grant
   let checkin;
   let updatedStats;
   try {
-    checkin = await createCheckin(activity_id, xpEarned);
+    checkin      = await createCheckin(activity_id, xpEarned, actual_value ?? null);
     updatedStats = await addXP(xpEarned);
   } catch (err: unknown) {
-    // Unique index violation (race condition / double submit)
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "23505") {
       return NextResponse.json({ error: "Já feito hoje!" }, { status: 409 });
     }
     throw err;
   }
-  const levelInfo = getLevelInfo(updatedStats.total_xp);
 
-  if (levelInfo.level !== updatedStats.level) {
-    await updateLevel(levelInfo.level);
-  }
+  const levelInfo = getLevelInfo(updatedStats.total_xp);
+  if (levelInfo.level !== updatedStats.level) await updateLevel(levelInfo.level);
 
   // Achievements
-  const allCheckins = await getAllCheckins();
-  const allDates = allCheckins.map((c) => c.checked_at.slice(0, 10));
+  const allCheckins   = await getAllCheckins();
+  const allDates      = allCheckins.map((c) => c.checked_at.slice(0, 10));
   const consecutiveDays = computeConsecutiveDays(allDates);
   const checkinsToday = allDates.filter((d) => d === todayStr).length;
 
-  // Streak for the current activity (returned to client for UI update)
   const newCheckinDates = await getCheckinDatesForActivity(activity_id);
-  const newStreak = computeStreak(newCheckinDates, activity.frequency);
+  const newStreak       = computeStreak(newCheckinDates, activity.frequency, now, activity.weekly_target ?? undefined);
 
-  // Max streak across ALL daily/weekly activities (L2: exclude 'free', L3: all activities)
   const allActivities = await getActivities(false);
   let maxStreak = 0;
   for (const act of allActivities) {
     if (act.frequency === "free") continue;
     const dates = act.id === activity_id ? newCheckinDates : await getCheckinDatesForActivity(act.id);
-    const s = computeStreak(dates, act.frequency);
+    const s = computeStreak(dates, act.frequency, now, act.weekly_target ?? undefined);
     maxStreak = Math.max(maxStreak, s.current, s.longest);
   }
+
+  // Weekly count for nx_week (returned so client can update the counter)
+  const weeklyCount = activity.frequency === "nx_week"
+    ? await getWeeklyCheckinCount(activity_id, weekStart, weekEnd)
+    : null;
 
   const ctx = {
     totalCheckins: await getTotalCheckinsCount(),
@@ -115,7 +122,6 @@ export async function POST(req: Request) {
 
   const earnedKeys = evaluateAchievements(ctx);
   const newlyUnlocked: { key: string; name: string; description: string; emoji: string }[] = [];
-
   for (const key of earnedKeys) {
     const result = await unlockAchievement(key);
     if (result) {
@@ -124,5 +130,12 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ checkin, xpEarned, newStreak: newStreak.current, levelInfo, newlyUnlocked });
+  return NextResponse.json({
+    checkin,
+    xpEarned,
+    newStreak: newStreak.current,
+    weeklyCount,
+    levelInfo,
+    newlyUnlocked,
+  });
 }

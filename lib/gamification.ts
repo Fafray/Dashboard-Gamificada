@@ -133,9 +133,69 @@ export function computeWeeklyStreak(checkinDates: string[], now: Date = new Date
   return { current, longest };
 }
 
-export function computeStreak(checkinDates: string[], frequency: Frequency, now: Date = new Date()): StreakResult {
-  if (frequency === "free") return { current: checkinDates.length, longest: checkinDates.length };
-  if (frequency === "weekly") return computeWeeklyStreak(checkinDates, now);
+export function computeNxWeekStreak(
+  checkinDates: string[],
+  weeklyTarget: number,
+  now: Date = new Date()
+): StreakResult {
+  if (checkinDates.length === 0) return { current: 0, longest: 0 };
+
+  // Count check-ins per ISO week
+  const weekCounts = new Map<string, number>();
+  for (const date of checkinDates) {
+    const weekStart = format(startOfISOWeek(parseISO(date)), "yyyy-MM-dd");
+    weekCounts.set(weekStart, (weekCounts.get(weekStart) ?? 0) + 1);
+  }
+
+  // Weeks that met the target
+  const completedWeeks = [...weekCounts.entries()]
+    .filter(([, count]) => count >= weeklyTarget)
+    .map(([week]) => week)
+    .sort()
+    .reverse();
+
+  if (completedWeeks.length === 0) return { current: 0, longest: 0 };
+
+  const thisWeekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
+  const lastWeekStart = format(startOfISOWeek(subWeeks(now, 1)), "yyyy-MM-dd");
+
+  let current = 0;
+  const mostRecent = completedWeeks[0];
+  if (mostRecent === thisWeekStart || mostRecent === lastWeekStart) {
+    let expected = mostRecent;
+    for (const week of completedWeeks) {
+      if (week === expected) {
+        current++;
+        expected = format(subWeeks(parseISO(expected), 1), "yyyy-MM-dd");
+      } else break;
+    }
+  }
+
+  let longest = 0;
+  let temp = 1;
+  for (let i = 1; i < completedWeeks.length; i++) {
+    const diff = differenceInCalendarWeeks(
+      parseISO(completedWeeks[i - 1]),
+      parseISO(completedWeeks[i]),
+      { weekStartsOn: 1 }
+    );
+    if (diff === 1) temp++;
+    else { longest = Math.max(longest, temp); temp = 1; }
+  }
+  longest = Math.max(longest, temp);
+
+  return { current, longest };
+}
+
+export function computeStreak(
+  checkinDates: string[],
+  frequency: Frequency,
+  now: Date = new Date(),
+  weeklyTarget?: number
+): StreakResult {
+  if (frequency === "free")    return { current: checkinDates.length, longest: checkinDates.length };
+  if (frequency === "weekly")  return computeWeeklyStreak(checkinDates, now);
+  if (frequency === "nx_week") return computeNxWeekStreak(checkinDates, weeklyTarget ?? 1, now);
   return computeDailyStreak(checkinDates, now);
 }
 

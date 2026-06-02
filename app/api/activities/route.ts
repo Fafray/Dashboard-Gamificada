@@ -15,16 +15,21 @@ export async function POST(req: Request) {
   if (!name || !frequency) {
     return NextResponse.json({ error: "name and frequency are required" }, { status: 400 });
   }
-  if (!["daily", "weekly", "free"].includes(frequency)) {
-    return NextResponse.json({ error: "frequency must be daily, weekly, or free" }, { status: 400 });
+  if (!["daily", "weekly", "free", "nx_week"].includes(frequency)) {
+    return NextResponse.json({ error: "frequency must be daily, weekly, free, or nx_week" }, { status: 400 });
   }
+
+  const { weekly_target, target_value, target_unit } = body;
 
   const activity = await createActivity({
     name,
     frequency,
-    xp_base: xp_base ?? 10,
-    emoji: emoji ?? null,
-    color: color ?? "#7c3aed",
+    xp_base:       xp_base ?? 10,
+    emoji:         emoji ?? null,
+    color:         color ?? "#7c3aed",
+    weekly_target: weekly_target ?? null,
+    target_value:  target_value ?? null,
+    target_unit:   target_unit ?? null,
   });
 
   return NextResponse.json(activity, { status: 201 });
