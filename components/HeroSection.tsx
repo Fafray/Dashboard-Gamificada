@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import { useState } from "react";
+
 interface LevelInfo {
   level: number;
   totalXP: number;
@@ -25,21 +28,123 @@ function getLevelTitle(level: number): string {
   return "REI DAS SOMBRAS";
 }
 
-function getCharEmoji(level: number): string {
-  if (level < 5)  return "👤";
-  if (level < 10) return "⚔️";
-  if (level < 15) return "🗡️";
-  if (level < 20) return "🛡️";
-  if (level < 30) return "🏹";
-  if (level < 50) return "⚡";
-  if (level < 80) return "🌀";
-  return "👁️";
+const RANK_IMAGE: Record<string, string> = {
+  "E-RANK":         "/characters/e-rank.jpg",
+  "D-RANK":         "/characters/d-rank.jpg",
+  "C-RANK":         "/characters/c-rank.jpg",
+  "B-RANK":         "/characters/b-rank.jpg",
+  "A-RANK":         "/characters/a-rank.jpg",
+  "S-RANK":         "/characters/s-rank.jpg",
+  "NACIONAL":       "/characters/nacional.jpg",
+  "MONARCA":        "/characters/monarca.jpg",
+  "REI DAS SOMBRAS":"/characters/rei-das-sombras.jpg",
+};
+
+const RANK_GLOW: Record<string, string> = {
+  "E-RANK":          "rgba(0,150,200,.6)",
+  "D-RANK":          "rgba(0,180,232,.7)",
+  "C-RANK":          "rgba(0,200,255,.7)",
+  "B-RANK":          "rgba(80,150,255,.7)",
+  "A-RANK":          "rgba(120,80,255,.8)",
+  "S-RANK":          "rgba(180,80,255,.9)",
+  "NACIONAL":        "rgba(255,180,0,.9)",
+  "MONARCA":         "rgba(180,0,255,1)",
+  "REI DAS SOMBRAS": "rgba(100,0,200,1)",
+};
+
+function CharPortrait({ rank, level }: { rank: string; level: number }) {
+  const [imgError, setImgError] = useState(false);
+  const imgSrc = RANK_IMAGE[rank];
+  const glow = RANK_GLOW[rank] ?? "rgba(0,150,200,.6)";
+
+  return (
+    <div style={{
+      position: "relative", width: "100%", flex: 1,
+      borderRadius: "var(--r-md)", overflow: "hidden",
+      minHeight: "200px",
+      background: "var(--bg-surface)",
+      border: "1px solid rgba(0,168,232,.15)",
+    }}>
+      {!imgError && imgSrc ? (
+        <Image
+          src={imgSrc}
+          alt={rank}
+          fill
+          style={{ objectFit: "cover", objectPosition: "top center" }}
+          onError={() => setImgError(true)}
+          priority
+        />
+      ) : (
+        /* Fallback sem imagem */
+        <div style={{
+          position: "absolute", inset: 0,
+          background: `radial-gradient(ellipse 70% 80% at 50% 30%, ${glow.replace("1)", ".18)")}, transparent 70%),
+                       radial-gradient(ellipse 50% 50% at 50% 100%, rgba(0,50,100,.4), transparent 60%)`,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <span style={{
+            fontSize: "80px", opacity: .18,
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontWeight: 700, letterSpacing: ".1em", color: "var(--accent-violet-bright)",
+          }}>
+            LV.{level}
+          </span>
+        </div>
+      )}
+
+      {/* Gradient overlay inferior para texto */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "linear-gradient(to top, rgba(4,8,16,.95) 0%, rgba(4,8,16,.6) 35%, transparent 65%)",
+        pointerEvents: "none",
+      }} />
+
+      {/* Lateral glow */}
+      <div style={{
+        position: "absolute", inset: 0, pointerEvents: "none",
+        boxShadow: `inset 0 0 40px ${glow.replace("1)", ".12)")}`,
+      }} />
+
+      {/* Nome + rank overlay */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0,
+        padding: "12px 14px",
+      }}>
+        <div style={{
+          fontFamily: "var(--font-space-grotesk), sans-serif",
+          fontSize: "20px", fontWeight: 700, letterSpacing: ".18em",
+          color: "#e8f4ff",
+          textShadow: `0 0 20px ${glow}, 0 2px 8px rgba(0,0,0,.8)`,
+          textTransform: "uppercase", lineHeight: 1,
+        }}>
+          Fabricio
+        </div>
+        <div style={{
+          marginTop: "4px", display: "flex", alignItems: "center", gap: "8px",
+        }}>
+          <span style={{
+            fontSize: "10px", letterSpacing: ".2em", fontWeight: 700,
+            color: "var(--accent-violet-bright)",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            textShadow: `0 0 12px ${glow}`,
+          }}>
+            {rank}
+          </span>
+          <span style={{ width: "1px", height: "10px", background: "rgba(0,168,232,.3)" }} />
+          <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: ".1em" }}>
+            LV.{level}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
   const { level, currentLevelXP, nextLevelXP, progress, totalXP } = levelInfo;
   const xpRemaining = nextLevelXP - currentLevelXP;
   const nearLevel = progress >= 80;
+  const rank = getLevelTitle(level);
 
   return (
     <div className="hero-grid">
@@ -56,7 +161,7 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
 
           <div className="hero-meta">
             <div className="hero-title">
-              <b>{getLevelTitle(level)}</b>
+              <b>{rank}</b>
             </div>
             <div className="hero-sub">
               {totalXP.toLocaleString("pt-BR")} XP ACUMULADO
@@ -97,34 +202,10 @@ export function HeroSection({ levelInfo, xpToday }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Right: Player status */}
-      <div className="hero-char">
-        <span className="eyebrow">[ STATUS ]</span>
-        <div className="char-stage" style={{ flexDirection: "column", gap: "10px", padding: "20px 16px" }}>
-          <div style={{
-            fontFamily: "var(--font-space-grotesk), sans-serif",
-            fontSize: "28px", fontWeight: 700, letterSpacing: ".18em",
-            color: "var(--accent-violet-bright)",
-            textShadow: "0 0 28px rgba(0,180,232,.6), 0 0 60px rgba(0,100,200,.3)",
-            textTransform: "uppercase",
-          }}>
-            Fabricio
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", textAlign: "left" }}>
-            {[
-              { label: "JOB", value: "CAÇADOR" },
-              { label: "RANK", value: getLevelTitle(level) },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontFamily: "var(--font-space-grotesk), sans-serif" }}>
-                <span style={{ color: "var(--text-muted)", letterSpacing: ".1em" }}>{label}</span>
-                <span style={{ color: "var(--text-secondary)", letterSpacing: ".08em", fontWeight: 700 }}>{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="char-cap">
-          LV.<b>{level}</b> · {getLevelTitle(level)}
-        </div>
+      {/* Right: Character portrait */}
+      <div className="hero-char" style={{ padding: "16px", gap: "0" }}>
+        <span className="eyebrow" style={{ marginBottom: "10px" }}>[ JOGADOR ]</span>
+        <CharPortrait rank={rank} level={level} />
       </div>
     </div>
   );
