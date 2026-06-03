@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Activity } from "@/lib/db";
 
 const COLOR_PRESETS = [
@@ -17,6 +17,14 @@ const FREQ_OPTIONS = [
 ] as const;
 
 const UNIT_OPTIONS = ["L", "h", "min", "km", "páginas", "vezes", "ml"];
+
+const EMOJI_GROUPS = [
+  { label: "Saúde", emojis: ["💧", "🥗", "🥦", "🍎", "😴", "🛌", "🧘", "❤️", "🩺", "💊"] },
+  { label: "Treino", emojis: ["🏋️", "🚴", "🏃", "🤸", "🧗", "🏊", "⚽", "🥊", "🎯", "💪"] },
+  { label: "Estudo", emojis: ["📚", "📖", "✏️", "🧠", "💻", "🎓", "📝", "🔬", "🎵", "🌐"] },
+  { label: "Disciplina", emojis: ["⏰", "📅", "✅", "🗓️", "⚡", "🔥", "🌅", "🌙", "🎯", "🏆"] },
+  { label: "Foco", emojis: ["🧘", "🎯", "🔮", "🌿", "🕯️", "📿", "🦋", "🌊", "⚓", "🧩"] },
+];
 
 const CATEGORIA_OPTIONS = [
   { value: "saude",      label: "Saúde",      attr: "VIT", emoji: "❤️" },
@@ -299,15 +307,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
                 Emoji
               </label>
-              <input
-                type="text"
-                value={values.emoji}
-                onChange={(e) => set("emoji", e.target.value)}
-                placeholder="💧"
-                className={`${inputClass} text-center text-xl`}
-                style={fieldStyle}
-                maxLength={2}
-              />
+              <EmojiPicker value={values.emoji} onChange={(e) => set("emoji", e)} />
             </div>
             <div>
               <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
@@ -392,6 +392,117 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
           </div>
         </form>
       </div>
+    </div>
+  );
+}
+
+// ─── Emoji Picker ─────────────────────────────────────────────────────────────
+
+function EmojiPicker({ value, onChange }: { value: string; onChange: (e: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [tab, setTab]   = useState(0);
+  const ref             = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full py-2.5 rounded-lg text-xl text-center transition"
+        style={{
+          background: "var(--bg-surface)",
+          border: `1px solid ${open ? "rgba(0,184,232,.5)" : "var(--border)"}`,
+          color: "var(--text-primary)",
+          minHeight: "42px",
+        }}
+      >
+        {value || "➕"}
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", zIndex: 100, top: "calc(100% + 6px)", left: 0,
+          width: "260px",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-light)",
+          borderRadius: "12px",
+          boxShadow: "0 12px 40px rgba(0,0,0,.6)",
+          overflow: "hidden",
+        }}>
+          {/* Tabs */}
+          <div style={{ display: "flex", borderBottom: "1px solid var(--border)", overflowX: "auto" }}>
+            {EMOJI_GROUPS.map((g, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setTab(i)}
+                style={{
+                  flex: "1 0 auto",
+                  padding: "8px 6px",
+                  fontSize: "10px",
+                  fontWeight: tab === i ? 700 : 400,
+                  color: tab === i ? "var(--accent-teal)" : "var(--text-muted)",
+                  background: tab === i ? "rgba(0,184,232,.08)" : "transparent",
+                  border: "none",
+                  borderBottom: tab === i ? "2px solid var(--accent-teal)" : "2px solid transparent",
+                  cursor: "pointer",
+                  letterSpacing: ".04em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "4px", padding: "10px" }}>
+            {EMOJI_GROUPS[tab].emojis.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => { onChange(e); setOpen(false); }}
+                style={{
+                  fontSize: "22px", padding: "6px",
+                  borderRadius: "8px", border: "none",
+                  background: value === e ? "rgba(0,184,232,.15)" : "transparent",
+                  cursor: "pointer",
+                  transition: "background .12s",
+                }}
+                onMouseEnter={(ev) => (ev.currentTarget.style.background = "rgba(255,255,255,.07)")}
+                onMouseLeave={(ev) => (ev.currentTarget.style.background = value === e ? "rgba(0,184,232,.15)" : "transparent")}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+
+          {/* Input manual */}
+          <div style={{ padding: "0 10px 10px", borderTop: "1px solid var(--border)" }}>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Ou cole qualquer emoji"
+              maxLength={2}
+              style={{
+                width: "100%", padding: "7px 10px", marginTop: "8px",
+                background: "var(--bg-surface)", border: "1px solid var(--border)",
+                borderRadius: "8px", color: "var(--text-primary)", fontSize: "14px",
+                outline: "none",
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
