@@ -10,6 +10,7 @@ import {
   getXpEarnedToday,
   getTodayCheckinForActivity,
   aplicarDecaySeNecessario,
+  fecharDiasPassados,
   updateLevel,
 } from "@/lib/db";
 import { getLevelInfo, computeStreak } from "@/lib/gamification";
@@ -25,8 +26,9 @@ export default async function DashboardPage() {
   const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
   const weekEnd   = format(endOfISOWeek(now),   "yyyy-MM-dd");
 
-  // Aplica decay antes de renderizar (XP cai se ficou inativo)
+  // Fecha dias passados sem checkin (penalidade) e aplica decay por inatividade
   const statsPreDecay = await getUserStats();
+  await fecharDiasPassados();
   await aplicarDecaySeNecessario(statsPreDecay.titulo_ativo_id);
 
   const [rawStats, activities, xpToday] = await Promise.all([

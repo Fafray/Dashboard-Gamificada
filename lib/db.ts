@@ -88,6 +88,7 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS nivel_maximo_atingido INTEGER NOT NULL DEFAULT 1`);
     await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS titulo_ativo_id TEXT`);
     await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS ultima_atividade TEXT`);
+    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS ultimo_fechamento TEXT`);
     // Sistema de eventos (timeline / gráfico de nível)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS events (
@@ -145,6 +146,7 @@ export interface UserStats {
   nivel_maximo_atingido: number;
   titulo_ativo_id: string | null;
   ultima_atividade: string | null;
+  ultimo_fechamento: string | null;
 }
 
 // ─── Activities ───────────────────────────────────────────────────────────────
@@ -469,6 +471,70 @@ export async function aplicarDecaySeNecessario(tituloAtivoId: string | null): Pr
     [novoXP, localISOString()]
   );
   return perda;
+}
+
+// Fecha dias passados sem checkin: aplica −xpPenalidade por dia perdido.
+// Roda na abertura do app (Opção A). Cap de 7 dias para não punir demais quem volta
+// de férias. Só age se o jogador já tem histórico (ultima_atividade preenchida).
+export async function fecharDiasPassados(xpPenalidade = 24): Promise<number> {
+  await init();
+  const stats = await getUserStats();
+
+  // Sem histórico → novo jogador, não pune
+  if (!stats.ultima_atividade) return 0;
+
+  // Só faz sentido se existem atividades obrigatórias (daily / nx_week)
+  const actRes = await pool.query(
+    `SELECT COUNT(*) as cnt FROM activities WHERE archived = 0 AND frequency IN ('daily','nx_week')`
+  );
+  if (parseInt(actRes.rows[0].cnt) === 0) return 0;
+
+  const hojeStr  = localISOString().slice(0, 10);
+  const refStr   = stats.ultimo_fechamento ?? stats.ultima_atividade.slice(0, 10);
+
+  // Itera de refStr+1 até ontem (exclusive de hoje), limitado a 7 dias
+  const diasParaVerificar: string[] = [];
+  const cursor = new Date(refStr);
+  cursor.setDate(cursor.getDate() + 1);
+
+  while (cursor.toISOString().slice(0, 10) < hojeStr && diasParaVerificar.length < 7) {
+    diasParaVerificar.push(cursor.toISOString().slice(0, 10));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  // Atualiza o marcador mesmo se não há dias a verificar
+  if (diasParaVerificar.length === 0) {
+    await pool.query(`UPDATE user_stats SET ultimo_fechamento = $1 WHERE id = 1`, [hojeStr]);
+    return 0;
+  }
+
+  let diasPerdidos = 0;
+  for (const dia of diasParaVerificar) {
+    const res = await pool.query(
+      `SELECT COUNT(*) as cnt FROM checkins WHERE LEFT(checked_at, 10) = $1`,
+      [dia]
+    );
+    if (parseInt(res.rows[0].cnt) === 0) diasPerdidos++;
+  }
+
+  const penalidade = diasPerdidos * xpPenalidade;
+
+  if (penalidade > 0) {
+    const novoXP = Math.max(0, stats.total_xp - penalidade);
+    await pool.query(
+      `UPDATE user_stats SET total_xp = $1, ultimo_fechamento = $2 WHERE id = 1`,
+      [novoXP, hojeStr]
+    );
+    await registrarEvento(
+      "nivel_down",
+      `Penalidade: ${diasPerdidos} dia${diasPerdidos > 1 ? "s" : ""} sem missões (−${penalidade} XP)`,
+      { penalidade, dias_perdidos: diasPerdidos }
+    );
+  } else {
+    await pool.query(`UPDATE user_stats SET ultimo_fechamento = $1 WHERE id = 1`, [hojeStr]);
+  }
+
+  return penalidade;
 }
 
 export async function equiparTitulo(id: string | null): Promise<void> {
