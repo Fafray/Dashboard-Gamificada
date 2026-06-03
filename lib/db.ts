@@ -317,6 +317,19 @@ export async function getTodayCheckinForActivity(
   return res.rows[0] ?? null;
 }
 
+export async function getLastCheckinThisWeek(
+  activityId: number, weekStart: string, weekEnd: string
+): Promise<{ id: number; xp_earned: number } | null> {
+  await init();
+  const res = await pool.query(
+    `SELECT id, xp_earned FROM checkins
+     WHERE activity_id = $1 AND LEFT(checked_at, 10) >= $2 AND LEFT(checked_at, 10) <= $3
+     ORDER BY checked_at DESC LIMIT 1`,
+    [activityId, weekStart, weekEnd]
+  );
+  return res.rows[0] ?? null;
+}
+
 export async function deleteCheckin(id: number): Promise<number> {
   await init();
   const res = await pool.query(`SELECT xp_earned FROM checkins WHERE id = $1`, [id]);

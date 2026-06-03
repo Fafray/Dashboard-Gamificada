@@ -9,6 +9,7 @@ import {
   getWeeklyCheckinCount,
   getXpEarnedToday,
   getTodayCheckinForActivity,
+  getLastCheckinThisWeek,
   aplicarDecaySeNecessario,
   fecharDiasPassados,
   updateLevel,
@@ -64,7 +65,10 @@ export default async function DashboardPage() {
               return count >= (activity.weekly_target ?? 1);
             })()
           : Promise.resolve(false),
-        getTodayCheckinForActivity(activity.id, todayStr),
+        // Para weekly: pega o checkin mais recente da semana (não só de hoje)
+        activity.frequency === "weekly"
+          ? getLastCheckinThisWeek(activity.id, weekStart, weekEnd)
+          : getTodayCheckinForActivity(activity.id, todayStr),
         isNxWeek
           ? getWeeklyCheckinCount(activity.id, weekStart, weekEnd)
           : Promise.resolve(null),
