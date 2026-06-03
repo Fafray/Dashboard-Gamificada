@@ -17,28 +17,44 @@ import { RegistroSistema } from "@/components/RegistroSistema";
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  const [heatmapData, xpData, totalCheckins, rawStats, activities] = await Promise.all([
-    getCheckinsGroupedByDate(365).catch((e) => { throw new Error("heatmap: " + e.message); }),
-    getXpPerDay(30).catch((e) => { throw new Error("xpPerDay: " + e.message); }),
-    getTotalCheckinsCount().catch((e) => { throw new Error("totalCheckins: " + e.message); }),
-    getUserStats().catch((e) => { throw new Error("userStats: " + e.message); }),
-    getActivities(false).catch((e) => { throw new Error("activities: " + e.message); }),
-  ]);
+  // ── data fetching ──────────────────────────────────────────
+  let heatmapData: { date: string; count: number }[] = [];
+  let xpData: { date: string; xp: number }[] = [];
+  let totalCheckins = 0;
+  let rawStats: Awaited<ReturnType<typeof getUserStats>>;
+  let activities: Awaited<ReturnType<typeof getActivities>> = [];
+  let eventos: { id: number; tipo: string; texto: string; data: string; extra: Record<string, unknown> | null }[] = [];
+  let levelHistory: { date: string; nivel: number }[] = [];
 
-  const { level: currentLevel } = getLevelInfo(rawStats.total_xp);
+  try {
+    [heatmapData, xpData, totalCheckins, rawStats, activities] = await Promise.all([
+      getCheckinsGroupedByDate(365),
+      getXpPerDay(30),
+      getTotalCheckinsCount(),
+      getUserStats(),
+      getActivities(false),
+    ]);
+  } catch(e) {
+    throw new Error("db-fetch: " + (e instanceof Error ? e.message : String(e)));
+  }
 
-  const [eventos, levelHistory] = await Promise.all([
+  const { level: currentLevel } = getLevelInfo(rawStats!.total_xp);
+
+  [eventos, levelHistory] = await Promise.all([
     getEvents(60).catch(() => []),
     getLevelHistory(currentLevel).catch(() => [{ date: new Date().toISOString().slice(0, 10), nivel: currentLevel }]),
   ]);
 
   let bestStreak = 0;
-  for (const act of activities) {
-    if (act.frequency === "free") continue;
-    const dates = await getCheckinDatesForActivity(act.id)
-      .catch((e) => { throw new Error(`streak[${act.id}]: ${e.message}`); });
-    const { longest } = computeStreak(dates, act.frequency);
-    bestStreak = Math.max(bestStreak, longest);
+  try {
+    for (const act of activities) {
+      if (act.frequency === "free") continue;
+      const dates = await getCheckinDatesForActivity(act.id);
+      const { longest } = computeStreak(dates, act.frequency);
+      bestStreak = Math.max(bestStreak, longest);
+    }
+  } catch(e) {
+    throw new Error("streak-loop: " + (e instanceof Error ? e.message : String(e)));
   }
 
   const activeDays = heatmapData.filter((d) => d.count > 0).length;
