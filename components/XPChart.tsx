@@ -33,7 +33,7 @@ function CustomTooltip({ active, payload, label }: {
       }}
     >
       <p style={{ color: "var(--text-muted)", marginBottom: "2px" }}>
-        {format(parseISO(label), "d MMM", { locale: ptBR })}
+        {(() => { try { return format(parseISO(label), "d MMM", { locale: ptBR }); } catch { return label; } })()}
       </p>
       <p style={{ color: "var(--accent-gold)", fontWeight: 600 }}>
         +{payload[0].value} XP
@@ -54,10 +54,11 @@ export function XPChart({ data }: XPChartProps) {
     );
   }
 
-  const formatted = data.map((d) => ({
-    ...d,
-    label: format(parseISO(d.date), "dd/MM"),
-  }));
+  const formatted = data.map((d) => {
+    let label = d.date.slice(5, 10).replace("-", "/"); // fallback: MM/DD
+    try { label = format(parseISO(d.date), "dd/MM"); } catch { /* data inválida */ }
+    return { ...d, label };
+  });
 
   return (
     <ResponsiveContainer width="100%" height={160}>
