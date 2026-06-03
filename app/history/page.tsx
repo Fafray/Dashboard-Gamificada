@@ -17,17 +17,21 @@ import { RegistroSistema } from "@/components/RegistroSistema";
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  const [heatmapData, xpData, totalCheckins, rawStats, activities, eventos] = await Promise.all([
+  const [heatmapData, xpData, totalCheckins, rawStats, activities] = await Promise.all([
     getCheckinsGroupedByDate(365),
     getXpPerDay(30),
     getTotalCheckinsCount(),
     getUserStats(),
     getActivities(false),
-    getEvents(60),
   ]);
 
   const { level: currentLevel } = getLevelInfo(rawStats.total_xp);
-  const levelHistory = await getLevelHistory(currentLevel);
+
+  // Novos dados: resilientes caso a tabela events ainda não exista
+  const [eventos, levelHistory] = await Promise.all([
+    getEvents(60).catch(() => []),
+    getLevelHistory(currentLevel).catch(() => [{ date: new Date().toISOString().slice(0, 10), nivel: currentLevel }]),
+  ]);
 
 
   let bestStreak = 0;

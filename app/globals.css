@@ -47,35 +47,41 @@
 }
 
 [data-theme="light"] {
-  --bg-base:        #040810;
-  --bg-surface:     #060a18;
-  --bg-card:        #090d20;
-  --bg-card-hover:  #0c1128;
-  --border:         #112038;
-  --border-light:   #182e50;
+  --bg-base:        #eef2f9;
+  --bg-surface:     #e4eaf5;
+  --bg-card:        #f4f7fd;
+  --bg-card-hover:  #edf1fa;
+  --border:         #c4d4e8;
+  --border-light:   #d8e4f0;
 
-  --accent-violet:        #0096c7;
-  --accent-violet-bright: #00b8e8;
-  --accent-blue:          #48cae4;
-  --accent-gold:          #ffd700;
-  --accent-green:         #00e599;
-  --accent-red:           #ef233c;
-  --accent-pink:          #8b5cf6;
-  --accent-teal:          #00f0c0;
+  --accent-violet:        #0078a8;
+  --accent-violet-bright: #0096c7;
+  --accent-blue:          #2196c4;
+  --accent-gold:          #c8960a;
+  --accent-green:         #00b87a;
+  --accent-red:           #d4182e;
+  --accent-pink:          #7c3aed;
+  --accent-teal:          #00a88a;
 
-  --text-primary:   #cce6ff;
-  --text-secondary: #4a7aa8;
-  --text-muted:     #243555;
+  --text-primary:   #0a1a2e;
+  --text-secondary: #2a4a6e;
+  --text-muted:     #5a7a9a;
 
-  --xp-bar-from: #0070c0;
-  --xp-bar-to:   #00f0c0;
+  --xp-bar-from: #0078a8;
+  --xp-bar-to:   #00a88a;
 
-  --glow-violet: 0 0 28px rgba(0,150,199,.55);
-  --glow-gold:   0 0 18px rgba(255,215,0,.60);
-  --glow-green:  0 0 22px rgba(0,229,153,.55);
-  --glow-teal:   0 0 26px rgba(0,240,192,.45);
+  --heat-0: #dde8f4;
+  --heat-1: #a8c8e4;
+  --heat-2: #4a98c8;
+  --heat-3: #0078a8;
+  --heat-4: #005880;
 
-  --shadow-card: 0 1px 0 rgba(0,180,255,.05) inset, 0 12px 32px -16px rgba(0,0,0,.95);
+  --glow-violet: 0 0 20px rgba(0,120,168,.3);
+  --glow-gold:   0 0 14px rgba(200,150,10,.4);
+  --glow-green:  0 0 16px rgba(0,184,122,.3);
+  --glow-teal:   0 0 18px rgba(0,168,138,.3);
+
+  --shadow-card: 0 1px 0 rgba(255,255,255,.8) inset, 0 2px 12px rgba(0,80,160,.08);
 }
 
 @theme inline {
@@ -145,6 +151,19 @@ button { font-family: inherit; cursor: pointer; }
   background-size: 38px 38px;
   opacity: 1; mix-blend-mode: normal;
 }
+
+[data-theme="light"] .aurora-bg {
+  background:
+    radial-gradient(55% 40% at 15% -5%, rgba(0,120,200,.10), transparent 65%),
+    radial-gradient(50% 45% at 85% -8%, rgba(60,0,180,.07), transparent 65%),
+    radial-gradient(70% 55% at 50% 100%, rgba(0,80,160,.06), transparent 70%);
+}
+
+[data-theme="light"] .grain {
+  background-image: radial-gradient(circle, rgba(0,100,180,.04) 1px, transparent 1px);
+}
+
+[data-theme="light"] .grain::after { opacity: 0; }
 
 /* Scan line */
 .grain::after {

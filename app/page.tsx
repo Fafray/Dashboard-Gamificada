@@ -28,7 +28,7 @@ export default async function DashboardPage() {
 
   // Fecha dias passados sem checkin (penalidade) e aplica decay por inatividade
   const statsPreDecay = await getUserStats();
-  await fecharDiasPassados();
+  await fecharDiasPassados().catch(() => {});
   await aplicarDecaySeNecessario(statsPreDecay.titulo_ativo_id);
 
   const [rawStats, activities, xpToday] = await Promise.all([
