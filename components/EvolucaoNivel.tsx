@@ -17,7 +17,7 @@ export function EvolucaoNivel({ historico }: EvolucaoNivelProps) {
   const H   = 140;
   const pad = 28;
 
-  const levels  = historico.map((d) => d.nivel);
+  const levels  = historico.map((d) => Number(d.nivel));
   const maxL    = Math.max(...levels, 2);
   const minL    = Math.max(1, Math.min(...levels) - 1);
   const range   = maxL - minL || 1;

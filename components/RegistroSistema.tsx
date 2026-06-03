@@ -1,4 +1,10 @@
-import type { SystemEvent } from "@/lib/db";
+export interface SystemEvent {
+  id: number;
+  tipo: string;
+  texto: string;
+  data: string;
+  extra: Record<string, unknown> | null;
+}
 
 const COR_EVENTO: Record<string, string> = {
   nivel_up:     "#00b8e8",
