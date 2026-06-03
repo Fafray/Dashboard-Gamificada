@@ -87,6 +87,7 @@ export function DashboardClient({
   const [doneSet, setDoneSet] = useState<Set<number>>(
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
   );
+  const [filtro, setFiltro] = useState<"todas" | "daily" | "semanal">("todas");
 
   const handleCheckin = useCallback((activityId: number, result: CheckinResult) => {
     setDoneSet((prev) => new Set([...prev, activityId]));
@@ -209,24 +210,81 @@ export function DashboardClient({
 
         {/* Missões */}
         <div className="section">
-          <div className="section-head">
-            <h2>Missões do Dia</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
+            <h2 style={{ margin: 0 }}>Missões do Dia</h2>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+              {doneCount} / {totalCount} concluídas
+            </span>
           </div>
 
           {initialActivities.length === 0 ? (
             <EmptyState />
           ) : (
-            <div className="act-grid">
-              {initialActivities.map((activity) => (
-                <ActivityCard
-                  key={activity.id}
-                  activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
-                  atributos={atributos}
-                  onCheckin={(result) => handleCheckin(activity.id, result)}
-                  onUndo={(result) => handleUndo(activity.id, result)}
-                />
-              ))}
-            </div>
+            <>
+              {/* Filtros */}
+              {(() => {
+                const chips = [
+                  { k: "todas"   as const, l: "Todas",   cnt: initialActivities.length },
+                  { k: "daily"   as const, l: "Diárias", cnt: initialActivities.filter((a) => a.frequency === "daily").length },
+                  { k: "semanal" as const, l: "Semanais",cnt: initialActivities.filter((a) => a.frequency === "weekly" || a.frequency === "nx_week").length },
+                ].filter((c) => c.k === "todas" || c.cnt > 0);
+                return (
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
+                    {chips.map((c) => (
+                      <button
+                        key={c.k}
+                        onClick={() => setFiltro(c.k)}
+                        style={{
+                          padding: "5px 13px", borderRadius: "8px", fontSize: "12px",
+                          fontWeight: 500, cursor: "pointer",
+                          border: filtro === c.k ? "1px solid rgba(0,184,232,.45)" : "1px solid rgba(120,150,180,.18)",
+                          background: filtro === c.k ? "rgba(0,184,232,.12)" : "transparent",
+                          color: filtro === c.k ? "var(--accent-teal)" : "var(--text-muted)",
+                        }}
+                      >
+                        {c.l} <span style={{ opacity: 0.6 }}>{c.cnt}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Banner Dia Perfeito */}
+              {allDone && (
+                <div style={{
+                  marginBottom: "14px", padding: "12px 16px", borderRadius: "12px",
+                  background: "rgba(47,208,154,.07)", border: "1px solid rgba(47,208,154,.4)",
+                  display: "flex", alignItems: "center", gap: "10px",
+                }}>
+                  <span style={{ fontSize: "18px" }}>⚡</span>
+                  <div>
+                    <div style={{ fontSize: "11px", letterSpacing: ".14em", fontWeight: 700, color: "#2fd09a", textTransform: "uppercase" }}>Dia Perfeito</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "1px" }}>
+                      Todas as missões concluídas · combo de <b style={{ color: "#2fd09a" }}>+{comboXp} XP</b>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="act-grid">
+                {initialActivities
+                  .filter((a) =>
+                    filtro === "todas" ? true :
+                    filtro === "daily" ? a.frequency === "daily" :
+                    a.frequency === "weekly" || a.frequency === "nx_week"
+                  )
+                  .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0))
+                  .map((activity) => (
+                    <ActivityCard
+                      key={activity.id}
+                      activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
+                      atributos={atributos}
+                      onCheckin={(result) => handleCheckin(activity.id, result)}
+                      onUndo={(result) => handleUndo(activity.id, result)}
+                    />
+                  ))}
+              </div>
+            </>
           )}
         </div>
 
