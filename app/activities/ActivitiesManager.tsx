@@ -5,12 +5,36 @@ import { useRouter } from "next/navigation";
 import type { Activity } from "@/lib/db";
 import { ActivityForm } from "@/components/ActivityForm";
 import { MedidorEquilibrio } from "@/components/MedidorEquilibrio";
+import { CATEGORIA_ATRIBUTO, CATEGORIA_LABELS } from "@/lib/attributes";
 
-const FREQ_LABEL: Record<string, string> = {
-  daily: "Diário",
-  weekly: "Semanal",
-  free: "Livre",
+const COR_ATTR: Record<string, string> = {
+  FOR: "#e24b4a",
+  VIT: "#1d9e75",
+  AGI: "#efa527",
+  INT: "#9b8bff",
+  PER: "#3b82f6",
 };
+
+function enrich(a: Activity) {
+  const tipo =
+    a.frequency === "daily" ? "diaria" :
+    a.frequency === "free"  ? "livre"  : "semanal";
+  const attr = a.categoria ? CATEGORIA_ATRIBUTO[a.categoria] ?? null : null;
+  const dificuldade =
+    a.xp_base <= 10 ? "Fácil" :
+    a.xp_base <= 25 ? "Média" : "Difícil";
+  const freqLabel =
+    a.frequency === "nx_week" ? `${a.weekly_target}x/semana` :
+    a.frequency === "daily"   ? "Diária"  :
+    a.frequency === "weekly"  ? "Semanal" : "Livre";
+  return { ...a, tipo, attr, dificuldade, freqLabel };
+}
+
+const GRUPOS = [
+  { tipo: "diaria",  rotulo: "DIÁRIAS" },
+  { tipo: "semanal", rotulo: "SEMANAIS" },
+  { tipo: "livre",   rotulo: "LIVRES" },
+] as const;
 
 interface ActivitiesManagerProps {
   active: Activity[];
@@ -142,15 +166,31 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
           </button>
         </div>
       ) : (
-        <div className="space-y-2">
-          {active.map((a) => (
-            <ActivityRow
-              key={a.id}
-              activity={a}
-              onEdit={() => setFormMode({ kind: "edit", activity: a })}
-              onArchive={() => handleArchive(a.id)}
-            />
-          ))}
+        <div className="space-y-5">
+          {GRUPOS.map((g) => {
+            const itens = active.map(enrich).filter((a) => a.tipo === g.tipo);
+            if (itens.length === 0) return null;
+            return (
+              <div key={g.tipo}>
+                <p
+                  className="text-xs font-semibold tracking-widest mb-2"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  {g.rotulo} · {itens.length}
+                </p>
+                <div className="space-y-2">
+                  {itens.map((a) => (
+                    <ActivityRow
+                      key={a.id}
+                      activity={a}
+                      onEdit={() => setFormMode({ kind: "edit", activity: a })}
+                      onArchive={() => handleArchive(a.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -173,7 +213,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
               {archived.map((a) => (
                 <ActivityRow
                   key={a.id}
-                  activity={a}
+                  activity={enrich(a)}
                   archived
                   onUnarchive={() => handleUnarchive(a.id)}
                 />
@@ -186,8 +226,15 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
   );
 }
 
+type EnrichedActivity = Activity & {
+  tipo?: string;
+  attr?: string | null;
+  dificuldade?: string;
+  freqLabel?: string;
+};
+
 interface ActivityRowProps {
-  activity: Activity;
+  activity: EnrichedActivity;
   archived?: boolean;
   onEdit?: () => void;
   onArchive?: () => void;
@@ -233,9 +280,25 @@ function ActivityRow({ activity: a, archived, onEdit, onArchive, onUnarchive }: 
         <p className="font-medium text-sm truncate" style={{ color: "var(--text-primary)" }}>
           {a.name}
         </p>
-        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          {FREQ_LABEL[a.frequency]} · +{a.xp_base} XP
-        </p>
+        <div className="flex flex-wrap gap-1.5 mt-1">
+          {a.categoria && a.attr && (
+            <span
+              className="text-xs rounded px-1.5 py-0.5 font-medium"
+              style={{
+                color: COR_ATTR[a.attr] ?? "var(--text-muted)",
+                background: (COR_ATTR[a.attr] ?? "#888") + "18",
+              }}
+            >
+              {CATEGORIA_LABELS[a.categoria] ?? a.categoria} · {a.attr}
+            </span>
+          )}
+          <span className="text-xs rounded px-1.5 py-0.5" style={{ color: "var(--text-muted)", background: "var(--bg-surface)" }}>
+            {a.freqLabel ?? a.frequency}
+          </span>
+          <span className="text-xs rounded px-1.5 py-0.5" style={{ color: "var(--text-muted)", background: "var(--bg-surface)" }}>
+            {a.dificuldade ?? "Fácil"} · +{a.xp_base} XP
+          </span>
+        </div>
       </div>
 
       {/* Color dot */}
