@@ -551,6 +551,55 @@ export async function subtrairXP(amount: number): Promise<UserStats> {
   return getUserStats();
 }
 
+// ─── Stats para Títulos ───────────────────────────────────────────────────────
+
+export async function getMaxCheckinsOnDay(): Promise<number> {
+  await init();
+  const res = await pool.query(`
+    SELECT COALESCE(MAX(cnt), 0) as max
+    FROM (
+      SELECT COUNT(*) as cnt FROM checkins GROUP BY LEFT(checked_at, 10)
+    ) t
+  `);
+  return parseInt(res.rows[0].max);
+}
+
+export async function getMaxCategoriasOnDay(): Promise<number> {
+  await init();
+  const res = await pool.query(`
+    SELECT COALESCE(MAX(cnt), 0) as max
+    FROM (
+      SELECT LEFT(c.checked_at, 10) as dia, COUNT(DISTINCT a.categoria) as cnt
+      FROM checkins c
+      JOIN activities a ON c.activity_id = a.id
+      WHERE a.categoria IS NOT NULL
+      GROUP BY LEFT(c.checked_at, 10)
+    ) t
+  `);
+  return parseInt(res.rows[0].max);
+}
+
+// Verifica se o usuário teve algum dia com checkins em TODAS as atividades diárias
+export async function getTeveDiaPerfeito(): Promise<boolean> {
+  await init();
+  const totalDiarias = await pool.query(
+    `SELECT COUNT(*) as cnt FROM activities WHERE archived = 0 AND frequency = 'daily'`
+  );
+  const total = parseInt(totalDiarias.rows[0].cnt);
+  if (total === 0) return false;
+
+  const res = await pool.query(`
+    SELECT COUNT(*) as cnt
+    FROM (
+      SELECT LEFT(checked_at, 10) as dia, COUNT(DISTINCT activity_id) as n
+      FROM checkins
+      GROUP BY LEFT(checked_at, 10)
+      HAVING COUNT(DISTINCT activity_id) >= $1
+    ) t
+  `, [total]);
+  return parseInt(res.rows[0].cnt) > 0;
+}
+
 // ─── Events ───────────────────────────────────────────────────────────────────
 
 export interface SystemEvent {

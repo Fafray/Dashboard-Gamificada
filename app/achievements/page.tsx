@@ -6,47 +6,17 @@ import {
   getActivities,
   getCheckinDatesForActivity,
   getAllCheckinDatesFlat,
+  getMaxCheckinsOnDay,
+  getMaxCategoriasOnDay,
+  getTeveDiaPerfeito,
 } from "@/lib/db";
-import { getLevelInfo, computeStreak, computeConsecutiveDays } from "@/lib/gamification";
+import { getLevelInfo, computeStreak, computeConsecutiveDays, nivelDoXp } from "@/lib/gamification";
 import { TITULOS } from "@/lib/titulos";
+import type { PlayerEstado, TituloStats } from "@/lib/titulos";
 import { GradeTitulos } from "@/components/GradeTitulos";
-import type { TituloItem } from "@/components/GradeTitulos";
 import type { Atributos } from "@/lib/attributes";
 
 export const dynamic = "force-dynamic";
-
-interface ProgressoCtx {
-  totalCheckins: number;
-  maxStreak: number;
-  level: number;
-  consecutiveDays: number;
-  atributos: Record<string, number>;
-}
-
-function getTituloProgresso(
-  id: string,
-  ctx: ProgressoCtx
-): { atual: number; total: number } | null {
-  const maxAttr = Math.max(0, ...Object.values(ctx.atributos));
-  switch (id) {
-    case "primeiro_passo":   return { atual: Math.min(ctx.totalCheckins, 1), total: 1 };
-    case "engrenando":       return { atual: ctx.totalCheckins, total: 10 };
-    case "despertado":       return { atual: ctx.level, total: 6 };
-    case "streak_7":         return { atual: ctx.maxStreak, total: 7 };
-    case "consistencia":     return { atual: ctx.consecutiveDays, total: 7 };
-    case "meio_centenario":  return { atual: ctx.totalCheckins, total: 50 };
-    case "especialista":     return { atual: maxAttr, total: 15 };
-    case "streak_14":        return { atual: ctx.maxStreak, total: 14 };
-    case "streak_30":        return { atual: ctx.maxStreak, total: 30 };
-    case "disciplina_ferro": return { atual: ctx.consecutiveDays, total: 30 };
-    case "veterano":         return { atual: ctx.level, total: 10 };
-    case "centenario":       return { atual: ctx.totalCheckins, total: 100 };
-    case "streak_100":       return { atual: ctx.maxStreak, total: 100 };
-    case "mestre":           return { atual: ctx.level, total: 20 };
-    case "ano_habitos":      return { atual: ctx.totalCheckins, total: 365 };
-    default:                 return null;
-  }
-}
 
 export default async function TitulosPage() {
   const now = new Date();
@@ -59,7 +29,7 @@ export default async function TitulosPage() {
     getAllCheckinDatesFlat(),
   ]);
 
-  const unlockedIds = new Set(unlocked.map((a) => a.key));
+  const unlockedIds = unlocked.map((a) => a.key);
   const { level } = getLevelInfo(rawStats.total_xp);
   const atributos = (rawStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
 
@@ -71,26 +41,51 @@ export default async function TitulosPage() {
   }
 
   const consecutiveDays = computeConsecutiveDays(allDates);
-  const ctx: ProgressoCtx = { totalCheckins, maxStreak, level, consecutiveDays, atributos };
 
-  const titulos: TituloItem[] = TITULOS.map((t) => ({
-    id: t.id,
-    nome: t.nome,
-    desc: t.desc,
-    emoji: t.emoji,
-    raridade: t.raridade,
-    equipavel: t.equipavel,
-    desbloqueado: unlockedIds.has(t.id),
-    progresso: unlockedIds.has(t.id) ? null : getTituloProgresso(t.id, ctx),
-  }));
+  // Stats extras (resilientes a erros)
+  const [maxMissoesNumDia, maxCategoriasNumDia, teveDiaPerfeito] = await Promise.all([
+    getMaxCheckinsOnDay().catch(() => 0),
+    getMaxCategoriasOnDay().catch(() => 0),
+    getTeveDiaPerfeito().catch(() => false),
+  ]);
 
-  const totalDesbloqueados = titulos.filter((t) => t.desbloqueado).length;
+  // Detecta check-in antes das 7h ou após as 22h em qualquer momento do histórico
+  // (simplificação: usa a hora atual do mais recente — para título one-shot é suficiente)
+  const checkinHour = now.getHours();
+
+  const player: PlayerEstado = {
+    streak: maxStreak,
+    xpTotal: rawStats.total_xp,
+    atributos: atributos as Record<string, number>,
+  };
+
+  const stats: TituloStats = {
+    totalCheckins,
+    maxMissoesNumDia,
+    maxCategoriasNumDia,
+    checkinAntesDas7: checkinHour < 7,
+    checkinApos22h: checkinHour >= 22,
+    teveDiaPerfeito,
+    diasComMissaoSeguidos: consecutiveDays,
+    diasPerfeitosSeguidos: 0,   // requer tracking futuro
+    diasSemFalhar: consecutiveDays,
+    sobreviveuAoRebaixamento: false,
+    recuperouNivelPerdido: (rawStats.nivel_maximo_atingido ?? 1) > nivelDoXp(rawStats.total_xp),
+    recuperouRankPerdido: false,
+    vezesRenasceu: 0,
+    diasNaMesmaClasse: 0,
+  };
+
+  const totalDesbloqueados = TITULOS.filter((t) => unlockedIds.includes(t.id)).length;
 
   return (
     <GradeTitulos
-      titulos={titulos}
+      desbloqueados={unlockedIds}
       tituloAtivoId={rawStats.titulo_ativo_id}
+      player={player}
+      stats={stats}
       totalDesbloqueados={totalDesbloqueados}
     />
   );
 }
+

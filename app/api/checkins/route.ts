@@ -30,7 +30,7 @@ import {
 import { xpComBonus } from "@/lib/attributes";
 import type { Atributos } from "@/lib/attributes";
 import { verificarTitulos, bonusXpDoTitulo, getTituloDef } from "@/lib/titulos";
-import type { TituloStats } from "@/lib/titulos";
+import type { TituloStats, PlayerEstado } from "@/lib/titulos";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -148,17 +148,30 @@ export async function POST(req: Request) {
   const desbloqueados = (await import("@/lib/db").then((m) => m.getAchievements()))
     .map((a) => a.key);
 
-  const tituloStats: TituloStats = {
-    totalCheckins,
-    maxStreak,
-    level: levelInfo.level,
-    checkinsToday,
-    checkinHour: now.getHours(),
-    consecutiveDays,
+  const playerEstado: PlayerEstado = {
+    streak:    maxStreak,
+    xpTotal:   updatedStats.total_xp,
     atributos: atributos as Record<string, number>,
   };
 
-  const earnedKeys = verificarTitulos(desbloqueados, tituloStats);
+  const tituloStats: TituloStats = {
+    totalCheckins,
+    maxMissoesNumDia:     checkinsToday,          // proxy: max hoje (simplificado)
+    maxCategoriasNumDia:  0,                       // calculado na página de títulos
+    checkinAntesDas7:     now.getHours() < 7,
+    checkinApos22h:       now.getHours() >= 22,
+    teveDiaPerfeito:      false,                   // calculado na página de títulos
+    diasComMissaoSeguidos: consecutiveDays,
+    diasPerfeitosSeguidos: 0,
+    diasSemFalhar:        consecutiveDays,
+    sobreviveuAoRebaixamento: false,
+    recuperouNivelPerdido: (updatedStats.nivel_maximo_atingido ?? 1) > levelInfo.level,
+    recuperouRankPerdido: false,
+    vezesRenasceu:        0,
+    diasNaMesmaClasse:    0,
+  };
+
+  const earnedKeys = verificarTitulos(desbloqueados, playerEstado, tituloStats);
   const newlyUnlocked: { key: string; name: string; description: string; emoji: string }[] = [];
   for (const key of earnedKeys) {
     const result = await unlockAchievement(key);

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Activity } from "@/lib/db";
 import { ActivityForm } from "@/components/ActivityForm";
+import { MedidorEquilibrio } from "@/components/MedidorEquilibrio";
 
 const FREQ_LABEL: Record<string, string> = {
   daily: "Diário",
@@ -111,6 +112,13 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
           + Nova
         </button>
       </div>
+
+      {/* Medidor de equilíbrio */}
+      {active.length > 0 && (
+        <div>
+          <MedidorEquilibrio atividades={active} />
+        </div>
+      )}
 
       {/* Active activities */}
       {active.length === 0 ? (

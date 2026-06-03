@@ -17,54 +17,37 @@ import { RegistroSistema } from "@/components/RegistroSistema";
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  // ── data fetching ──────────────────────────────────────────
-  let heatmapData: { date: string; count: number }[] = [];
-  let xpData: { date: string; xp: number }[] = [];
-  let totalCheckins = 0;
-  let rawStats: Awaited<ReturnType<typeof getUserStats>>;
-  let activities: Awaited<ReturnType<typeof getActivities>> = [];
-  let eventos: { id: number; tipo: string; texto: string; data: string; extra: Record<string, unknown> | null }[] = [];
-  let levelHistory: { date: string; nivel: number }[] = [];
+  const [heatmapData, xpData, totalCheckins, rawStats, activities] = await Promise.all([
+    getCheckinsGroupedByDate(365),
+    getXpPerDay(30),
+    getTotalCheckinsCount(),
+    getUserStats(),
+    getActivities(false),
+  ]);
 
-  try {
-    [heatmapData, xpData, totalCheckins, rawStats, activities] = await Promise.all([
-      getCheckinsGroupedByDate(365),
-      getXpPerDay(30),
-      getTotalCheckinsCount(),
-      getUserStats(),
-      getActivities(false),
-    ]);
-  } catch(e) {
-    throw new Error("db-fetch: " + (e instanceof Error ? e.message : String(e)));
-  }
+  const { level: currentLevel } = getLevelInfo(rawStats.total_xp);
 
-  const { level: currentLevel } = getLevelInfo(rawStats!.total_xp);
-
-  [eventos, levelHistory] = await Promise.all([
+  const [eventos, levelHistory] = await Promise.all([
     getEvents(60).catch(() => []),
     getLevelHistory(currentLevel).catch(() => [{ date: new Date().toISOString().slice(0, 10), nivel: currentLevel }]),
   ]);
 
   let bestStreak = 0;
-  try {
-    for (const act of activities) {
-      if (act.frequency === "free") continue;
-      const dates = await getCheckinDatesForActivity(act.id);
-      const { longest } = computeStreak(dates, act.frequency);
-      bestStreak = Math.max(bestStreak, longest);
-    }
-  } catch(e) {
-    throw new Error("streak-loop: " + (e instanceof Error ? e.message : String(e)));
+  for (const act of activities) {
+    if (act.frequency === "free") continue;
+    const dates = await getCheckinDatesForActivity(act.id);
+    const { longest } = computeStreak(dates, act.frequency);
+    bestStreak = Math.max(bestStreak, longest);
   }
 
   const activeDays = heatmapData.filter((d) => d.count > 0).length;
-  const xpLast30 = xpData.reduce((sum, d) => sum + d.xp, 0);
+  const xpLast30   = xpData.reduce((sum, d) => sum + d.xp, 0);
 
   const stats = [
-    { label: "Check-ins totais", value: totalCheckins, color: "var(--accent-teal)" },
-    { label: "Dias ativos", value: activeDays, color: "var(--accent-green)" },
-    { label: "Maior streak", value: `${bestStreak}d`, color: "var(--accent-gold)" },
-    { label: "XP últimos 30d", value: `+${xpLast30}`, color: "var(--accent-violet-bright)" },
+    { label: "Check-ins totais", value: totalCheckins,           color: "var(--accent-teal)" },
+    { label: "Dias ativos",      value: activeDays,              color: "var(--accent-green)" },
+    { label: "Maior streak",     value: `${bestStreak}d`,        color: "var(--accent-gold)" },
+    { label: "XP últimos 30d",   value: `+${xpLast30}`,          color: "var(--accent-violet-bright)" },
   ];
 
   return (
@@ -78,24 +61,10 @@ export default async function HistoryPage() {
 
       {/* Stats */}
       <div className="section">
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "14px",
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
           {stats.map((s) => (
             <div key={s.label} className="card" style={{ padding: "18px 16px", textAlign: "center" }}>
-              <p
-                style={{
-                  fontFamily: "var(--font-space-grotesk)",
-                  fontSize: "24px",
-                  fontWeight: 700,
-                  color: s.color,
-                  lineHeight: 1,
-                }}
-              >
+              <p style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "24px", fontWeight: 700, color: s.color, lineHeight: 1 }}>
                 {s.value}
               </p>
               <p style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: "6px" }}>
@@ -115,10 +84,7 @@ export default async function HistoryPage() {
               <p className="panel-help">Último ano de atividade</p>
             </div>
             <div className="heat-stats">
-              <div className="hs">
-                <b>{activeDays}</b>
-                <span>dias ativos</span>
-              </div>
+              <div className="hs"><b>{activeDays}</b><span>dias ativos</span></div>
             </div>
           </div>
           <Heatmap data={heatmapData} />
@@ -134,10 +100,7 @@ export default async function HistoryPage() {
               <p className="panel-help">Últimos 30 dias</p>
             </div>
             <div className="heat-stats">
-              <div className="hs">
-                <b>+{xpLast30}</b>
-                <span>XP no período</span>
-              </div>
+              <div className="hs"><b>+{xpLast30}</b><span>XP no período</span></div>
             </div>
           </div>
           <XPChart data={xpData} />

@@ -1,35 +1,28 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { TITULOS, RARIDADES } from "@/lib/titulos";
-import type { Raridade } from "@/lib/titulos";
+import { TITULOS, TRILHAS, RARIDADES } from "@/lib/titulos";
+import type { Titulo, TrilhaKey, PlayerEstado, TituloStats } from "@/lib/titulos";
 
 const CYAN = "#00b8e8";
 
-export interface TituloItem {
-  id: string;
-  nome: string;
-  desc: string;
-  emoji: string;
-  raridade: Raridade;
-  equipavel?: boolean;
-  desbloqueado: boolean;
-  progresso: { atual: number; total: number } | null;
-}
-
 interface GradeTitulosProps {
-  titulos: TituloItem[];
+  desbloqueados: string[];
   tituloAtivoId: string | null;
+  player: PlayerEstado;
+  stats: TituloStats;
   totalDesbloqueados: number;
 }
 
 export function GradeTitulos({
-  titulos,
+  desbloqueados: initialDesbloqueados,
   tituloAtivoId: initialAtivoId,
+  player,
+  stats,
   totalDesbloqueados,
 }: GradeTitulosProps) {
-  const [ativoId, setAtivoId]   = useState(initialAtivoId);
-  const [loading, setLoading]   = useState<string | null>(null);
+  const [ativoId, setAtivoId]         = useState(initialAtivoId);
+  const [loading, setLoading]         = useState<string | null>(null);
 
   const equipar = useCallback(async (id: string) => {
     const novoId = ativoId === id ? null : id;
@@ -56,7 +49,7 @@ export function GradeTitulos({
         <div>
           <p className="eyebrow">[ TÍTULOS ]</p>
           <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px", letterSpacing: ".06em" }}>
-            {totalDesbloqueados} / {total} desbloqueados
+            {totalDesbloqueados} / {total} · por trilha, a raridade sobe junto
           </p>
         </div>
       </div>
@@ -69,11 +62,9 @@ export function GradeTitulos({
             border: "1px solid rgba(0,184,232,.3)",
             borderRadius: "var(--r-lg)",
             padding: "14px 18px",
-            display: "flex",
-            alignItems: "center",
-            gap: "14px",
+            display: "flex", alignItems: "center", gap: "14px",
           }}>
-            <span style={{ fontSize: "26px", lineHeight: 1 }}>{ativo.emoji}</span>
+            <span style={{ fontSize: "24px", lineHeight: 1 }}>{ativo.emoji}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: "10px", letterSpacing: ".14em", color: "var(--text-muted)", textTransform: "uppercase" }}>
                 Título Ativo
@@ -83,10 +74,9 @@ export function GradeTitulos({
               </div>
               {ativo.bonus && (
                 <div style={{ fontSize: "11px", color: CYAN, marginTop: "2px" }}>
-                  {ativo.bonus.tipo === "xp_global" && `+${Math.round((ativo.bonus.mult ?? 0) * 100)}% XP global`}
-                  {ativo.bonus.tipo === "xp_categoria" && `+${Math.round((ativo.bonus.mult ?? 0) * 100)}% XP em ${ativo.bonus.categoria}`}
-                  {ativo.bonus.tipo === "reduz_decay" && "Decay reduzido à metade"}
-                  {ativo.bonus.tipo === "streak_shield" && "Escudo de sequência ativo"}
+                  {ativo.bonus.tipo === "xp_global"     && `+${Math.round((ativo.bonus.mult ?? 0) * 100)}% XP global`}
+                  {ativo.bonus.tipo === "xp_categoria"  && `+${Math.round((ativo.bonus.mult ?? 0) * 100)}% XP em ${ativo.bonus.categoria}`}
+                  {ativo.bonus.tipo === "reduz_decay"   && "Decay reduzido à metade"}
                 </div>
               )}
             </div>
@@ -108,111 +98,167 @@ export function GradeTitulos({
         </div>
       )}
 
-      {/* Grade */}
+      {/* Trilhas */}
       <div className="section" style={{ marginTop: ativo ? undefined : 0 }}>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))",
-          gap: "12px",
-        }}>
-          {titulos.map((t) => {
-            const R      = RARIDADES[t.raridade];
-            const isAtivo = ativoId === t.id;
-            const pct    = t.progresso
-              ? Math.min(100, Math.round((t.progresso.atual / t.progresso.total) * 100))
-              : null;
-            const isLoading = loading === t.id;
-            const tDef = TITULOS.find((x) => x.id === t.id);
-            const clicavel = t.desbloqueado && !!t.equipavel && !loading;
+        {(Object.entries(TRILHAS) as [TrilhaKey, typeof TRILHAS[TrilhaKey]][]).map(([chave, tr]) => {
+          const degraus = TITULOS.filter((t) => t.trilha === chave);
+          const feitos  = degraus.filter((t) => initialDesbloqueados.includes(t.id)).length;
 
-            return (
+          return (
+            <TrilhaRow
+              key={chave}
+              trilhaKey={chave}
+              trilhaNome={tr.nome}
+              trilhaIcone={tr.icone}
+              degraus={degraus}
+              desbloqueados={initialDesbloqueados}
+              ativoId={ativoId}
+              feitos={feitos}
+              player={player}
+              stats={stats}
+              loading={loading}
+              onEquipar={equipar}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+interface TrilhaRowProps {
+  trilhaKey: TrilhaKey;
+  trilhaNome: string;
+  trilhaIcone: string;
+  degraus: Titulo[];
+  desbloqueados: string[];
+  ativoId: string | null;
+  feitos: number;
+  player: PlayerEstado;
+  stats: TituloStats;
+  loading: string | null;
+  onEquipar: (id: string) => void;
+}
+
+function TrilhaRow({
+  trilhaNome, trilhaIcone, degraus, desbloqueados,
+  ativoId, feitos, player, stats, loading, onEquipar,
+}: TrilhaRowProps) {
+  return (
+    <div style={{
+      display: "flex", gap: "16px", alignItems: "flex-start",
+      padding: "18px 0", borderBottom: "1px solid rgba(120,150,180,.08)",
+    }}>
+      {/* Coluna esquerda: nome da trilha */}
+      <div style={{ width: "110px", flexShrink: 0, paddingTop: "6px" }}>
+        <div style={{
+          color: "var(--text-primary)", fontSize: "12px", fontWeight: 700,
+          letterSpacing: ".08em", textTransform: "uppercase",
+          fontFamily: "var(--font-space-grotesk), sans-serif",
+        }}>
+          {trilhaIcone} {trilhaNome}
+        </div>
+        <div style={{ color: "var(--text-muted)", fontSize: "10px", marginTop: "3px" }}>
+          {feitos} / {degraus.length}
+        </div>
+      </div>
+
+      {/* Escada horizontal */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", overflowX: "auto", paddingBottom: "4px" }}>
+        {degraus.map((t, i) => {
+          const R          = RARIDADES[t.raridade];
+          const done       = desbloqueados.includes(t.id);
+          const emProgresso = !done && i === feitos; // primeiro bloqueado
+          const isAtivo    = ativoId === t.id;
+          const [atual, alvo] = t.progresso(player, stats);
+          const pct        = Math.min(100, Math.round((atual / alvo) * 100));
+          const isLoading  = loading === t.id;
+
+          return (
+            <div key={t.id} style={{ display: "flex", alignItems: "center" }}>
+              {/* Conector */}
+              {i > 0 && (
+                <div style={{
+                  width: "24px", height: "2px",
+                  background: desbloqueados.includes(degraus[i - 1].id) ? R.cor : "rgba(120,150,180,.15)",
+                  flexShrink: 0,
+                }} />
+              )}
+
+              {/* Nó do título */}
               <div
-                key={t.id}
-                onClick={() => clicavel && equipar(t.id)}
+                onClick={() => done && t.equipavel && !loading && onEquipar(t.id)}
+                title={`${t.nome} — ${t.desc}`}
                 style={{
-                  background: "var(--bg-card)",
-                  border: `1px solid ${t.desbloqueado ? `${R.cor}50` : "rgba(120,150,180,.12)"}`,
-                  borderRadius: "12px",
-                  padding: "14px",
-                  cursor: clicavel ? "pointer" : "default",
-                  transition: "border-color .18s, box-shadow .18s",
+                  display: "flex", flexDirection: "column", alignItems: "center",
+                  width: "72px", flexShrink: 0,
+                  cursor: done && t.equipavel ? "pointer" : "default",
                   opacity: isLoading ? 0.6 : 1,
-                  boxShadow: isAtivo ? `0 0 0 2px ${R.cor}` : undefined,
                 }}
               >
-                {/* Top row: emoji + rarity */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px" }}>
-                  <div style={{
-                    width: "40px", height: "40px", borderRadius: "10px",
-                    background: t.desbloqueado ? `${R.cor}20` : "var(--bg-surface)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: "20px",
-                    filter: t.desbloqueado ? "none" : "grayscale(1) brightness(.35)",
-                  }}>
-                    {t.emoji}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px" }}>
+                {/* Círculo */}
+                <div style={{
+                  width: "36px", height: "36px", borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: done ? R.cor : emProgresso ? `${R.cor}18` : "var(--bg-surface)",
+                  border: done
+                    ? "none"
+                    : emProgresso
+                    ? `2px solid ${R.cor}`
+                    : "1px solid rgba(120,150,180,.18)",
+                  boxShadow: isAtivo ? `0 0 0 3px ${R.cor}55` : emProgresso ? `0 0 10px ${R.cor}44` : "none",
+                  transition: "all .18s",
+                  fontSize: done ? "14px" : emProgresso ? "8px" : "14px",
+                  color: done ? "#0a1628" : "var(--text-muted)",
+                  fontWeight: 700,
+                }}>
+                  {done ? (
+                    <span style={{ color: "#0a1628" }}>✓</span>
+                  ) : emProgresso ? (
                     <span style={{
-                      fontSize: "8px", letterSpacing: ".14em", fontWeight: 700,
-                      color: t.desbloqueado ? R.cor : `${R.cor}55`,
-                      textTransform: "uppercase",
-                      fontFamily: "var(--font-space-grotesk), sans-serif",
-                    }}>
-                      {R.nome}
-                    </span>
-                    {t.desbloqueado && t.equipavel && (
-                      <span style={{
-                        fontSize: "8px", letterSpacing: ".1em",
-                        color: isAtivo ? R.cor : "var(--text-muted)",
-                        textTransform: "uppercase",
-                      }}>
-                        {isAtivo ? "✓ Ativo" : "Equipar"}
-                      </span>
-                    )}
-                  </div>
+                      width: "9px", height: "9px", borderRadius: "50%", background: R.cor, display: "block",
+                    }} />
+                  ) : (
+                    <span style={{ fontSize: "12px", opacity: 0.4 }}>🔒</span>
+                  )}
                 </div>
 
-                {/* Nome + desc */}
+                {/* Nome */}
                 <div style={{
-                  fontSize: "14px", fontWeight: 600,
-                  color: t.desbloqueado ? "var(--text-primary)" : "var(--text-muted)",
-                  marginBottom: "4px",
+                  fontSize: "9.5px", fontWeight: done || emProgresso ? 600 : 400,
+                  color: done || emProgresso ? "var(--text-primary)" : "var(--text-muted)",
+                  marginTop: "6px", textAlign: "center", lineHeight: 1.2,
+                  width: "68px", overflow: "hidden",
                 }}>
                   {t.nome}
                 </div>
-                <div style={{ fontSize: "11px", color: "var(--text-muted)", lineHeight: 1.5 }}>
-                  {t.desc}
+
+                {/* Progresso / raridade */}
+                <div style={{
+                  fontSize: "8.5px", marginTop: "3px",
+                  color: done || emProgresso ? R.cor : "rgba(120,150,180,.5)",
+                  textAlign: "center",
+                }}>
+                  {done
+                    ? (t.equipavel ? (isAtivo ? "✓ Ativo" : "Equipar") : RARIDADES[t.raridade].nome)
+                    : emProgresso
+                    ? `${atual}/${alvo}`
+                    : RARIDADES[t.raridade].nome}
                 </div>
 
-                {/* Bônus (desbloqueado + equipável) */}
-                {t.desbloqueado && tDef?.bonus && (
-                  <div style={{ marginTop: "8px", fontSize: "10px", color: R.cor, letterSpacing: ".06em" }}>
-                    {tDef.bonus.tipo === "xp_global" && `+${Math.round((tDef.bonus.mult ?? 0) * 100)}% XP global`}
-                    {tDef.bonus.tipo === "xp_categoria" && `+${Math.round((tDef.bonus.mult ?? 0) * 100)}% XP em ${tDef.bonus.categoria}`}
-                    {tDef.bonus.tipo === "reduz_decay" && "Decay reduzido à metade"}
-                    {tDef.bonus.tipo === "streak_shield" && "Escudo de sequência"}
-                  </div>
-                )}
-
-                {/* Barra de progresso (bloqueado) */}
-                {!t.desbloqueado && pct !== null && t.progresso && (
-                  <div style={{ marginTop: "10px" }}>
-                    <div style={{
-                      display: "flex", justifyContent: "space-between",
-                      fontSize: "10px", color: "var(--text-muted)", marginBottom: "4px",
-                    }}>
-                      <span>{t.progresso.atual} / {t.progresso.total}</span>
-                      <span>{pct}%</span>
-                    </div>
-                    <div style={{ height: "3px", borderRadius: "2px", background: "rgba(120,150,180,.12)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: R.cor }} />
-                    </div>
+                {/* Mini barra para o nó em progresso */}
+                {emProgresso && pct > 0 && pct < 100 && (
+                  <div style={{
+                    width: "48px", height: "2px", borderRadius: "2px",
+                    background: "rgba(120,150,180,.12)", overflow: "hidden", marginTop: "4px",
+                  }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: R.cor }} />
                   </div>
                 )}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
