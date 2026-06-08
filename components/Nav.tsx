@@ -9,11 +9,13 @@ const links = [
   { href: "/activities", label: "Missões", icon: "⚡" },
   { href: "/achievements", label: "Títulos", icon: "◆" },
   { href: "/history", label: "Registros", icon: "▣" },
+  { href: "/agenda", label: "Agenda", icon: "📅" },
 ];
 
 export function Nav() {
   const path = usePathname();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [agendaCount, setAgendaCount] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem("dq-theme") as "dark" | "light" | null;
@@ -21,6 +23,13 @@ export function Nav() {
       setTheme(saved);
       document.documentElement.dataset.theme = saved;
     }
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/agenda/today-count")
+      .then((r) => r.json())
+      .then((d) => setAgendaCount(d.count ?? 0))
+      .catch(() => {});
   }, []);
 
   function toggleTheme() {
@@ -58,6 +67,7 @@ export function Nav() {
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             {links.map((l) => {
               const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
+              const isAgenda = l.href === "/agenda";
               return (
                 <Link
                   key={l.href}
@@ -79,10 +89,23 @@ export function Nav() {
                     fontFamily: "var(--font-space-grotesk), sans-serif",
                     textTransform: "uppercase" as const,
                     textShadow: active ? "0 0 16px rgba(0,180,232,.5)" : "none",
+                    position: "relative",
                   }}
                 >
                   <span>{l.icon}</span>
                   {l.label}
+                  {isAgenda && agendaCount > 0 && (
+                    <span style={{
+                      position: "absolute", top: "3px", right: "3px",
+                      width: "16px", height: "16px", borderRadius: "50%",
+                      background: "#ef4444", color: "white",
+                      fontSize: "9px", fontWeight: 800, display: "flex",
+                      alignItems: "center", justifyContent: "center",
+                      lineHeight: 1, fontFamily: "sans-serif",
+                    }}>
+                      {agendaCount > 9 ? "9+" : agendaCount}
+                    </span>
+                  )}
                 </Link>
               );
             })}

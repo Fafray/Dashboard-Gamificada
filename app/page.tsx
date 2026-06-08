@@ -13,6 +13,7 @@ import {
   aplicarDecaySeNecessario,
   fecharDiasPassados,
   updateLevel,
+  getScheduledTasks,
 } from "@/lib/db";
 import { getLevelInfo, computeStreak } from "@/lib/gamification";
 import { derivarClasse } from "@/lib/attributes";
@@ -97,6 +98,9 @@ export default async function DashboardPage() {
     ? getDailyBonusMissionId(activitiesWithStatus.map((a) => a.id), now)
     : null;
 
+  const allTasks = await getScheduledTasks(false);
+  const todayTasks = allTasks.filter((t) => t.due_date <= todayStr);
+
   const dateLabel = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
   const capitalizedDate = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
@@ -110,6 +114,7 @@ export default async function DashboardPage() {
       pontosDisponiveis={pontosDisponiveis}
       classeInfo={classeInfo}
       bonusMissionId={bonusMissionId}
+      todayTasks={todayTasks}
     />
   );
 }

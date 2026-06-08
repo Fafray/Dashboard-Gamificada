@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import Link from "next/link";
 import { ActivityCard } from "./ActivityCard";
 import { HeroSection } from "./HeroSection";
 import { LevelUpOverlay } from "./LevelUpOverlay";
@@ -10,6 +11,15 @@ import { PainelStatus } from "./PainelStatus";
 import { MissaoDoSistema } from "./MissaoDoSistema";
 import { computeComboXP } from "@/lib/gamification";
 import type { Atributos, ClasseInfo } from "@/lib/attributes";
+
+interface TodayTask {
+  id: number;
+  name: string;
+  emoji: string | null;
+  due_date: string;
+  due_time: string | null;
+  category: string | null;
+}
 
 interface Activity {
   id: number;
@@ -70,6 +80,7 @@ interface DashboardClientProps {
   pontosDisponiveis: number;
   classeInfo: ClasseInfo;
   bonusMissionId: number | null;
+  todayTasks: TodayTask[];
 }
 
 export function DashboardClient({
@@ -81,6 +92,7 @@ export function DashboardClient({
   pontosDisponiveis,
   classeInfo: initialClasse,
   bonusMissionId,
+  todayTasks,
 }: DashboardClientProps) {
   const [classeInfo, setClasseInfo] = useState(initialClasse);
   const [levelInfo, setLevelInfo] = useState(initialLevelInfo);
@@ -294,6 +306,32 @@ export function DashboardClient({
             </>
           )}
         </div>
+
+        {/* Agenda de Hoje */}
+        {todayTasks.length > 0 && (
+          <div className="section">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
+              <h2 style={{ margin: 0 }}>📅 Agenda de Hoje</h2>
+              <Link href="/agenda" style={{ fontSize: "11px", color: "var(--accent-teal)", textDecoration: "none", letterSpacing: ".06em" }}>
+                Ver tudo →
+              </Link>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {todayTasks.map((t) => (
+                <div key={t.id} className="card" style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "16px" }}>{t.emoji ?? "📌"}</span>
+                  <span style={{ flex: 1, fontSize: "13.5px", fontWeight: 600, color: "var(--text-primary)" }}>{t.name}</span>
+                  {t.due_time && (
+                    <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 500 }}>{t.due_time}</span>
+                  )}
+                  {t.due_date < new Date().toISOString().slice(0, 10) && (
+                    <span style={{ fontSize: "10px", color: "#ef4444", fontWeight: 700, letterSpacing: ".07em" }}>ATRASADA</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* XP pop quando todas as missões são concluídas */}
         {bonusPop !== null && (

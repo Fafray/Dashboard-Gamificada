@@ -107,6 +107,20 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS is_keystone BOOLEAN NOT NULL DEFAULT FALSE`);
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS graduation_count INTEGER NOT NULL DEFAULT 0`);
     await pool.query(`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS checkin_level VARCHAR(10)`);
+    // Agenda — tarefas pontuais com data futura
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS scheduled_tasks (
+        id           SERIAL PRIMARY KEY,
+        name         TEXT NOT NULL,
+        emoji        TEXT,
+        due_date     TEXT NOT NULL,
+        due_time     TEXT,
+        category     TEXT,
+        notes        TEXT,
+        completed_at TEXT,
+        created_at   TEXT NOT NULL
+      )
+    `);
   })();
   return schemaReady;
 }
@@ -711,4 +725,74 @@ export async function getLevelHistory(currentLevel: number): Promise<{ date: str
     return [{ date: today, nivel: currentLevel }];
   }
   return res.rows;
+}
+
+// ─── Agenda (Scheduled Tasks) ─────────────────────────────────────────────────
+
+export interface ScheduledTask {
+  id: number;
+  name: string;
+  emoji: string | null;
+  due_date: string;        // yyyy-MM-dd
+  due_time: string | null; // HH:mm
+  category: string | null; // pessoal | saude | trabalho | financeiro
+  notes: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export async function getScheduledTasks(includeCompleted = false): Promise<ScheduledTask[]> {
+  await init();
+  const sql = includeCompleted
+    ? `SELECT * FROM scheduled_tasks ORDER BY due_date ASC, due_time ASC NULLS LAST, created_at ASC`
+    : `SELECT * FROM scheduled_tasks WHERE completed_at IS NULL ORDER BY due_date ASC, due_time ASC NULLS LAST, created_at ASC`;
+  const res = await pool.query(sql);
+  return res.rows;
+}
+
+export async function getScheduledTask(id: number): Promise<ScheduledTask | null> {
+  await init();
+  const res = await pool.query(`SELECT * FROM scheduled_tasks WHERE id = $1`, [id]);
+  return res.rows[0] ?? null;
+}
+
+export async function createScheduledTask(
+  data: Omit<ScheduledTask, "id" | "completed_at" | "created_at">
+): Promise<ScheduledTask> {
+  await init();
+  const res = await pool.query(
+    `INSERT INTO scheduled_tasks (name, emoji, due_date, due_time, category, notes, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [data.name, data.emoji ?? null, data.due_date, data.due_time ?? null,
+     data.category ?? null, data.notes ?? null, localISOString()]
+  );
+  return (await getScheduledTask(res.rows[0].id))!;
+}
+
+export async function updateScheduledTask(
+  id: number,
+  data: Partial<Pick<ScheduledTask, "name" | "emoji" | "due_date" | "due_time" | "category" | "notes" | "completed_at">>
+): Promise<ScheduledTask | null> {
+  await init();
+  const allowed = ["name", "emoji", "due_date", "due_time", "category", "notes", "completed_at"];
+  const keys = Object.keys(data).filter((k) => allowed.includes(k));
+  if (keys.length === 0) return getScheduledTask(id);
+  const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
+  const values = keys.map((k) => (data as Record<string, unknown>)[k]);
+  await pool.query(`UPDATE scheduled_tasks SET ${setClause} WHERE id = $${keys.length + 1}`, [...values, id]);
+  return getScheduledTask(id);
+}
+
+export async function deleteScheduledTask(id: number): Promise<void> {
+  await init();
+  await pool.query(`DELETE FROM scheduled_tasks WHERE id = $1`, [id]);
+}
+
+export async function countTodayPendingTasks(todayStr: string): Promise<number> {
+  await init();
+  const res = await pool.query(
+    `SELECT COUNT(*) as cnt FROM scheduled_tasks WHERE due_date <= $1 AND completed_at IS NULL`,
+    [todayStr]
+  );
+  return parseInt(res.rows[0].cnt);
 }
