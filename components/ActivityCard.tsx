@@ -20,10 +20,12 @@ interface LevelInfo {
 interface CheckinResult {
   checkin: { id: number; xp_earned: number };
   xpEarned: number;
+  keystoneBonusXP?: number;
   newStreak: number;
   weeklyCount: number | null;
   levelInfo: LevelInfo;
   newlyUnlocked: { key: string; name: string; description: string; emoji: string }[];
+  graduation_available?: boolean;
 }
 
 interface UndoResult {
@@ -47,6 +49,10 @@ interface Activity {
   target_unit: string | null;
   weekly_target: number | null;
   weeklyCount: number | null;
+  micro_version: string | null;
+  anchor_context: string | null;
+  is_keystone: boolean;
+  graduation_count: number;
 }
 
 interface ActivityCardProps {
@@ -69,6 +75,9 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
   const [justDone, setJustDone] = useState(false);
   const [xpPops, setXpPops] = useState<{ id: number; text: string }[]>([]);
   const [milestoneFiring, setMilestoneFiring] = useState(false);
+  const [graduationOpen, setGraduationOpen] = useState(false);
+  const [newMinimum, setNewMinimum] = useState("");
+  const [savingGraduation, setSavingGraduation] = useState(false);
   // Numeric input state
   const [numValue, setNumValue] = useState<string>(
     activity.target_value ? String(activity.target_value) : ""
@@ -103,12 +112,13 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
     }
   }
 
-  async function handleCheckin() {
+  async function handleCheckin(level?: "minimum" | "beyond") {
     if (done || loading || weeklyDone) return;
     setLoading(true);
     try {
       const body: Record<string, unknown> = { activity_id: activity.id };
       if (hasTarget && numValue) body.actual_value = parseFloat(numValue);
+      if (level) body.checkin_level = level;
 
       const res = await fetch("/api/checkins", {
         method: "POST",
@@ -136,8 +146,32 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
       addXpPop(result.xpEarned, result.newStreak);
       setTimeout(() => setJustDone(false), 720);
       onCheckin(result);
+
+      if (result.graduation_available) {
+        setNewMinimum("");
+        setTimeout(() => setGraduationOpen(true), 800);
+      }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGraduation(evolve: boolean) {
+    if (!evolve) { setGraduationOpen(false); return; }
+    if (!newMinimum.trim()) return;
+    setSavingGraduation(true);
+    try {
+      await fetch(`/api/activities/${activity.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          micro_version: newMinimum.trim(),
+          graduation_count: activity.graduation_count + 1,
+        }),
+      });
+      setGraduationOpen(false);
+    } finally {
+      setSavingGraduation(false);
     }
   }
 
@@ -178,7 +212,16 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
           {activity.emoji || "⚡"}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="act-name">{activity.name}</div>
+          <div className="act-name" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            {activity.name}
+            {activity.is_keystone && (
+              <span style={{
+                fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
+                background: "rgba(239,165,39,.15)", border: "1px solid rgba(239,165,39,.4)",
+                color: "#efa527", borderRadius: "4px", padding: "1px 5px",
+              }}>⚓ ÂNCORA</span>
+            )}
+          </div>
           <div className="act-freq">
             <span className="freq-dot" />
             {isNxWeek
@@ -203,6 +246,11 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
               </span>
             )}
           </div>
+          {activity.anchor_context && (
+            <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", fontStyle: "italic" }}>
+              {activity.anchor_context}
+            </div>
+          )}
         </div>
 
         {/* Streak ou pips semanais */}
@@ -282,21 +330,46 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
 
       {/* Footer */}
       <div className="act-foot">
-        <button
-          className="btn-checkin"
-          onClick={handleCheckin}
-          disabled={isDone || loading || (isNxWeek && weeklyDone)}
-        >
-          {loading
-            ? "..."
-            : isDone
-            ? (isNxWeek ? `✓ SEMANA COMPLETA` : "✓ MISSÃO CONCLUÍDA")
-            : hasTarget && numValue
-            ? `REGISTRAR ${numValue} ${activity.target_unit ?? ""}`
-            : isNxWeek
-            ? `EXECUTAR ${weeklyCount + 1}/${weekTarget}`
-            : `COMPLETAR · +${xpEfetivo} XP`}
-        </button>
+        {activity.micro_version && !isDone ? (
+          <>
+            <button
+              className="btn-checkin"
+              onClick={() => handleCheckin("minimum")}
+              disabled={loading}
+              title={activity.micro_version}
+              style={{ flex: 1 }}
+            >
+              {loading ? "..." : `MÍNIMO · +${xpEfetivo} XP`}
+            </button>
+            <button
+              className="btn-checkin"
+              onClick={() => handleCheckin("beyond")}
+              disabled={loading}
+              title={activity.target_value
+                ? `${activity.name} — ${activity.target_value}${activity.target_unit ?? ""}`
+                : activity.name}
+              style={{ flex: 1, opacity: 0.9, background: `${activity.color}cc` }}
+            >
+              {loading ? "..." : `ALÉM · +${Math.round(xpEfetivo * 1.25)} XP`}
+            </button>
+          </>
+        ) : (
+          <button
+            className="btn-checkin"
+            onClick={() => handleCheckin()}
+            disabled={isDone || loading || (isNxWeek && weeklyDone)}
+          >
+            {loading
+              ? "..."
+              : isDone
+              ? (isNxWeek ? `✓ SEMANA COMPLETA` : "✓ MISSÃO CONCLUÍDA")
+              : hasTarget && numValue
+              ? `REGISTRAR ${numValue} ${activity.target_unit ?? ""}`
+              : isNxWeek
+              ? `EXECUTAR ${weeklyCount + 1}/${weekTarget}`
+              : `COMPLETAR · +${xpEfetivo} XP`}
+          </button>
+        )}
 
         {checkinId && (
           <button className="btn-undo" onClick={handleUndo} title="Desfazer último check-in">
@@ -304,6 +377,73 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
           </button>
         )}
       </div>
+
+      {/* Modal de graduação */}
+      {graduationOpen && (
+        <div
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)",
+            padding: "16px",
+          }}
+        >
+          <div style={{
+            background: "var(--bg-card)",
+            border: "1px solid rgba(255,215,0,.3)",
+            borderRadius: "16px",
+            padding: "24px",
+            maxWidth: "360px",
+            width: "100%",
+            boxShadow: "0 0 60px rgba(255,215,0,.1), 0 24px 48px rgba(0,0,0,.8)",
+          }}>
+            <div style={{ fontSize: "28px", textAlign: "center", marginBottom: "8px" }}>🎯</div>
+            <h3 style={{ color: "var(--text-primary)", fontWeight: 700, textAlign: "center", marginBottom: "4px" }}>
+              Hábito consolidado!
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "13px", textAlign: "center", marginBottom: "16px" }}>
+              <em>"{activity.micro_version}"</em> virou rotina. Quer evoluir seu mínimo?
+            </p>
+            <input
+              type="text"
+              value={newMinimum}
+              onChange={(e) => setNewMinimum(e.target.value)}
+              placeholder="Novo mínimo (ex: 10 min de corrida)"
+              style={{
+                width: "100%", padding: "10px 12px", borderRadius: "8px",
+                background: "var(--bg-surface)", border: "1px solid var(--border)",
+                color: "var(--text-primary)", fontSize: "14px", outline: "none",
+                marginBottom: "12px",
+              }}
+              autoFocus
+            />
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={() => handleGraduation(false)}
+                style={{
+                  flex: 1, padding: "10px", borderRadius: "8px",
+                  background: "var(--bg-surface)", border: "1px solid var(--border)",
+                  color: "var(--text-secondary)", fontWeight: 600, cursor: "pointer",
+                }}
+              >
+                Manter
+              </button>
+              <button
+                onClick={() => handleGraduation(true)}
+                disabled={!newMinimum.trim() || savingGraduation}
+                style={{
+                  flex: 1, padding: "10px", borderRadius: "8px",
+                  background: newMinimum.trim() ? "#efa527" : "rgba(239,165,39,.3)",
+                  border: "none", color: "white", fontWeight: 700,
+                  cursor: newMinimum.trim() ? "pointer" : "not-allowed",
+                }}
+              >
+                {savingGraduation ? "..." : "Evoluir →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

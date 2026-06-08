@@ -13,14 +13,15 @@ export type Raridade = keyof typeof RARIDADES;
 
 // ─── Trilhas ──────────────────────────────────────────────────────────────────
 export const TRILHAS = {
-  sequencia:  { nome: "Sequência",  icone: "🔥" },
-  dedicacao:  { nome: "Dedicação",  icone: "⚙️" },
-  ascensao:   { nome: "Ascensão",   icone: "⬆️" },
-  disciplina: { nome: "Disciplina", icone: "🎯" },
-  maestria:   { nome: "Maestria",   icone: "🔮" },
-  habitos:    { nome: "Hábitos",    icone: "⏰" },
-  lendas:     { nome: "Lendas",     icone: "⚠️" },
-  vocacao:    { nome: "Vocação",    icone: "🛡️" },
+  sequencia:   { nome: "Sequência",    icone: "🔥" },
+  dedicacao:   { nome: "Dedicação",    icone: "⚙️" },
+  ascensao:    { nome: "Ascensão",     icone: "⬆️" },
+  disciplina:  { nome: "Disciplina",   icone: "🎯" },
+  maestria:    { nome: "Maestria",     icone: "🔮" },
+  habitos:     { nome: "Hábitos",      icone: "⏰" },
+  lendas:      { nome: "Lendas",       icone: "⚠️" },
+  vocacao:     { nome: "Vocação",      icone: "🛡️" },
+  microhabito: { nome: "Micro-Hábito", icone: "🌱" },
 } as const;
 
 export type TrilhaKey = keyof typeof TRILHAS;
@@ -53,6 +54,11 @@ export interface TituloStats {
   recuperouRankPerdido: boolean;
   vezesRenasceu: number;
   diasNaMesmaClasse: number;
+  // Micro-hábitos
+  microMinimosTotal?: number;
+  totalGraduacoes?: number;
+  keystoneStreakDias?: number;
+  maxMicroStreak?: number;
 }
 
 export interface Titulo {
@@ -133,6 +139,26 @@ export const TITULOS: Titulo[] = [
   // 🛡️ VOCAÇÃO
   { id: "devoto", trilha: "vocacao", emoji: "🛡️", nome: "Devoto", raridade: "epico", desc: "Mantenha a mesma classe por 30 dias", progresso: (p, s) => cap(s.diasNaMesmaClasse, 30),
     equipavel: true, bonus: { tipo: "xp_global", mult: 0.05 } },
+
+  // 🌱 MICRO-HÁBITO
+  { id: "micro_primeiro_minimo", trilha: "microhabito", emoji: "🌱", nome: "Primeiro Passo Mínimo", raridade: "comum",
+    desc: "Fez o check-in no nível mínimo pela primeira vez",
+    progresso: (p, s) => cap(s.microMinimosTotal ?? 0, 1) },
+  { id: "micro_escalada_1", trilha: "microhabito", emoji: "🪜", nome: "Escalada I", raridade: "raro",
+    desc: "Evoluiu um hábito mínimo pela primeira vez",
+    progresso: (p, s) => cap(s.totalGraduacoes ?? 0, 1) },
+  { id: "micro_escalada_2", trilha: "microhabito", emoji: "🪜", nome: "Escalada II", raridade: "epico",
+    desc: "Evoluiu hábitos mínimos duas vezes",
+    progresso: (p, s) => cap(s.totalGraduacoes ?? 0, 2) },
+  { id: "micro_escalada_3", trilha: "microhabito", emoji: "🏔️", nome: "Escalada III", raridade: "lendario",
+    desc: "Evoluiu hábitos mínimos três vezes",
+    progresso: (p, s) => cap(s.totalGraduacoes ?? 0, 3) },
+  { id: "micro_ancora_30", trilha: "microhabito", emoji: "⚓", nome: "Âncora do Sistema", raridade: "epico",
+    desc: "30 dias consecutivos com hábito-âncora concluído",
+    progresso: (p, s) => cap(s.keystoneStreakDias ?? 0, 30) },
+  { id: "micro_imparavel", trilha: "microhabito", emoji: "🔒", nome: "Imparável", raridade: "mitico",
+    desc: "66 dias consecutivos no mínimo — automatização científica",
+    progresso: (p, s) => cap(s.maxMicroStreak ?? 0, 66) },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

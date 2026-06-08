@@ -27,6 +27,10 @@ interface Activity {
   target_unit: string | null;
   weekly_target: number | null;
   weeklyCount: number | null;
+  micro_version: string | null;
+  anchor_context: string | null;
+  is_keystone: boolean;
+  graduation_count: number;
 }
 
 interface LevelInfo {

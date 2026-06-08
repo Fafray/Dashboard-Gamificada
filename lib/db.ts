@@ -99,6 +99,12 @@ function init(): Promise<void> {
         extra JSONB
       )
     `);
+    // Micro-hábitos
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS micro_version TEXT`);
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS anchor_context TEXT`);
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS is_keystone BOOLEAN NOT NULL DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS graduation_count INTEGER NOT NULL DEFAULT 0`);
+    await pool.query(`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS checkin_level VARCHAR(10)`);
   })();
   return schemaReady;
 }
@@ -120,6 +126,10 @@ export interface Activity {
   target_unit: string | null;
   weekly_target: number | null;
   categoria: string | null;
+  micro_version: string | null;
+  anchor_context: string | null;
+  is_keystone: boolean;
+  graduation_count: number;
 }
 
 export interface Checkin {
@@ -128,6 +138,7 @@ export interface Checkin {
   checked_at: string;
   xp_earned: number;
   actual_value: number | null;
+  checkin_level: "minimum" | "beyond" | null;
 }
 
 export interface Achievement {
@@ -171,11 +182,12 @@ export async function createActivity(
 ): Promise<Activity> {
   await init();
   const res = await pool.query(
-    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, micro_version, anchor_context, is_keystone, graduation_count, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
     [data.name, data.frequency, data.xp_base, data.emoji, data.color,
      data.target_value ?? null, data.target_unit ?? null, data.weekly_target ?? null,
-     data.categoria ?? null, localISOString()]
+     data.categoria ?? null, data.micro_version ?? null, data.anchor_context ?? null,
+     data.is_keystone ?? false, data.graduation_count ?? 0, localISOString()]
   );
   return (await getActivity(res.rows[0].id))!;
 }
@@ -183,6 +195,7 @@ export async function createActivity(
 const ACTIVITY_ALLOWED_KEYS = new Set([
   "name", "frequency", "xp_base", "emoji", "color", "archived",
   "target_value", "target_unit", "weekly_target", "categoria",
+  "micro_version", "anchor_context", "is_keystone", "graduation_count",
 ]);
 
 export async function updateActivity(
@@ -251,14 +264,37 @@ export async function createCheckin(
   activityId: number,
   xpEarned: number,
   actualValue?: number | null,
-  at?: Date
+  at?: Date,
+  checkinLevel?: "minimum" | "beyond" | null
 ): Promise<Checkin> {
   await init();
   const res = await pool.query(
-    `INSERT INTO checkins (activity_id, checked_at, xp_earned, actual_value) VALUES ($1, $2, $3, $4) RETURNING *`,
-    [activityId, localISOString(at), xpEarned, actualValue ?? null]
+    `INSERT INTO checkins (activity_id, checked_at, xp_earned, actual_value, checkin_level) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+    [activityId, localISOString(at), xpEarned, actualValue ?? null, checkinLevel ?? null]
   );
   return res.rows[0];
+}
+
+export async function getXpSumTodayExcluding(excludeActivityId: number, todayStr: string): Promise<number> {
+  await init();
+  const res = await pool.query(
+    `SELECT COALESCE(SUM(xp_earned), 0) as total
+     FROM checkins
+     WHERE LEFT(checked_at, 10) = $1 AND activity_id != $2`,
+    [todayStr, excludeActivityId]
+  );
+  return parseInt(res.rows[0].total);
+}
+
+export async function getTotalGraduationCount(): Promise<number> {
+  await init();
+  const res = await pool.query(`SELECT COALESCE(SUM(graduation_count), 0) as total FROM activities WHERE archived = 0`);
+  return parseInt(res.rows[0].total);
+}
+
+export async function clearOtherKeystones(keepId: number): Promise<void> {
+  await init();
+  await pool.query(`UPDATE activities SET is_keystone = FALSE WHERE id != $1 AND is_keystone = TRUE`, [keepId]);
 }
 
 export async function getCheckinDatesForActivity(activityId: number): Promise<string[]> {

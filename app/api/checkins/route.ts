@@ -13,11 +13,14 @@ import {
   addXP,
   updateLevel,
   unlockAchievement,
+  hasAchievement,
   getCheckinsByDate,
   getUserStats,
   sincronizarNivelMaximo,
   setUltimaAtividade,
   registrarEvento,
+  getXpSumTodayExcluding,
+  getTotalGraduationCount,
 } from "@/lib/db";
 import {
   computeStreak,
@@ -39,9 +42,15 @@ export async function GET(req: Request) {
   return NextResponse.json([]);
 }
 
+function graduationThreshold(graduationCount: number): number {
+  if (graduationCount === 0) return 21;
+  if (graduationCount === 1) return 42;
+  return 66;
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
-  const { activity_id, actual_value } = body;
+  const { activity_id, actual_value, checkin_level } = body;
 
   if (!activity_id) {
     return NextResponse.json({ error: "activity_id is required" }, { status: 400 });
@@ -76,19 +85,20 @@ export async function POST(req: Request) {
     }
   }
 
-  // Streak → XP (multStreak + bônus de atributo + bônus de título)
-  const checkinDates = await getCheckinDatesForActivity(activity_id);
-  const streak       = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
-  const playerStats  = await getUserStats();
-  const atributos    = (playerStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
-  const tituloBonus  = bonusXpDoTitulo(playerStats.titulo_ativo_id, activity.categoria);
-  const xpBase       = calculateXP(activity.xp_base, streak.current);
-  const xpEarned     = Math.round(xpComBonus(xpBase, activity.categoria, atributos) * (1 + tituloBonus));
+  // Streak → XP (multStreak + bônus de atributo + bônus de título + level bonus)
+  const checkinDates  = await getCheckinDatesForActivity(activity_id);
+  const streak        = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
+  const playerStats   = await getUserStats();
+  const atributos     = (playerStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
+  const tituloBonus   = bonusXpDoTitulo(playerStats.titulo_ativo_id, activity.categoria);
+  const xpBase        = calculateXP(activity.xp_base, streak.current);
+  const levelMult     = checkin_level === "beyond" ? 1.25 : 1.0;
+  const xpEarned      = Math.round(xpComBonus(xpBase, activity.categoria, atributos) * (1 + tituloBonus) * levelMult);
 
   let checkin;
   let updatedStats;
   try {
-    checkin      = await createCheckin(activity_id, xpEarned, actual_value ?? null);
+    checkin      = await createCheckin(activity_id, xpEarned, actual_value ?? null, undefined, checkin_level ?? null);
     updatedStats = await addXP(xpEarned);
   } catch (err: unknown) {
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "23505") {
@@ -184,12 +194,43 @@ export async function POST(req: Request) {
     }
   }
 
+  // Micro-hábito: achievement primeiro mínimo
+  if (checkin_level === "minimum" && !(await hasAchievement("micro_primeiro_minimo"))) {
+    const r = await unlockAchievement("micro_primeiro_minimo");
+    if (r) {
+      const def = getTituloDef("micro_primeiro_minimo");
+      if (def) {
+        newlyUnlocked.push({ key: def.id, name: def.nome, description: def.desc, emoji: def.emoji });
+        await registrarEvento("titulo", `${def.emoji} Título desbloqueado: ${def.nome}`, { titulo_id: def.id });
+      }
+    }
+  }
+
+  // Keystone bonus: +10% do XP total das outras atividades do dia
+  let keystoneBonusXP = 0;
+  if (activity.is_keystone) {
+    const otherXpToday = await getXpSumTodayExcluding(activity_id, todayStr);
+    keystoneBonusXP = Math.round(otherXpToday * 0.10);
+    if (keystoneBonusXP > 0) {
+      updatedStats = await addXP(keystoneBonusXP);
+      await registrarEvento("keystone_bonus", `⚓ Bônus âncora: +${keystoneBonusXP} XP`, { bonus: keystoneBonusXP });
+    }
+  }
+
+  // Verificação de graduação
+  const graduation_available = !!(
+    activity.micro_version &&
+    newStreak.current === graduationThreshold(activity.graduation_count)
+  );
+
   return NextResponse.json({
     checkin,
-    xpEarned,
+    xpEarned: xpEarned + keystoneBonusXP,
+    keystoneBonusXP,
     newStreak: newStreak.current,
     weeklyCount,
     levelInfo,
     newlyUnlocked,
+    graduation_available,
   });
 }

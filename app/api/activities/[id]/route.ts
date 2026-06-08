@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActivity, updateActivity, archiveActivity } from "@/lib/db";
+import { getActivity, updateActivity, archiveActivity, clearOtherKeystones } from "@/lib/db";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,6 +19,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const updated = await updateActivity(activityId, body);
+  if (body.is_keystone === true && updated) {
+    await clearOtherKeystones(updated.id);
+  }
   return NextResponse.json(updated);
 }
 
