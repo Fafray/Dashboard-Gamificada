@@ -21,7 +21,16 @@ import {
   registrarEvento,
   getXpSumTodayExcluding,
   getTotalGraduationCount,
+  useVitShield,
+  vitShieldAvailable,
 } from "@/lib/db";
+import {
+  agiMorningBonus,
+  forStreakBoosted,
+  intStudyBonus,
+  getDailyBonusMissionId,
+  perBonusMissionBonus,
+} from "@/lib/perks";
 import {
   computeStreak,
   calculateXP,
@@ -85,15 +94,61 @@ export async function POST(req: Request) {
     }
   }
 
-  // Streak → XP (multStreak + bônus de atributo + bônus de título + level bonus)
-  const checkinDates  = await getCheckinDatesForActivity(activity_id);
-  const streak        = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
-  const playerStats   = await getUserStats();
-  const atributos     = (playerStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
-  const tituloBonus   = bonusXpDoTitulo(playerStats.titulo_ativo_id, activity.categoria);
-  const xpBase        = calculateXP(activity.xp_base, streak.current);
-  const levelMult     = checkin_level === "beyond" ? 1.25 : 1.0;
-  const xpEarned      = Math.round(xpComBonus(xpBase, activity.categoria, atributos) * (1 + tituloBonus) * levelMult);
+  // Streak → XP
+  const checkinDatesRaw = await getCheckinDatesForActivity(activity_id);
+  const playerStats     = await getUserStats();
+  const atributos       = (playerStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
+
+  // VIT perk: escudo de streak — injeta ontem nas datas se há lacuna de 1 dia
+  let shieldActivated = false;
+  let checkinDates = checkinDatesRaw;
+  if (activity.frequency === "daily" && vitShieldAvailable(playerStats, todayStr)) {
+    const { format: fmt, subDays, parseISO } = await import("date-fns");
+    const yesterday  = fmt(subDays(now, 1), "yyyy-MM-dd");
+    const dayBefore  = fmt(subDays(now, 2), "yyyy-MM-dd");
+    if (!checkinDates.includes(yesterday) && checkinDates.includes(dayBefore)) {
+      checkinDates = [...checkinDates, yesterday];
+      shieldActivated = true;
+      await useVitShield(todayStr);
+      await registrarEvento("vit_shield", "🛡️ Escudo de streak ativado (VIT)", {});
+    }
+  }
+
+  const streak      = computeStreak(checkinDates, activity.frequency, now, activity.weekly_target ?? undefined);
+  const tituloBonus = bonusXpDoTitulo(playerStats.titulo_ativo_id, activity.categoria);
+
+  // FOR perk: sobe tier de streak em treino
+  const effectiveStreak = forStreakBoosted(streak.current, atributos, activity.categoria);
+  const xpBase          = calculateXP(activity.xp_base, effectiveStreak);
+
+  // PER perk: missão bônus do dia
+  const allActivitiesForPer  = await getActivities(false);
+  const activeIds            = allActivitiesForPer.map((a) => a.id);
+  const bonusMissionId       = getDailyBonusMissionId(activeIds, now);
+  const perBonus             = perBonusMissionBonus(atributos, activity_id, bonusMissionId);
+
+  // AGI perk: bônus manhã
+  const agiBonus = agiMorningBonus(atributos, now.getHours());
+
+  // INT perk: bônus estudo
+  const intBonus = intStudyBonus(atributos, activity.categoria);
+
+  // Micro-hábito: bônus "além"
+  const levelMult = checkin_level === "beyond" ? 1.25 : 1.0;
+
+  const xpEarned = Math.round(
+    xpComBonus(xpBase, activity.categoria, atributos)
+    * (1 + tituloBonus)
+    * (1 + agiBonus + intBonus + perBonus)
+    * levelMult
+  );
+
+  const perksAtivos: string[] = [];
+  if (shieldActivated)  perksAtivos.push("🛡️ Escudo (VIT)");
+  if (effectiveStreak !== streak.current) perksAtivos.push("💪 Treino (FOR)");
+  if (agiBonus > 0)     perksAtivos.push("☀️ Manhã (AGI)");
+  if (intBonus > 0)     perksAtivos.push("📚 Estudo (INT)");
+  if (perBonus > 0)     perksAtivos.push("🎯 Missão (PER)");
 
   let checkin;
   let updatedStats;
@@ -232,5 +287,7 @@ export async function POST(req: Request) {
     levelInfo,
     newlyUnlocked,
     graduation_available,
+    perksAtivos,
+    shieldActivated,
   });
 }

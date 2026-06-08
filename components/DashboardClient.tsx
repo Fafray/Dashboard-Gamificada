@@ -69,6 +69,7 @@ interface DashboardClientProps {
   atributos: Atributos;
   pontosDisponiveis: number;
   classeInfo: ClasseInfo;
+  bonusMissionId: number | null;
 }
 
 export function DashboardClient({
@@ -79,6 +80,7 @@ export function DashboardClient({
   atributos,
   pontosDisponiveis,
   classeInfo: initialClasse,
+  bonusMissionId,
 }: DashboardClientProps) {
   const [classeInfo, setClasseInfo] = useState(initialClasse);
   const [levelInfo, setLevelInfo] = useState(initialLevelInfo);
@@ -283,6 +285,7 @@ export function DashboardClient({
                       key={activity.id}
                       activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
                       atributos={atributos}
+                      isBonusMission={bonusMissionId !== null && activity.id === bonusMissionId}
                       onCheckin={(result) => handleCheckin(activity.id, result)}
                       onUndo={(result) => handleUndo(activity.id, result)}
                     />

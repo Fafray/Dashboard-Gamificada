@@ -58,6 +58,7 @@ interface Activity {
 interface ActivityCardProps {
   activity: Activity;
   atributos?: Atributos;
+  isBonusMission?: boolean;
   onCheckin: (result: CheckinResult) => void;
   onUndo: (result: UndoResult) => void;
 }
@@ -66,7 +67,7 @@ const FREQ_LABEL: Record<string, string> = {
   daily: "DIÁRIA", weekly: "SEMANAL", free: "LIVRE", nx_week: "/ SEM.",
 };
 
-export function ActivityCard({ activity, atributos, onCheckin, onUndo }: ActivityCardProps) {
+export function ActivityCard({ activity, atributos, isBonusMission, onCheckin, onUndo }: ActivityCardProps) {
   const [done, setDone] = useState(activity.doneToday);
   const [checkinId, setCheckinId] = useState<number | null>(activity.todayCheckinId);
   const [streak, setStreak] = useState(activity.streak.current);
@@ -199,6 +200,7 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
     <div
       ref={cardRef}
       className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}`}
+      style={isBonusMission && !isDone ? { border: "1px solid rgba(239,165,39,.5)", boxShadow: "0 0 16px rgba(239,165,39,.08)" } : undefined}
     >
       <div className="pulse-ring" />
 
@@ -220,6 +222,13 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
                 background: "rgba(239,165,39,.15)", border: "1px solid rgba(239,165,39,.4)",
                 color: "#efa527", borderRadius: "4px", padding: "1px 5px",
               }}>⚓ ÂNCORA</span>
+            )}
+            {isBonusMission && !isDone && (
+              <span style={{
+                fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
+                background: "rgba(239,165,39,.12)", border: "1px solid rgba(239,165,39,.35)",
+                color: "#efa527", borderRadius: "4px", padding: "1px 5px",
+              }}>🎯 MISSÃO</span>
             )}
           </div>
           <div className="act-freq">
@@ -337,7 +346,12 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
               onClick={() => handleCheckin("minimum")}
               disabled={loading}
               title={activity.micro_version}
-              style={{ flex: 1 }}
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: `1px solid ${activity.color}55`,
+                color: "var(--text-secondary)",
+              }}
             >
               {loading ? "..." : `MÍNIMO · +${xpEfetivo} XP`}
             </button>
@@ -348,7 +362,7 @@ export function ActivityCard({ activity, atributos, onCheckin, onUndo }: Activit
               title={activity.target_value
                 ? `${activity.name} — ${activity.target_value}${activity.target_unit ?? ""}`
                 : activity.name}
-              style={{ flex: 1, opacity: 0.9, background: `${activity.color}cc` }}
+              style={{ flex: 1, background: activity.color, color: "white" }}
             >
               {loading ? "..." : `ALÉM · +${Math.round(xpEfetivo * 1.25)} XP`}
             </button>

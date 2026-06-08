@@ -99,6 +99,8 @@ function init(): Promise<void> {
         extra JSONB
       )
     `);
+    // Perks passivos (VIT shield)
+    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS vit_shield_used_at TEXT`);
     // Micro-hábitos
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS micro_version TEXT`);
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS anchor_context TEXT`);
@@ -158,6 +160,7 @@ export interface UserStats {
   titulo_ativo_id: string | null;
   ultima_atividade: string | null;
   ultimo_fechamento: string | null;
+  vit_shield_used_at: string | null;
 }
 
 // ─── Activities ───────────────────────────────────────────────────────────────
@@ -295,6 +298,19 @@ export async function getTotalGraduationCount(): Promise<number> {
 export async function clearOtherKeystones(keepId: number): Promise<void> {
   await init();
   await pool.query(`UPDATE activities SET is_keystone = FALSE WHERE id != $1 AND is_keystone = TRUE`, [keepId]);
+}
+
+export async function useVitShield(dateStr: string): Promise<void> {
+  await init();
+  await pool.query(`UPDATE user_stats SET vit_shield_used_at = $1 WHERE id = 1`, [dateStr]);
+}
+
+export function vitShieldAvailable(stats: UserStats, todayStr: string): boolean {
+  if (!stats.vit_shield_used_at) return true;
+  const used = new Date(stats.vit_shield_used_at);
+  const today = new Date(todayStr);
+  const diffDays = Math.floor((today.getTime() - used.getTime()) / 86400000);
+  return diffDays >= 30;
 }
 
 export async function getCheckinDatesForActivity(activityId: number): Promise<string[]> {

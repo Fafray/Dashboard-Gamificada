@@ -17,6 +17,7 @@ import {
 import { getLevelInfo, computeStreak } from "@/lib/gamification";
 import { derivarClasse } from "@/lib/attributes";
 import type { Atributos } from "@/lib/attributes";
+import { getDailyBonusMissionId } from "@/lib/perks";
 import { DashboardClient } from "@/components/DashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -92,6 +93,10 @@ export default async function DashboardPage() {
     })
   );
 
+  const bonusMissionId = atributos.PER >= 5
+    ? getDailyBonusMissionId(activitiesWithStatus.map((a) => a.id), now)
+    : null;
+
   const dateLabel = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
   const capitalizedDate = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
@@ -104,6 +109,7 @@ export default async function DashboardPage() {
       atributos={atributos}
       pontosDisponiveis={pontosDisponiveis}
       classeInfo={classeInfo}
+      bonusMissionId={bonusMissionId}
     />
   );
 }
