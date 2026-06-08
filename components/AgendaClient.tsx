@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { format, isToday, isTomorrow, isPast, isThisWeek, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -22,12 +22,23 @@ interface AgendaClientProps {
   initialTasks: ScheduledTask[];
 }
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
-  pessoal:    { label: "Pessoal",    color: "#7c3aed" },
-  saude:      { label: "Saúde",      color: "#10b981" },
-  trabalho:   { label: "Trabalho",   color: "#3b82f6" },
-  financeiro: { label: "Financeiro", color: "#f59e0b" },
-};
+// Cores por categoria (texto livre — heurística por palavras-chave)
+function getCategoryColor(cat: string | null): string {
+  if (!cat) return "#94a3b8";
+  const c = cat.toLowerCase();
+  if (c.includes("saúde") || c.includes("saude") || c.includes("médico") || c.includes("medico") || c.includes("fisio")) return "#10b981";
+  if (c.includes("trabalho") || c.includes("reunião") || c.includes("reuniao")) return "#3b82f6";
+  if (c.includes("financeiro") || c.includes("finance") || c.includes("banco") || c.includes("conta")) return "#f59e0b";
+  if (c.includes("veículo") || c.includes("veiculo") || c.includes("carro") || c.includes("moto")) return "#f97316";
+  if (c.includes("casa") || c.includes("família") || c.includes("familia")) return "#a855f7";
+  if (c.includes("lazer") || c.includes("viagem") || c.includes("férias") || c.includes("ferias")) return "#06b6d4";
+  return "#7c3aed";
+}
+
+const CATEGORY_SUGGESTIONS = [
+  "Pessoal", "Saúde", "Trabalho", "Financeiro",
+  "Veículo", "Casa", "Família", "Lazer", "Médico", "Viagem",
+];
 
 const URGENCY_CONFIG: Record<Urgency, { label: string; color: string; dimColor: string }> = {
   overdue:  { label: "Atrasadas",     color: "#ef4444", dimColor: "rgba(239,68,68,.1)" },
@@ -36,6 +47,17 @@ const URGENCY_CONFIG: Record<Urgency, { label: string; color: string; dimColor: 
   week:     { label: "Esta Semana",   color: "#3b82f6", dimColor: "rgba(59,130,246,.1)" },
   later:    { label: "Mais Adiante",  color: "#94a3b8", dimColor: "rgba(148,163,184,.06)" },
 };
+
+const EMOJI_GROUPS = [
+  { label: "Agenda",    emojis: ["📌", "📋", "✅", "🗓️", "⏰", "📞", "📩", "🔔", "📝", "🎯"] },
+  { label: "Transporte",emojis: ["🚗", "🚕", "✈️", "🚌", "🚂", "⛽", "🔧", "🛞", "🛻", "🏎️"] },
+  { label: "Casa",      emojis: ["🏠", "🔑", "🛒", "🧹", "🛠️", "💡", "📦", "🪑", "🛋️", "🌱"] },
+  { label: "Saúde",     emojis: ["🏥", "💊", "🩺", "🦷", "👓", "🧬", "💉", "🩻", "❤️", "🧘"] },
+  { label: "Trabalho",  emojis: ["💼", "📊", "💻", "🖨️", "📈", "🤝", "🏢", "📜", "🔏", "💡"] },
+  { label: "Finanças",  emojis: ["💰", "🏦", "💳", "📑", "🧾", "💵", "📤", "🪙", "📉", "🤑"] },
+  { label: "Família",   emojis: ["👨‍👩‍👧", "🎂", "🎁", "🥳", "❤️", "🤗", "👶", "🐶", "🐱", "🌺"] },
+  { label: "Lazer",     emojis: ["🎬", "🎮", "🏖️", "✈️", "🍕", "🎵", "📷", "⛰️", "🎪", "🃏"] },
+];
 
 function getUrgency(task: ScheduledTask): Urgency {
   const d = parseISO(task.due_date);
@@ -109,7 +131,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
         emoji: form.emoji.trim() || null,
         due_date: form.due_date,
         due_time: form.due_time || null,
-        category: form.category || null,
+        category: form.category.trim() || null,
         notes: form.notes.trim() || null,
       };
 
@@ -283,27 +305,28 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
           }}
           onClick={(e) => { if (e.target === e.currentTarget) closeForm(); }}
         >
-          <div className="card" style={{ width: "100%", maxWidth: "480px", padding: "28px", position: "relative" }}>
+          <div className="card" style={{ width: "100%", maxWidth: "480px", padding: "28px", position: "relative", maxHeight: "90vh", overflowY: "auto" }}>
             <p className="eyebrow" style={{ marginBottom: "20px" }}>
               {editingTask ? "[ EDITAR TAREFA ]" : "[ NOVA TAREFA ]"}
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-              {/* Nome + Emoji */}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <input
-                  value={form.emoji}
-                  onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))}
-                  placeholder="📌"
-                  style={{ ...inputStyle, width: "60px", textAlign: "center", fontSize: "20px" }}
-                />
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Nome da tarefa"
-                  style={{ ...inputStyle, flex: 1 }}
-                  autoFocus
-                />
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Emoji picker + Nome */}
+              <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                <div style={{ flexShrink: 0 }}>
+                  <label style={labelStyle}>Emoji</label>
+                  <EmojiPicker value={form.emoji} onChange={(e) => setForm((f) => ({ ...f, emoji: e })) } />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Nome *</label>
+                  <input
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Ex: Levar carro na revisão"
+                    style={inputStyle}
+                    autoFocus
+                  />
+                </div>
               </div>
 
               {/* Data + Hora */}
@@ -328,32 +351,19 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                 </div>
               </div>
 
-              {/* Categoria */}
+              {/* Categoria — texto livre com sugestões */}
               <div>
                 <label style={labelStyle}>Categoria</label>
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                  {[{ k: "", l: "Nenhuma" }, ...Object.entries(CATEGORY_CONFIG).map(([k, v]) => ({ k, l: v.label }))].map(({ k, l }) => (
-                    <button
-                      key={k}
-                      onClick={() => setForm((f) => ({ ...f, category: k }))}
-                      style={{
-                        padding: "5px 12px", borderRadius: "7px", fontSize: "12px", fontWeight: 500,
-                        cursor: "pointer", border: "1px solid",
-                        borderColor: form.category === k
-                          ? (k ? CATEGORY_CONFIG[k].color : "rgba(0,184,232,.45)")
-                          : "rgba(120,150,180,.2)",
-                        background: form.category === k
-                          ? (k ? `${CATEGORY_CONFIG[k].color}22` : "rgba(0,184,232,.1)")
-                          : "transparent",
-                        color: form.category === k
-                          ? (k ? CATEGORY_CONFIG[k].color : "var(--accent-teal)")
-                          : "var(--text-muted)",
-                      }}
-                    >
-                      {l}
-                    </button>
-                  ))}
-                </div>
+                <input
+                  list="cat-suggestions"
+                  value={form.category}
+                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                  placeholder="Ex: Veículo, Médico, Casa..."
+                  style={inputStyle}
+                />
+                <datalist id="cat-suggestions">
+                  {CATEGORY_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
+                </datalist>
               </div>
 
               {/* Notas */}
@@ -389,6 +399,8 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
   );
 }
 
+// ─── Task Card ────────────────────────────────────────────────────────────────
+
 interface TaskCardProps {
   task: ScheduledTask;
   urgency: Urgency;
@@ -401,7 +413,7 @@ interface TaskCardProps {
 
 function TaskCard({ task, urgency, done, completing, onComplete, onEdit, onDelete }: TaskCardProps) {
   const cfg = URGENCY_CONFIG[urgency];
-  const catCfg = task.category ? CATEGORY_CONFIG[task.category] : null;
+  const catColor = getCategoryColor(task.category);
 
   return (
     <div
@@ -442,26 +454,24 @@ function TaskCard({ task, urgency, done, completing, onComplete, onEdit, onDelet
           }}>
             {task.name}
           </span>
-          {catCfg && (
+          {task.category && (
             <span style={{
               fontSize: "10px", padding: "2px 7px", borderRadius: "5px", fontWeight: 600,
-              background: `${catCfg.color}22`, color: catCfg.color, letterSpacing: ".07em",
+              background: `${catColor}22`, color: catColor, letterSpacing: ".07em",
               textTransform: "uppercase", fontFamily: "var(--font-space-grotesk), sans-serif",
             }}>
-              {catCfg.label}
+              {task.category}
             </span>
           )}
         </div>
         <div style={{ fontSize: "11.5px", color: done ? "var(--text-muted)" : cfg.color, marginTop: "4px", fontWeight: 500 }}>
           📅 {formatDueDate(task)}
           {done && task.completed_at && (
-            <span style={{ color: "#10b981", marginLeft: "10px" }}>
-              ✓ concluída
-            </span>
+            <span style={{ color: "#10b981", marginLeft: "10px" }}>✓ concluída</span>
           )}
         </div>
         {task.notes && (
-          <div style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: "4px", fontStyle: "italic" }}>
+          <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "5px", lineHeight: 1.45 }}>
             {task.notes}
           </div>
         )}
@@ -470,17 +480,115 @@ function TaskCard({ task, urgency, done, completing, onComplete, onEdit, onDelet
       {/* Actions */}
       <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
         {!done && (
-          <button onClick={onEdit} style={iconBtnStyle} title="Editar">
-            ✏️
-          </button>
+          <button onClick={onEdit} style={iconBtnStyle} title="Editar">✏️</button>
         )}
-        <button onClick={onDelete} style={{ ...iconBtnStyle, opacity: 0.6 }} title="Excluir">
-          ✕
-        </button>
+        <button onClick={onDelete} style={{ ...iconBtnStyle, opacity: 0.6 }} title="Excluir">✕</button>
       </div>
     </div>
   );
 }
+
+// ─── Emoji Picker ─────────────────────────────────────────────────────────────
+
+function EmojiPicker({ value, onChange }: { value: string; onChange: (e: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [tab, setTab]   = useState(0);
+  const ref             = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function close(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "52px", height: "42px", borderRadius: "8px", fontSize: "22px",
+          textAlign: "center", cursor: "pointer",
+          background: "var(--bg-card)",
+          border: `1px solid ${open ? "rgba(0,184,232,.5)" : "var(--border)"}`,
+          color: "var(--text-primary)", display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {value || "➕"}
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", zIndex: 200, top: "calc(100% + 6px)", left: 0,
+          width: "260px", background: "var(--bg-card)", border: "1px solid var(--border-light)",
+          borderRadius: "12px", boxShadow: "0 12px 40px rgba(0,0,0,.6)", overflow: "hidden",
+        }}>
+          {/* Tabs */}
+          <div style={{ display: "flex", borderBottom: "1px solid var(--border)", overflowX: "auto" }}>
+            {EMOJI_GROUPS.map((g, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setTab(i)}
+                style={{
+                  flex: "1 0 auto", padding: "7px 5px", fontSize: "9.5px",
+                  fontWeight: tab === i ? 700 : 400,
+                  color: tab === i ? "var(--accent-teal)" : "var(--text-muted)",
+                  background: tab === i ? "rgba(0,184,232,.08)" : "transparent",
+                  border: "none", borderBottom: tab === i ? "2px solid var(--accent-teal)" : "2px solid transparent",
+                  cursor: "pointer", letterSpacing: ".04em", whiteSpace: "nowrap",
+                }}
+              >
+                {g.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "4px", padding: "10px" }}>
+            {EMOJI_GROUPS[tab].emojis.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => { onChange(e); setOpen(false); }}
+                style={{
+                  fontSize: "22px", padding: "6px", borderRadius: "8px", border: "none",
+                  background: value === e ? "rgba(0,184,232,.15)" : "transparent",
+                  cursor: "pointer", transition: "background .12s",
+                }}
+                onMouseEnter={(ev) => (ev.currentTarget.style.background = "rgba(255,255,255,.07)")}
+                onMouseLeave={(ev) => (ev.currentTarget.style.background = value === e ? "rgba(0,184,232,.15)" : "transparent")}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+
+          {/* Input manual */}
+          <div style={{ padding: "0 10px 10px", borderTop: "1px solid var(--border)" }}>
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Ou cole qualquer emoji"
+              maxLength={2}
+              style={{
+                width: "100%", padding: "7px 10px", marginTop: "8px",
+                background: "var(--bg-surface)", border: "1px solid var(--border)",
+                borderRadius: "8px", color: "var(--text-primary)", fontSize: "14px", outline: "none",
+                boxSizing: "border-box", fontFamily: "inherit",
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
   width: "100%", padding: "9px 12px", borderRadius: "8px", fontSize: "13px",
