@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActivity, updateActivity, archiveActivity, clearOtherKeystones } from "@/lib/db";
+import { getActivity, updateActivity, archiveActivity, deleteActivityPermanently, clearOtherKeystones } from "@/lib/db";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -25,11 +25,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const activityId = parseInt(id);
   if (isNaN(activityId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
 
-  await archiveActivity(activityId);
+  const url = new URL(req.url);
+  if (url.searchParams.get("permanent") === "true") {
+    await deleteActivityPermanently(activityId);
+  } else {
+    await archiveActivity(activityId);
+  }
   return NextResponse.json({ success: true });
 }

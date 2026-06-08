@@ -233,6 +233,12 @@ export async function archiveActivity(id: number): Promise<void> {
   await pool.query(`UPDATE activities SET archived = 1 WHERE id = $1`, [id]);
 }
 
+export async function deleteActivityPermanently(id: number): Promise<void> {
+  await init();
+  await pool.query(`DELETE FROM checkins WHERE activity_id = $1`, [id]);
+  await pool.query(`DELETE FROM activities WHERE id = $1`, [id]);
+}
+
 // ─── Checkins ─────────────────────────────────────────────────────────────────
 
 export async function getCheckinsByDate(date: string): Promise<Checkin[]> {

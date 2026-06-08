@@ -102,6 +102,12 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
     router.refresh();
   }
 
+  async function handleDelete(id: number) {
+    await fetch(`/api/activities/${id}?permanent=true`, { method: "DELETE" });
+    await refresh();
+    router.refresh();
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
       {/* Modal */}
@@ -216,6 +222,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
                   activity={enrich(a)}
                   archived
                   onUnarchive={() => handleUnarchive(a.id)}
+                  onDelete={() => handleDelete(a.id)}
                 />
               ))}
             </div>
@@ -239,10 +246,12 @@ interface ActivityRowProps {
   onEdit?: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
+  onDelete?: () => void;
 }
 
-function ActivityRow({ activity: a, archived, onEdit, onArchive, onUnarchive }: ActivityRowProps) {
+function ActivityRow({ activity: a, archived, onEdit, onArchive, onUnarchive, onDelete }: ActivityRowProps) {
   const [confirming, setConfirming] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function requestArchive() {
     if (confirming) {
@@ -251,6 +260,16 @@ function ActivityRow({ activity: a, archived, onEdit, onArchive, onUnarchive }: 
     } else {
       setConfirming(true);
       setTimeout(() => setConfirming(false), 3000);
+    }
+  }
+
+  function requestDelete() {
+    if (confirmingDelete) {
+      onDelete?.();
+      setConfirmingDelete(false);
+    } else {
+      setConfirmingDelete(true);
+      setTimeout(() => setConfirmingDelete(false), 3000);
     }
   }
 
@@ -310,17 +329,31 @@ function ActivityRow({ activity: a, archived, onEdit, onArchive, onUnarchive }: 
       {/* Actions */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {archived ? (
-          <button
-            onClick={onUnarchive}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium"
-            style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              color: "var(--text-secondary)",
-            }}
-          >
-            Desarquivar
-          </button>
+          <>
+            <button
+              onClick={onUnarchive}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium"
+              style={{
+                background: "var(--bg-surface)",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              Desarquivar
+            </button>
+            <button
+              onClick={requestDelete}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+              style={
+                confirmingDelete
+                  ? { background: "#ef444420", border: "1px solid #ef4444", color: "#ef4444" }
+                  : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }
+              }
+              title={confirmingDelete ? "Clique novamente para excluir permanentemente" : "Excluir permanentemente"}
+            >
+              {confirmingDelete ? "Confirmar?" : "Excluir"}
+            </button>
+          </>
         ) : (
           <>
             <button
