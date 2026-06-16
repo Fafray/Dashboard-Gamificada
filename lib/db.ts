@@ -855,7 +855,7 @@ export async function getAgendaTasksForNotification(nowISO: string): Promise<Sch
        AND notified_at IS NULL
        AND (
          CONCAT(COALESCE(notify_date, due_date), 'T', COALESCE(notify_time, due_time), ':00')::timestamp
-         BETWEEN ($1::timestamp - INTERVAL '16 minutes') AND $1::timestamp
+         BETWEEN ($1::timestamp - INTERVAL '2 minutes') AND $1::timestamp
        )`,
     [nowISO]
   );
