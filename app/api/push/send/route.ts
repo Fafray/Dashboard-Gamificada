@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
-import { getPushSubscriptions, getActivitiesWithNotifyAt, getAgendaTasksForNotification } from "@/lib/db";
+import { getPushSubscriptions, getActivitiesWithNotifyAt, getAgendaTasksForNotification, markAgendaTaskNotified } from "@/lib/db";
+
+function localISO(offsetHours: number): string {
+  const now = new Date();
+  const localMs = now.getTime() + offsetHours * 3600000;
+  return new Date(localMs).toISOString().replace("Z", "").replace("T", "T");
+}
 
 export async function POST(req: Request) {
   webpush.setVapidDetails(
@@ -8,10 +14,9 @@ export async function POST(req: Request) {
     process.env.VAPID_PUBLIC_KEY || "",
     process.env.VAPID_PRIVATE_KEY || ""
   );
-  // Aceita chamada manual com payload específico OU disparo automático por hora
+
   const body = await req.json().catch(() => ({}));
 
-  // Verificação de segurança: cron secret
   const secret = req.headers.get("x-cron-secret");
   if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
@@ -23,25 +28,26 @@ export async function POST(req: Request) {
   }
 
   let notifications: { title: string; body: string; url: string; tag: string }[] = [];
+  let agendaTaskIds: number[] = [];
 
   if (body.title) {
-    // Chamada manual com payload explícito
     notifications = [{ title: body.title, body: body.body || "", url: body.url || "/", tag: body.tag || "manual" }];
   } else {
-    // Disparo automático: verifica atividades com notify_at = hora atual
-    const now = new Date();
-    // Ajuste para fuso horário local (Railway usa UTC — user pode definir TZ)
     const localOffset = parseInt(process.env.TZ_OFFSET_HOURS || "-3");
+    const now = new Date();
     const localHour = (now.getUTCHours() + localOffset + 24) % 24;
     const localMin = now.getUTCMinutes();
     const timeStr = `${String(localHour).padStart(2, "0")}:${String(localMin).padStart(2, "0")}`;
 
-    const localDateStr = `${String(now.getUTCFullYear())}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+    // ISO local para a query de janela de tempo da agenda
+    const nowLocalISO = localISO(localOffset);
 
     const [activities, agendaTasks] = await Promise.all([
       getActivitiesWithNotifyAt(timeStr),
-      getAgendaTasksForNotification(timeStr, localDateStr),
+      getAgendaTasksForNotification(nowLocalISO),
     ]);
+
+    agendaTaskIds = agendaTasks.map((t) => t.id);
 
     notifications = [
       ...activities.map((a) => ({
@@ -78,6 +84,11 @@ export async function POST(req: Request) {
         failed.push(sub.endpoint);
       }
     }
+  }
+
+  // Marca tarefas da agenda como notificadas para não reenviar
+  if (sent > 0) {
+    await Promise.all(agendaTaskIds.map((id) => markAgendaTaskNotified(id)));
   }
 
   return NextResponse.json({ sent, failed: failed.length });

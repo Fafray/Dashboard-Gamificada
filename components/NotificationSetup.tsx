@@ -29,6 +29,7 @@ export function NotificationSetup() {
   const [status, setStatus] = useState<"unknown" | "unsupported" | "denied" | "granted" | "loading">("unknown");
   const [error, setError] = useState<string | null>(null);
   const [vapidKey, setVapidKey] = useState<string>("");
+  const [testing, setTesting] = useState(false);
   const [showIOSHint, setShowIOSHint] = useState(false);
 
   useEffect(() => {
@@ -97,6 +98,24 @@ export function NotificationSetup() {
     }
   }
 
+  async function sendTest() {
+    setTesting(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "⚡ Daily Quest", body: "Notificações funcionando!", url: "/", tag: "test" }),
+      });
+      const data = await res.json();
+      if (data.sent === 0) setError(`Nenhuma notificação enviada. ${data.reason ?? "Verifique as assinaturas."}`);
+    } catch {
+      setError("Erro ao enviar teste");
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function disable() {
     setError(null);
     setStatus("loading");
@@ -159,16 +178,30 @@ export function NotificationSetup() {
         {status === "denied" ? (
           <span style={{ fontSize: "11px", color: "#ef4444" }}>Bloqueado no browser</span>
         ) : status === "granted" ? (
-          <button
-            onClick={disable}
-            style={{
-              padding: "6px 12px", borderRadius: "8px", fontSize: "12px",
-              background: "var(--bg-surface)", border: "1px solid var(--border)",
-              color: "var(--text-muted)", cursor: "pointer", fontWeight: 600,
-            }}
-          >
-            Desativar
-          </button>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button
+              onClick={sendTest}
+              disabled={testing}
+              style={{
+                padding: "6px 12px", borderRadius: "8px", fontSize: "12px",
+                background: "rgba(0,240,192,.12)", border: "1px solid rgba(0,240,192,.3)",
+                color: "var(--accent-teal)", cursor: "pointer", fontWeight: 600,
+                opacity: testing ? 0.7 : 1,
+              }}
+            >
+              {testing ? "..." : "Testar"}
+            </button>
+            <button
+              onClick={disable}
+              style={{
+                padding: "6px 12px", borderRadius: "8px", fontSize: "12px",
+                background: "var(--bg-surface)", border: "1px solid var(--border)",
+                color: "var(--text-muted)", cursor: "pointer", fontWeight: 600,
+              }}
+            >
+              Desativar
+            </button>
+          </div>
         ) : (
           <button
             onClick={enable}

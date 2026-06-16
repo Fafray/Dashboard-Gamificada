@@ -128,6 +128,7 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_enabled BOOLEAN DEFAULT FALSE`);
     await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_date TEXT`);
     await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_time TEXT`);
+    await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notified_at TEXT`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (
         id         SERIAL PRIMARY KEY,
@@ -793,8 +794,9 @@ export interface ScheduledTask {
   category: string | null;
   notes: string | null;
   notify_enabled: boolean;
-  notify_date: string | null; // yyyy-MM-dd — quando disparar a notificação
-  notify_time: string | null; // HH:mm
+  notify_date: string | null;
+  notify_time: string | null;
+  notified_at: string | null;
   completed_at: string | null;
   created_at: string;
 }
@@ -842,16 +844,27 @@ export async function updateScheduledTask(
   return getScheduledTask(id);
 }
 
-export async function getAgendaTasksForNotification(timeStr: string, todayStr: string): Promise<ScheduledTask[]> {
+export async function getAgendaTasksForNotification(nowISO: string): Promise<ScheduledTask[]> {
   await init();
+  // Busca tarefas com notify_enabled cujo horário (notify_date+notify_time ou due_date+due_time)
+  // esteja dentro dos últimos 16 minutos e ainda não foram notificadas
   const res = await pool.query(
     `SELECT * FROM scheduled_tasks
-     WHERE notify_enabled = TRUE AND completed_at IS NULL
-       AND COALESCE(notify_time, due_time) = $1
-       AND COALESCE(notify_date, due_date) = $2`,
-    [timeStr, todayStr]
+     WHERE notify_enabled = TRUE
+       AND completed_at IS NULL
+       AND notified_at IS NULL
+       AND (
+         CONCAT(COALESCE(notify_date, due_date), 'T', COALESCE(notify_time, due_time), ':00')::timestamp
+         BETWEEN ($1::timestamp - INTERVAL '16 minutes') AND $1::timestamp
+       )`,
+    [nowISO]
   );
   return res.rows;
+}
+
+export async function markAgendaTaskNotified(id: number): Promise<void> {
+  await init();
+  await pool.query(`UPDATE scheduled_tasks SET notified_at = $1 WHERE id = $2`, [localISOString(), id]);
 }
 
 export async function deleteScheduledTask(id: number): Promise<void> {
