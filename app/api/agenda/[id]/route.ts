@@ -28,6 +28,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     notify_enabled: typeof notify_enabled === "boolean" ? notify_enabled : undefined,
     notify_date: notify_date !== undefined ? (notify_date || null) : undefined,
     notify_time: notify_time !== undefined ? (notify_time || null) : undefined,
+    // Reseta notified_at sempre que notify fields são alterados, para reenviar no novo horário
+    notified_at: null,
   });
   return NextResponse.json({ task });
 }
