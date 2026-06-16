@@ -2,13 +2,12 @@ import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { getPushSubscriptions, getActivitiesWithNotifyAt } from "@/lib/db";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || "mailto:daily-quest@app.com",
-  process.env.VAPID_PUBLIC_KEY || "",
-  process.env.VAPID_PRIVATE_KEY || ""
-);
-
 export async function POST(req: Request) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || "mailto:daily-quest@app.com",
+    process.env.VAPID_PUBLIC_KEY || "",
+    process.env.VAPID_PRIVATE_KEY || ""
+  );
   // Aceita chamada manual com payload específico OU disparo automático por hora
   const body = await req.json().catch(() => ({}));
 
