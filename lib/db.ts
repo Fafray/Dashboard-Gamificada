@@ -817,7 +817,7 @@ export async function getScheduledTask(id: number): Promise<ScheduledTask | null
 }
 
 export async function createScheduledTask(
-  data: Omit<ScheduledTask, "id" | "completed_at" | "created_at">
+  data: Omit<ScheduledTask, "id" | "completed_at" | "created_at" | "notified_at">
 ): Promise<ScheduledTask> {
   await init();
   const res = await pool.query(
