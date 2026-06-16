@@ -1,0 +1,31 @@
+{
+  "name": "Daily Quest",
+  "short_name": "Daily Quest",
+  "description": "RPG de hábitos — vire o protagonista da sua vida",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f1e",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Missões de hoje",
+      "url": "/",
+      "description": "Ver missões do dia"
+    },
+    {
+      "name": "Atividades",
+      "url": "/activities",
+      "description": "Gerenciar atividades"
+    }
+  ]
+}

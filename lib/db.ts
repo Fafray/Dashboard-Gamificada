@@ -123,6 +123,17 @@ function init(): Promise<void> {
         created_at   TEXT NOT NULL
       )
     `);
+    // PWA — lembretes por atividade e assinaturas push
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS notify_at TEXT`);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        id         SERIAL PRIMARY KEY,
+        endpoint   TEXT NOT NULL UNIQUE,
+        p256dh     TEXT NOT NULL,
+        auth       TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      )
+    `);
   })();
   return schemaReady;
 }
@@ -149,6 +160,7 @@ export interface Activity {
   is_keystone: boolean;
   graduation_count: number;
   scheduled_days: string | null; // "1,3,5" = Seg/Qua/Sex (JS: 0=Dom...6=Sáb)
+  notify_at: string | null;     // "HH:MM" horário do lembrete diário
 }
 
 export interface Checkin {
@@ -202,13 +214,13 @@ export async function createActivity(
 ): Promise<Activity> {
   await init();
   const res = await pool.query(
-    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, micro_version, anchor_context, is_keystone, graduation_count, scheduled_days, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
+    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, micro_version, anchor_context, is_keystone, graduation_count, scheduled_days, notify_at, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
     [data.name, data.frequency, data.xp_base, data.emoji, data.color,
      data.target_value ?? null, data.target_unit ?? null, data.weekly_target ?? null,
      data.categoria ?? null, data.micro_version ?? null, data.anchor_context ?? null,
      data.is_keystone ?? false, data.graduation_count ?? 0,
-     data.scheduled_days ?? null, localISOString()]
+     data.scheduled_days ?? null, data.notify_at ?? null, localISOString()]
   );
   return (await getActivity(res.rows[0].id))!;
 }
@@ -217,7 +229,7 @@ const ACTIVITY_ALLOWED_KEYS = new Set([
   "name", "frequency", "xp_base", "emoji", "color", "archived",
   "target_value", "target_unit", "weekly_target", "categoria",
   "micro_version", "anchor_context", "is_keystone", "graduation_count",
-  "scheduled_days",
+  "scheduled_days", "notify_at",
 ]);
 
 export async function updateActivity(
@@ -835,4 +847,43 @@ export async function countTodayPendingTasks(todayStr: string): Promise<number> 
     [todayStr]
   );
   return parseInt(res.rows[0].cnt);
+}
+
+// ─── Push Subscriptions ───────────────────────────────────────────────────────
+
+export interface PushSubscription {
+  id: number;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+export async function savePushSubscription(endpoint: string, p256dh: string, auth: string): Promise<void> {
+  await init();
+  await pool.query(
+    `INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (endpoint) DO UPDATE SET p256dh = $2, auth = $3`,
+    [endpoint, p256dh, auth, localISOString()]
+  );
+}
+
+export async function deletePushSubscription(endpoint: string): Promise<void> {
+  await init();
+  await pool.query(`DELETE FROM push_subscriptions WHERE endpoint = $1`, [endpoint]);
+}
+
+export async function getPushSubscriptions(): Promise<PushSubscription[]> {
+  await init();
+  const res = await pool.query(`SELECT * FROM push_subscriptions`);
+  return res.rows;
+}
+
+export async function getActivitiesWithNotifyAt(timeStr: string): Promise<Activity[]> {
+  await init();
+  const res = await pool.query(
+    `SELECT * FROM activities WHERE archived = 0 AND notify_at = $1`,
+    [timeStr]
+  );
+  return res.rows;
 }

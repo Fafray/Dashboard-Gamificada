@@ -58,6 +58,7 @@ interface FormValues {
   anchor_context: string;
   is_keystone: boolean;
   scheduled_days: string;
+  notify_at: string;
 }
 
 interface ActivityFormProps {
@@ -87,6 +88,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
     anchor_context: (activity as Activity & { anchor_context?: string })?.anchor_context ?? "",
     is_keystone:    (activity as Activity & { is_keystone?: boolean })?.is_keystone ?? false,
     scheduled_days: (activity as Activity & { scheduled_days?: string })?.scheduled_days ?? "",
+    notify_at:      (activity as Activity & { notify_at?: string })?.notify_at ?? "",
   });
   const [hasTarget, setHasTarget] = useState(!!activity?.target_value);
   const [hasMicro, setHasMicro] = useState(!!(activity as Activity & { micro_version?: string })?.micro_version);
@@ -484,6 +486,36 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                   }}
                 />
               ))}
+            </div>
+          </div>
+
+          {/* Lembrete */}
+          <div>
+            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+              🔔 Lembrete
+            </label>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <input
+                type="time"
+                value={values.notify_at}
+                onChange={(e) => set("notify_at", e.target.value)}
+                className={inputClass}
+                style={{ ...fieldStyle, width: "130px", flex: "none" }}
+              />
+              {values.notify_at && (
+                <button
+                  type="button"
+                  onClick={() => set("notify_at", "")}
+                  style={{ fontSize: "12px", color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}
+                >
+                  Remover
+                </button>
+              )}
+              {!values.notify_at && (
+                <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                  Sem lembrete — opcional
+                </span>
+              )}
             </div>
           </div>
 

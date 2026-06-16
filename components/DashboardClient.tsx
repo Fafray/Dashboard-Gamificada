@@ -9,6 +9,7 @@ import { AchievementToast } from "./AchievementToast";
 import { PainelAtributos } from "./PainelAtributos";
 import { PainelStatus } from "./PainelStatus";
 import { MissaoDoSistema } from "./MissaoDoSistema";
+import { NotificationSetup } from "./NotificationSetup";
 import { computeComboXP } from "@/lib/gamification";
 import type { Atributos, ClasseInfo } from "@/lib/attributes";
 
@@ -232,6 +233,10 @@ export function DashboardClient({
           </div>
         )}
 
+        {/* Notificações PWA */}
+        <div className="section">
+          <NotificationSetup />
+        </div>
 
         {/* Missões */}
         <div className="section">
