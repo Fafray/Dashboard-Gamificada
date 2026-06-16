@@ -64,7 +64,7 @@ export default async function DashboardPage() {
     activitiesToShow.map(async (activity) => {
       const isNxWeek = activity.frequency === "nx_week";
 
-      const [checkinDates, doneRaw, todayCheckin, weeklyCount] = await Promise.all([
+      const [checkinDates, doneRawBase, todayCheckin, weeklyCount] = await Promise.all([
         getCheckinDatesForActivity(activity.id),
         activity.frequency === "daily"
           ? hasCheckinToday(activity.id, todayStr)
@@ -85,6 +85,11 @@ export default async function DashboardPage() {
           : Promise.resolve(null),
       ]);
 
+      // Para hábitos diários com meta numérica: "feito" só quando acumulado >= meta
+      const doneRaw = (activity.frequency === "daily" && activity.target_value != null)
+        ? (Number(todayCheckin?.actual_value ?? 0) >= activity.target_value)
+        : doneRawBase;
+
       const streak = computeStreak(
         checkinDates,
         activity.frequency,
@@ -98,6 +103,7 @@ export default async function DashboardPage() {
         doneToday: doneRaw,
         todayCheckinId: todayCheckin?.id ?? null,
         todayCheckinXP: todayCheckin?.xp_earned ?? null,
+        todayCheckinValue: todayCheckin?.actual_value ?? null,
         weeklyCount: weeklyCount as number | null,
       };
     })

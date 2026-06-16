@@ -37,6 +37,7 @@ interface Activity {
   target_unit: string | null;
   weekly_target: number | null;
   weeklyCount: number | null;
+  todayCheckinValue: number | null;
   micro_version: string | null;
   anchor_context: string | null;
   is_keystone: boolean;
@@ -135,6 +136,11 @@ export function DashboardClient({
   const nonFreeActivities = initialActivities.filter((a) => a.frequency !== "free");
   const doneCount = nonFreeActivities.filter((a) => doneSet.has(a.id)).length;
   const totalCount = nonFreeActivities.length;
+
+  // Dia Perfeito: conta apenas atividades diárias
+  const dailyActivities = initialActivities.filter((a) => a.frequency === "daily");
+  const dailyDoneCount = dailyActivities.filter((a) => doneSet.has(a.id)).length;
+  const allDailyDone = dailyActivities.length > 0 && dailyDoneCount === dailyActivities.length;
   const allDone = totalCount > 0 && doneCount === totalCount;
 
   const comboXp = computeComboXP(atributos.AGI ?? 0);
@@ -216,11 +222,11 @@ export function DashboardClient({
         </div>
 
         {/* Missão do Sistema */}
-        {totalCount > 0 && (
+        {dailyActivities.length > 0 && (
           <div className="section">
             <MissaoDoSistema
-              doneCount={doneCount}
-              totalCount={totalCount}
+              doneCount={dailyDoneCount}
+              totalCount={dailyActivities.length}
               comboXp={comboXp}
             />
           </div>
@@ -242,9 +248,9 @@ export function DashboardClient({
               {/* Filtros */}
               {(() => {
                 const chips = [
-                  { k: "todas"   as const, l: "Todas",   cnt: initialActivities.length },
                   { k: "daily"   as const, l: "Diárias", cnt: initialActivities.filter((a) => a.frequency === "daily").length },
                   { k: "semanal" as const, l: "Semanais",cnt: initialActivities.filter((a) => a.frequency === "weekly" || a.frequency === "nx_week").length },
+                  { k: "todas"   as const, l: "Todas",   cnt: initialActivities.length },
                 ].filter((c) => c.k === "todas" || c.cnt > 0);
                 return (
                   <div style={{ display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
@@ -268,7 +274,7 @@ export function DashboardClient({
               })()}
 
               {/* Banner Dia Perfeito */}
-              {allDone && (
+              {allDailyDone && (
                 <div style={{
                   marginBottom: "14px", padding: "12px 16px", borderRadius: "12px",
                   background: "rgba(47,208,154,.07)", border: "1px solid rgba(47,208,154,.4)",
@@ -300,6 +306,7 @@ export function DashboardClient({
                       isBonusMission={bonusMissionId !== null && activity.id === bonusMissionId}
                       onCheckin={(result) => handleCheckin(activity.id, result)}
                       onUndo={(result) => handleUndo(activity.id, result)}
+                      initialAccumulated={activity.todayCheckinValue}
                     />
                   ))}
               </div>

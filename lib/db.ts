@@ -385,21 +385,50 @@ export async function getXpEarnedToday(localDateStr: string): Promise<number> {
 
 export async function getTodayCheckinForActivity(
   activityId: number, localDateStr: string
-): Promise<{ id: number; xp_earned: number } | null> {
+): Promise<{ id: number; xp_earned: number; actual_value: number | null } | null> {
   await init();
   const res = await pool.query(
-    `SELECT id, xp_earned FROM checkins WHERE activity_id = $1 AND LEFT(checked_at, 10) = $2 ORDER BY checked_at DESC LIMIT 1`,
+    `SELECT id, xp_earned, actual_value FROM checkins WHERE activity_id = $1 AND LEFT(checked_at, 10) = $2 ORDER BY checked_at DESC LIMIT 1`,
     [activityId, localDateStr]
   );
   return res.rows[0] ?? null;
 }
 
+export async function accumulateCheckinValue(
+  activityId: number,
+  todayStr: string,
+  increment: number
+): Promise<{ id: number; actual_value: number; xp_earned: number }> {
+  await init();
+  const existing = await pool.query(
+    `SELECT id, actual_value, xp_earned FROM checkins WHERE activity_id = $1 AND LEFT(checked_at, 10) = $2`,
+    [activityId, todayStr]
+  );
+  if (existing.rows.length > 0) {
+    const row = existing.rows[0];
+    const newValue = (Number(row.actual_value) || 0) + increment;
+    await pool.query(`UPDATE checkins SET actual_value = $1 WHERE id = $2`, [newValue, row.id]);
+    return { id: row.id, actual_value: newValue, xp_earned: Number(row.xp_earned) };
+  } else {
+    const res = await pool.query(
+      `INSERT INTO checkins (activity_id, checked_at, xp_earned, actual_value) VALUES ($1, $2, 0, $3) RETURNING id`,
+      [activityId, localISOString(), increment]
+    );
+    return { id: res.rows[0].id, actual_value: increment, xp_earned: 0 };
+  }
+}
+
+export async function setCheckinXp(checkinId: number, xpEarned: number): Promise<void> {
+  await init();
+  await pool.query(`UPDATE checkins SET xp_earned = $1 WHERE id = $2`, [xpEarned, checkinId]);
+}
+
 export async function getLastCheckinThisWeek(
   activityId: number, weekStart: string, weekEnd: string
-): Promise<{ id: number; xp_earned: number } | null> {
+): Promise<{ id: number; xp_earned: number; actual_value: number | null } | null> {
   await init();
   const res = await pool.query(
-    `SELECT id, xp_earned FROM checkins
+    `SELECT id, xp_earned, actual_value FROM checkins
      WHERE activity_id = $1 AND LEFT(checked_at, 10) >= $2 AND LEFT(checked_at, 10) <= $3
      ORDER BY checked_at DESC LIMIT 1`,
     [activityId, weekStart, weekEnd]

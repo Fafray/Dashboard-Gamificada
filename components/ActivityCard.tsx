@@ -59,6 +59,7 @@ interface ActivityCardProps {
   activity: Activity;
   atributos?: Atributos;
   isBonusMission?: boolean;
+  initialAccumulated?: number | null;
   onCheckin: (result: CheckinResult) => void;
   onUndo: (result: UndoResult) => void;
 }
@@ -67,7 +68,19 @@ const FREQ_LABEL: Record<string, string> = {
   daily: "DIÁRIA", weekly: "SEMANAL", free: "LIVRE", nx_week: "/ SEM.",
 };
 
-export function ActivityCard({ activity, atributos, isBonusMission, onCheckin, onUndo }: ActivityCardProps) {
+function defaultIncrement(unit: string | null): number {
+  if (!unit) return 1;
+  const u = unit.toUpperCase();
+  if (u === "L") return 0.5;
+  if (u === "ML") return 250;
+  if (u === "H") return 1;
+  if (u === "MIN") return 10;
+  if (u === "KM") return 1;
+  if (u === "PÁGINAS" || u === "PG" || u === "PAG") return 5;
+  return 1;
+}
+
+export function ActivityCard({ activity, atributos, isBonusMission, initialAccumulated, onCheckin, onUndo }: ActivityCardProps) {
   const [done, setDone] = useState(activity.doneToday);
   const [checkinId, setCheckinId] = useState<number | null>(activity.todayCheckinId);
   const [streak, setStreak] = useState(activity.streak.current);
@@ -79,9 +92,15 @@ export function ActivityCard({ activity, atributos, isBonusMission, onCheckin, o
   const [graduationOpen, setGraduationOpen] = useState(false);
   const [newMinimum, setNewMinimum] = useState("");
   const [savingGraduation, setSavingGraduation] = useState(false);
-  // Numeric input state
+  // Legacy single-register numeric input
   const [numValue, setNumValue] = useState<string>(
     activity.target_value ? String(activity.target_value) : ""
+  );
+  // Incremental tracking state
+  const isIncremental = activity.frequency === "daily" && !!activity.target_value;
+  const [accumulated, setAccumulated] = useState<number>(initialAccumulated ?? 0);
+  const [incrementInput, setIncrementInput] = useState<string>(
+    String(defaultIncrement(activity.target_unit))
   );
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -110,6 +129,43 @@ export function ActivityCard({ activity, atributos, isBonusMission, onCheckin, o
     if (milestone) {
       setMilestoneFiring(true);
       setTimeout(() => setMilestoneFiring(false), 700);
+    }
+  }
+
+  async function handleAccumulate() {
+    const inc = parseFloat(incrementInput);
+    if (!inc || inc <= 0 || loading) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/checkins/accumulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activity_id: activity.id, increment: inc }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || "Erro ao registrar");
+        return;
+      }
+      const result = await res.json();
+      setAccumulated(result.total);
+      setCheckinId(result.checkinId);
+      if (result.targetReached && result.xpEarned > 0) {
+        setDone(true);
+        setJustDone(true);
+        addXpPop(result.xpEarned, streak);
+        setTimeout(() => setJustDone(false), 720);
+        onCheckin({
+          checkin: { id: result.checkinId, xp_earned: result.xpEarned },
+          xpEarned: result.xpEarned,
+          newStreak: streak,
+          weeklyCount: null,
+          levelInfo: result.levelInfo,
+          newlyUnlocked: [],
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -304,8 +360,70 @@ export function ActivityCard({ activity, atributos, isBonusMission, onCheckin, o
         </div>
       )}
 
-      {/* HUD — Numeric input */}
-      {hasTarget && !isDone && (
+      {/* HUD — Incremental tracking (daily with target) */}
+      {isIncremental && (
+        <div className="hud-input-wrap">
+          {/* Progress bar */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: isDone ? "#2fd09a" : "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+              {accumulated % 1 === 0 ? accumulated : accumulated.toFixed(1)}
+            </span>
+            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+              / {activity.target_value} {activity.target_unit}
+            </span>
+          </div>
+          <div className="hud-bar-track" style={{ marginBottom: "10px" }}>
+            <div
+              className={`hud-bar-fill ${accumulated >= (activity.target_value ?? 0) ? "at" : accumulated > 0 ? "below" : "below"}`}
+              style={{ width: `${Math.min(100, (accumulated / (activity.target_value ?? 1)) * 100)}%`, transition: "width 0.3s ease" }}
+            />
+          </div>
+          {/* Add increment controls */}
+          {!isDone && (
+            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <input
+                type="number"
+                value={incrementInput}
+                onChange={(e) => setIncrementInput(e.target.value)}
+                min={0.1}
+                step={defaultIncrement(activity.target_unit)}
+                style={{
+                  width: "70px", padding: "6px 8px", borderRadius: "8px",
+                  background: "var(--bg-surface)", border: "1px solid var(--border)",
+                  color: "var(--text-primary)", fontSize: "14px", fontWeight: 600,
+                  textAlign: "center", outline: "none",
+                }}
+              />
+              <span style={{ fontSize: "12px", color: "var(--text-muted)", minWidth: "30px" }}>
+                {activity.target_unit}
+              </span>
+              <button
+                onClick={handleAccumulate}
+                disabled={loading}
+                style={{
+                  flex: 1, padding: "7px 12px", borderRadius: "8px",
+                  background: "var(--accent-teal)", color: "white",
+                  fontSize: "12px", fontWeight: 700, cursor: "pointer",
+                  border: "none", letterSpacing: ".05em",
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                {loading ? "..." : "+ ADICIONAR"}
+              </button>
+            </div>
+          )}
+          {isDone && (
+            <div className="hud-done-badge">
+              <span>✓</span>
+              <span className="hud-done-value">{accumulated % 1 === 0 ? accumulated : accumulated.toFixed(1)} {activity.target_unit}</span>
+              <span style={{ color: "var(--text-muted)", letterSpacing: ".06em", fontSize: "11px" }}>META ATINGIDA</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* HUD — Legacy single-register numeric (weekly/nx_week with target) */}
+      {hasTarget && !isIncremental && !isDone && (
         <div className="hud-input-wrap">
           <div className="hud-input-row">
             <input
@@ -327,9 +445,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, onCheckin, o
           </div>
         </div>
       )}
-
-      {/* HUD — Value registered */}
-      {hasTarget && isDone && (
+      {hasTarget && !isIncremental && isDone && (
         <div className="hud-done-badge">
           <span>✓</span>
           <span className="hud-done-value">{numValue || "—"} {activity.target_unit}</span>
@@ -339,7 +455,18 @@ export function ActivityCard({ activity, atributos, isBonusMission, onCheckin, o
 
       {/* Footer */}
       <div className="act-foot">
-        {activity.micro_version && !isDone ? (
+        {/* Incremental: footer só mostra estado de conclusão */}
+        {isIncremental ? (
+          isDone ? (
+            <button className="btn-checkin" disabled style={{ opacity: 0.7 }}>
+              ✓ META ATINGIDA · +{xpEfetivo} XP
+            </button>
+          ) : (
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
+              {accumulated > 0 ? `Em progresso — falta ${((activity.target_value ?? 0) - accumulated).toFixed(1).replace('.0','')} ${activity.target_unit}` : `Adicione acima para registrar`}
+            </div>
+          )
+        ) : activity.micro_version && !isDone ? (
           <>
             <button
               className="btn-checkin"
