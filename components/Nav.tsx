@@ -84,7 +84,7 @@ export function Nav() {
     <nav
       style={{
         position: "fixed",
-        right: "20px",
+        left: "20px",
         top: "50%",
         transform: "translateY(-50%)",
         zIndex: 50,

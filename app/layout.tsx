@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="aurora-bg" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
         <Nav />
-        <main className="flex-1 overflow-y-auto" style={{ position: "relative", zIndex: 2, paddingRight: "80px" }}>
+        <main className="flex-1 overflow-y-auto" style={{ position: "relative", zIndex: 2, paddingLeft: "80px" }}>
           {children}
         </main>
       </body>
