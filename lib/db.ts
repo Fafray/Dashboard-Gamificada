@@ -409,7 +409,9 @@ export async function getTodayCheckinForActivity(
     `SELECT id, xp_earned, actual_value FROM checkins WHERE activity_id = $1 AND LEFT(checked_at, 10) = $2 ORDER BY checked_at DESC LIMIT 1`,
     [activityId, localDateStr]
   );
-  return res.rows[0] ?? null;
+  if (!res.rows[0]) return null;
+  const r = res.rows[0];
+  return { id: r.id, xp_earned: Number(r.xp_earned), actual_value: r.actual_value != null ? Number(r.actual_value) : null };
 }
 
 export async function accumulateCheckinValue(
@@ -451,7 +453,9 @@ export async function getLastCheckinThisWeek(
      ORDER BY checked_at DESC LIMIT 1`,
     [activityId, weekStart, weekEnd]
   );
-  return res.rows[0] ?? null;
+  if (!res.rows[0]) return null;
+  const r = res.rows[0];
+  return { id: r.id, xp_earned: Number(r.xp_earned), actual_value: r.actual_value != null ? Number(r.actual_value) : null };
 }
 
 export async function deleteCheckin(id: number): Promise<number> {
