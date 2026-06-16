@@ -832,10 +832,10 @@ export async function createScheduledTask(
 
 export async function updateScheduledTask(
   id: number,
-  data: Partial<Pick<ScheduledTask, "name" | "emoji" | "due_date" | "due_time" | "category" | "notes" | "notify_enabled" | "notify_date" | "notify_time" | "completed_at">>
+  data: Partial<Pick<ScheduledTask, "name" | "emoji" | "due_date" | "due_time" | "category" | "notes" | "notify_enabled" | "notify_date" | "notify_time" | "notified_at" | "completed_at">>
 ): Promise<ScheduledTask | null> {
   await init();
-  const allowed = ["name", "emoji", "due_date", "due_time", "category", "notes", "notify_enabled", "notify_date", "notify_time", "completed_at"];
+  const allowed = ["name", "emoji", "due_date", "due_time", "category", "notes", "notify_enabled", "notify_date", "notify_time", "notified_at", "completed_at"];
   const keys = Object.keys(data).filter((k) => allowed.includes(k));
   if (keys.length === 0) return getScheduledTask(id);
   const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
