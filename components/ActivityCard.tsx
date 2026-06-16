@@ -97,7 +97,8 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
     activity.target_value ? String(activity.target_value) : ""
   );
   // Incremental tracking state
-  const isIncremental = activity.frequency === "daily" && !!activity.target_value;
+  // Incremental só quando não há micro_version — micro hábito tem prioridade
+  const isIncremental = activity.frequency === "daily" && !!activity.target_value && !activity.micro_version;
   const [accumulated, setAccumulated] = useState<number>(initialAccumulated ?? 0);
   const [incrementInput, setIncrementInput] = useState<string>(
     String(defaultIncrement(activity.target_unit))

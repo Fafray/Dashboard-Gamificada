@@ -189,10 +189,10 @@ export function DashboardClient({
                 <span>dias</span>
               </div>
             )}
-            {totalCount > 0 && (
+            {dailyActivities.length > 0 && (
               <div className="chip">
-                <span className="num">{doneCount}</span>
-                <span>/{totalCount}</span>
+                <span className="num">{dailyDoneCount}</span>
+                <span>/{dailyActivities.length}</span>
               </div>
             )}
           </div>
@@ -205,8 +205,8 @@ export function DashboardClient({
         <div className="section">
           <PainelStatus
             maxStreak={maxStreak}
-            doneCount={doneCount}
-            totalCount={totalCount}
+            doneCount={dailyDoneCount}
+            totalCount={dailyActivities.length}
             totalXP={levelInfo.totalXP}
           />
         </div>
@@ -232,12 +232,13 @@ export function DashboardClient({
           </div>
         )}
 
+
         {/* Missões */}
         <div className="section">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
             <h2 style={{ margin: 0 }}>Missões do Dia</h2>
             <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              {doneCount} / {totalCount} concluídas
+              {dailyDoneCount} / {dailyActivities.length} diárias concluídas
             </span>
           </div>
 

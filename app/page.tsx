@@ -85,8 +85,8 @@ export default async function DashboardPage() {
           : Promise.resolve(null),
       ]);
 
-      // Para hábitos diários com meta numérica: "feito" só quando acumulado >= meta
-      const doneRaw = (activity.frequency === "daily" && activity.target_value != null)
+      // Para hábitos diários com meta numérica SEM micro_version: "feito" quando acumulado >= meta
+      const doneRaw = (activity.frequency === "daily" && activity.target_value != null && !activity.micro_version)
         ? (Number(todayCheckin?.actual_value ?? 0) >= activity.target_value)
         : doneRawBase;
 
