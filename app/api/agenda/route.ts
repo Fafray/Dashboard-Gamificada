@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, emoji, due_date, due_time, category, notes, notify_enabled } = body;
+  const { name, emoji, due_date, due_time, category, notes, notify_enabled, notify_date, notify_time } = body;
   if (!name || !due_date) {
     return NextResponse.json({ error: "name e due_date são obrigatórios" }, { status: 400 });
   }
-  const task = await createScheduledTask({ name, emoji, due_date, due_time, category, notes, notify_enabled: !!notify_enabled });
+  const task = await createScheduledTask({ name, emoji, due_date, due_time, category, notes, notify_enabled: !!notify_enabled, notify_date: notify_date || null, notify_time: notify_time || null });
   return NextResponse.json({ task }, { status: 201 });
 }

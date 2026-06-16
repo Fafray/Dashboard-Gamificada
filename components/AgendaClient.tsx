@@ -13,6 +13,8 @@ interface ScheduledTask {
   category: string | null;
   notes: string | null;
   notify_enabled: boolean;
+  notify_date: string | null;
+  notify_time: string | null;
   completed_at: string | null;
   created_at: string;
 }
@@ -76,7 +78,8 @@ function formatDueDate(task: ScheduledTask): string {
 }
 
 const EMPTY_FORM = {
-  name: "", emoji: "", due_date: "", due_time: "", category: "", notes: "", notify_enabled: false,
+  name: "", emoji: "", due_date: "", due_time: "", category: "", notes: "",
+  notify_enabled: false, notify_date: "", notify_time: "",
 };
 
 export function AgendaClient({ initialTasks }: AgendaClientProps) {
@@ -115,6 +118,8 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
       category: task.category ?? "",
       notes: task.notes ?? "",
       notify_enabled: task.notify_enabled ?? false,
+      notify_date: task.notify_date ?? "",
+      notify_time: task.notify_time ?? "",
     });
     setShowForm(true);
   }
@@ -136,6 +141,8 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
         category: form.category.trim() || null,
         notes: form.notes.trim() || null,
         notify_enabled: form.notify_enabled,
+        notify_date: form.notify_enabled ? (form.notify_date || null) : null,
+        notify_time: form.notify_enabled ? (form.notify_time || null) : null,
       };
 
       if (editingTask) {
@@ -354,26 +361,43 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                 </div>
               </div>
 
-              {/* Notificação — só aparece quando tem hora definida */}
-              {form.due_time && (
+              {/* Notificação */}
+              <div style={{
+                borderRadius: "10px", overflow: "hidden",
+                border: `1px solid ${form.notify_enabled ? "rgba(0,240,192,.35)" : "var(--border)"}`,
+                transition: "border-color .15s",
+              }}>
+                {/* Toggle row */}
                 <button
                   type="button"
-                  onClick={() => setForm((f) => ({ ...f, notify_enabled: !f.notify_enabled }))}
+                  onClick={() => {
+                    const next = !form.notify_enabled;
+                    setForm((f) => ({
+                      ...f,
+                      notify_enabled: next,
+                      // pré-preenche com a data/hora da tarefa se não tiver
+                      notify_date: next && !f.notify_date ? f.due_date : f.notify_date,
+                      notify_time: next && !f.notify_time ? f.due_time : f.notify_time,
+                    }));
+                  }}
                   style={{
                     display: "flex", alignItems: "center", gap: "10px",
-                    padding: "10px 14px", borderRadius: "10px", width: "100%",
-                    background: form.notify_enabled ? "rgba(0,240,192,.08)" : "var(--bg-card)",
-                    border: `1px solid ${form.notify_enabled ? "rgba(0,240,192,.35)" : "var(--border)"}`,
-                    cursor: "pointer", textAlign: "left", transition: "all .15s",
+                    padding: "10px 14px", width: "100%",
+                    background: form.notify_enabled ? "rgba(0,240,192,.06)" : "var(--bg-card)",
+                    border: "none", cursor: "pointer", textAlign: "left", transition: "background .15s",
                   }}
                 >
                   <span style={{ fontSize: "18px" }}>{form.notify_enabled ? "🔔" : "🔕"}</span>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                      {form.notify_enabled ? "Notificação ativa" : "Notificar às " + form.due_time}
+                      {form.notify_enabled ? "Notificação ativa" : "Ativar lembrete"}
                     </p>
                     <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>
-                      {form.notify_enabled ? `Você será avisado às ${form.due_time}` : "Toque para ativar lembrete"}
+                      {form.notify_enabled
+                        ? form.notify_date && form.notify_time
+                          ? `Aviso em ${form.notify_date === form.due_date ? "mesmo dia" : form.notify_date} às ${form.notify_time}`
+                          : "Defina data e hora abaixo"
+                        : "Escolha quando quer ser avisado"}
                     </p>
                   </div>
                   <div style={{
@@ -389,7 +413,36 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                     }} />
                   </div>
                 </button>
-              )}
+
+                {/* Data + hora da notificação — expande quando ativo */}
+                {form.notify_enabled && (
+                  <div style={{
+                    display: "flex", gap: "10px", padding: "0 14px 12px",
+                    background: "rgba(0,240,192,.04)",
+                    borderTop: "1px solid rgba(0,240,192,.15)",
+                    paddingTop: "12px",
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={labelStyle}>Data do aviso</label>
+                      <input
+                        type="date"
+                        value={form.notify_date}
+                        onChange={(e) => setForm((f) => ({ ...f, notify_date: e.target.value }))}
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ width: "110px" }}>
+                      <label style={labelStyle}>Hora do aviso</label>
+                      <input
+                        type="time"
+                        value={form.notify_time}
+                        onChange={(e) => setForm((f) => ({ ...f, notify_time: e.target.value }))}
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Categoria — texto livre com sugestões */}
               <div>
