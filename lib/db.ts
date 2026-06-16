@@ -129,6 +129,8 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_date TEXT`);
     await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_time TEXT`);
     await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notified_at TEXT`);
+    await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_repeat BOOLEAN DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_sent_count INT DEFAULT 0`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (
         id         SERIAL PRIMARY KEY,
@@ -796,6 +798,8 @@ export interface ScheduledTask {
   notify_enabled: boolean;
   notify_date: string | null;
   notify_time: string | null;
+  notify_repeat: boolean;
+  notify_sent_count: number;
   notified_at: string | null;
   completed_at: string | null;
   created_at: string;
@@ -817,25 +821,25 @@ export async function getScheduledTask(id: number): Promise<ScheduledTask | null
 }
 
 export async function createScheduledTask(
-  data: Omit<ScheduledTask, "id" | "completed_at" | "created_at" | "notified_at">
+  data: Omit<ScheduledTask, "id" | "completed_at" | "created_at" | "notified_at" | "notify_sent_count">
 ): Promise<ScheduledTask> {
   await init();
   const res = await pool.query(
-    `INSERT INTO scheduled_tasks (name, emoji, due_date, due_time, category, notes, notify_enabled, notify_date, notify_time, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+    `INSERT INTO scheduled_tasks (name, emoji, due_date, due_time, category, notes, notify_enabled, notify_date, notify_time, notify_repeat, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
     [data.name, data.emoji ?? null, data.due_date, data.due_time ?? null,
      data.category ?? null, data.notes ?? null, data.notify_enabled ?? false,
-     data.notify_date ?? null, data.notify_time ?? null, localISOString()]
+     data.notify_date ?? null, data.notify_time ?? null, data.notify_repeat ?? false, localISOString()]
   );
   return (await getScheduledTask(res.rows[0].id))!;
 }
 
 export async function updateScheduledTask(
   id: number,
-  data: Partial<Pick<ScheduledTask, "name" | "emoji" | "due_date" | "due_time" | "category" | "notes" | "notify_enabled" | "notify_date" | "notify_time" | "notified_at" | "completed_at">>
+  data: Partial<Pick<ScheduledTask, "name" | "emoji" | "due_date" | "due_time" | "category" | "notes" | "notify_enabled" | "notify_date" | "notify_time" | "notify_repeat" | "notify_sent_count" | "notified_at" | "completed_at">>
 ): Promise<ScheduledTask | null> {
   await init();
-  const allowed = ["name", "emoji", "due_date", "due_time", "category", "notes", "notify_enabled", "notify_date", "notify_time", "notified_at", "completed_at"];
+  const allowed = ["name", "emoji", "due_date", "due_time", "category", "notes", "notify_enabled", "notify_date", "notify_time", "notify_repeat", "notify_sent_count", "notified_at", "completed_at"];
   const keys = Object.keys(data).filter((k) => allowed.includes(k));
   if (keys.length === 0) return getScheduledTask(id);
   const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
@@ -852,10 +856,21 @@ export async function getAgendaTasksForNotification(nowISO: string): Promise<Sch
     `SELECT * FROM scheduled_tasks
      WHERE notify_enabled = TRUE
        AND completed_at IS NULL
-       AND notified_at IS NULL
        AND (
-         CONCAT(COALESCE(notify_date, due_date), 'T', COALESCE(notify_time, due_time), ':00')::timestamp
-         BETWEEN ($1::timestamp - INTERVAL '2 minutes') AND $1::timestamp
+         -- Envio inicial (notify_sent_count = 0)
+         (notify_sent_count = 0
+           AND CONCAT(COALESCE(notify_date, due_date), 'T', COALESCE(notify_time, due_time), ':00')::timestamp
+               BETWEEN ($1::timestamp - INTERVAL '2 minutes') AND $1::timestamp)
+         OR
+         -- 2ª vez: 5 min depois (só se notify_repeat = true)
+         (notify_repeat = TRUE AND notify_sent_count = 1
+           AND CONCAT(COALESCE(notify_date, due_date), 'T', COALESCE(notify_time, due_time), ':00')::timestamp + INTERVAL '5 minutes'
+               BETWEEN ($1::timestamp - INTERVAL '2 minutes') AND $1::timestamp)
+         OR
+         -- 3ª vez: 10 min depois (só se notify_repeat = true)
+         (notify_repeat = TRUE AND notify_sent_count = 2
+           AND CONCAT(COALESCE(notify_date, due_date), 'T', COALESCE(notify_time, due_time), ':00')::timestamp + INTERVAL '10 minutes'
+               BETWEEN ($1::timestamp - INTERVAL '2 minutes') AND $1::timestamp)
        )`,
     [nowISO]
   );
@@ -876,7 +891,10 @@ export async function getNotifyDiagnostics(): Promise<{
 
 export async function markAgendaTaskNotified(id: number): Promise<void> {
   await init();
-  await pool.query(`UPDATE scheduled_tasks SET notified_at = $1 WHERE id = $2`, [localISOString(), id]);
+  await pool.query(
+    `UPDATE scheduled_tasks SET notify_sent_count = notify_sent_count + 1, notified_at = COALESCE(notified_at, $1) WHERE id = $2`,
+    [localISOString(), id]
+  );
 }
 
 export async function deleteScheduledTask(id: number): Promise<void> {

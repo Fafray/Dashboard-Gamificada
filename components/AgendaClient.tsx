@@ -15,6 +15,7 @@ interface ScheduledTask {
   notify_enabled: boolean;
   notify_date: string | null;
   notify_time: string | null;
+  notify_repeat: boolean;
   completed_at: string | null;
   created_at: string;
 }
@@ -79,7 +80,7 @@ function formatDueDate(task: ScheduledTask): string {
 
 const EMPTY_FORM = {
   name: "", emoji: "", due_date: "", due_time: "", category: "", notes: "",
-  notify_enabled: false, notify_date: "", notify_time: "",
+  notify_enabled: false, notify_date: "", notify_time: "", notify_repeat: false,
 };
 
 export function AgendaClient({ initialTasks }: AgendaClientProps) {
@@ -120,6 +121,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
       notify_enabled: task.notify_enabled ?? false,
       notify_date: task.notify_date ?? "",
       notify_time: task.notify_time ?? "",
+      notify_repeat: task.notify_repeat ?? false,
     });
     setShowForm(true);
   }
@@ -143,6 +145,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
         notify_enabled: form.notify_enabled,
         notify_date: form.notify_enabled ? (form.notify_date || null) : null,
         notify_time: form.notify_enabled ? (form.notify_time || null) : null,
+        notify_repeat: form.notify_enabled ? form.notify_repeat : false,
       };
 
       if (editingTask) {
@@ -414,32 +417,68 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                   </div>
                 </button>
 
-                {/* Data + hora da notificação — expande quando ativo */}
+                {/* Data + hora + repeat — expande quando ativo */}
                 {form.notify_enabled && (
                   <div style={{
-                    display: "flex", gap: "10px", padding: "0 14px 12px",
+                    display: "flex", flexDirection: "column", gap: "10px",
+                    padding: "12px 14px",
                     background: "rgba(0,240,192,.04)",
                     borderTop: "1px solid rgba(0,240,192,.15)",
-                    paddingTop: "12px",
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={labelStyle}>Data do aviso</label>
-                      <input
-                        type="date"
-                        value={form.notify_date}
-                        onChange={(e) => setForm((f) => ({ ...f, notify_date: e.target.value }))}
-                        style={inputStyle}
-                      />
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={labelStyle}>Data do aviso</label>
+                        <input
+                          type="date"
+                          value={form.notify_date}
+                          onChange={(e) => setForm((f) => ({ ...f, notify_date: e.target.value }))}
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div style={{ width: "110px" }}>
+                        <label style={labelStyle}>Hora do aviso</label>
+                        <input
+                          type="time"
+                          value={form.notify_time}
+                          onChange={(e) => setForm((f) => ({ ...f, notify_time: e.target.value }))}
+                          style={inputStyle}
+                        />
+                      </div>
                     </div>
-                    <div style={{ width: "110px" }}>
-                      <label style={labelStyle}>Hora do aviso</label>
-                      <input
-                        type="time"
-                        value={form.notify_time}
-                        onChange={(e) => setForm((f) => ({ ...f, notify_time: e.target.value }))}
-                        style={inputStyle}
-                      />
-                    </div>
+                    {/* Toggle repetir */}
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, notify_repeat: !f.notify_repeat }))}
+                      style={{
+                        display: "flex", alignItems: "center", gap: "10px",
+                        padding: "8px 12px", borderRadius: "8px", width: "100%",
+                        background: form.notify_repeat ? "rgba(245,158,11,.08)" : "transparent",
+                        border: `1px solid ${form.notify_repeat ? "rgba(245,158,11,.35)" : "var(--border)"}`,
+                        cursor: "pointer", textAlign: "left",
+                      }}
+                    >
+                      <span style={{ fontSize: "16px" }}>🔁</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                          Repetir lembrete
+                        </p>
+                        <p style={{ fontSize: "10.5px", color: "var(--text-muted)", margin: "1px 0 0" }}>
+                          {form.notify_repeat ? "Avisa 2x mais: +5min e +10min depois" : "Avisa só uma vez"}
+                        </p>
+                      </div>
+                      <div style={{
+                        width: "32px", height: "18px", borderRadius: "9px",
+                        background: form.notify_repeat ? "#f59e0b" : "var(--border)",
+                        position: "relative", flexShrink: 0, transition: "background .15s",
+                      }}>
+                        <div style={{
+                          position: "absolute", top: "2px",
+                          left: form.notify_repeat ? "16px" : "2px",
+                          width: "14px", height: "14px", borderRadius: "50%",
+                          background: "white", transition: "left .15s",
+                        }} />
+                      </div>
+                    </button>
                   </div>
                 )}
               </div>
