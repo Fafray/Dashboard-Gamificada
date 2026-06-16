@@ -43,6 +43,7 @@ interface Activity {
   anchor_context: string | null;
   is_keystone: boolean;
   graduation_count: number;
+  scheduled_days: string | null;
 }
 
 interface LevelInfo {
@@ -107,7 +108,7 @@ export function DashboardClient({
   const [doneSet, setDoneSet] = useState<Set<number>>(
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
   );
-  const [filtro, setFiltro] = useState<"todas" | "daily" | "semanal">("todas");
+  const [filtro, setFiltro] = useState<"todas" | "daily" | "semanal">("daily");
 
   const handleCheckin = useCallback((activityId: number, result: CheckinResult) => {
     setDoneSet((prev) => new Set([...prev, activityId]));
@@ -253,9 +254,12 @@ export function DashboardClient({
             <>
               {/* Filtros */}
               {(() => {
+                // nx_week com dias fixos é tratado como "diária" porque já foi filtrado para aparecer só hoje
+                const isDailyLike = (a: Activity) => a.frequency === "daily" || (a.frequency === "nx_week" && !!a.scheduled_days);
+                const isSemansal = (a: Activity) => a.frequency === "weekly" || (a.frequency === "nx_week" && !a.scheduled_days);
                 const chips = [
-                  { k: "daily"   as const, l: "Diárias", cnt: initialActivities.filter((a) => a.frequency === "daily").length },
-                  { k: "semanal" as const, l: "Semanais",cnt: initialActivities.filter((a) => a.frequency === "weekly" || a.frequency === "nx_week").length },
+                  { k: "daily"   as const, l: "Diárias", cnt: initialActivities.filter(isDailyLike).length },
+                  { k: "semanal" as const, l: "Semanais",cnt: initialActivities.filter(isSemansal).length },
                   { k: "todas"   as const, l: "Todas",   cnt: initialActivities.length },
                 ].filter((c) => c.k === "todas" || c.cnt > 0);
                 return (
@@ -300,8 +304,8 @@ export function DashboardClient({
                 {initialActivities
                   .filter((a) =>
                     filtro === "todas" ? true :
-                    filtro === "daily" ? a.frequency === "daily" :
-                    a.frequency === "weekly" || a.frequency === "nx_week"
+                    filtro === "daily" ? (a.frequency === "daily" || (a.frequency === "nx_week" && !!a.scheduled_days)) :
+                    (a.frequency === "weekly" || (a.frequency === "nx_week" && !a.scheduled_days))
                   )
                   .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0))
                   .map((activity) => (
