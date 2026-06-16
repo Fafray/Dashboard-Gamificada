@@ -12,6 +12,7 @@ interface ScheduledTask {
   due_time: string | null;
   category: string | null;
   notes: string | null;
+  notify_enabled: boolean;
   completed_at: string | null;
   created_at: string;
 }
@@ -75,7 +76,7 @@ function formatDueDate(task: ScheduledTask): string {
 }
 
 const EMPTY_FORM = {
-  name: "", emoji: "", due_date: "", due_time: "", category: "", notes: "",
+  name: "", emoji: "", due_date: "", due_time: "", category: "", notes: "", notify_enabled: false,
 };
 
 export function AgendaClient({ initialTasks }: AgendaClientProps) {
@@ -113,6 +114,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
       due_time: task.due_time ?? "",
       category: task.category ?? "",
       notes: task.notes ?? "",
+      notify_enabled: task.notify_enabled ?? false,
     });
     setShowForm(true);
   }
@@ -133,6 +135,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
         due_time: form.due_time || null,
         category: form.category.trim() || null,
         notes: form.notes.trim() || null,
+        notify_enabled: form.notify_enabled,
       };
 
       if (editingTask) {
@@ -350,6 +353,43 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                   />
                 </div>
               </div>
+
+              {/* Notificação — só aparece quando tem hora definida */}
+              {form.due_time && (
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, notify_enabled: !f.notify_enabled }))}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "10px",
+                    padding: "10px 14px", borderRadius: "10px", width: "100%",
+                    background: form.notify_enabled ? "rgba(0,240,192,.08)" : "var(--bg-card)",
+                    border: `1px solid ${form.notify_enabled ? "rgba(0,240,192,.35)" : "var(--border)"}`,
+                    cursor: "pointer", textAlign: "left", transition: "all .15s",
+                  }}
+                >
+                  <span style={{ fontSize: "18px" }}>{form.notify_enabled ? "🔔" : "🔕"}</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+                      {form.notify_enabled ? "Notificação ativa" : "Notificar às " + form.due_time}
+                    </p>
+                    <p style={{ fontSize: "11px", color: "var(--text-muted)", margin: "2px 0 0" }}>
+                      {form.notify_enabled ? `Você será avisado às ${form.due_time}` : "Toque para ativar lembrete"}
+                    </p>
+                  </div>
+                  <div style={{
+                    width: "36px", height: "20px", borderRadius: "10px",
+                    background: form.notify_enabled ? "var(--accent-teal)" : "var(--border)",
+                    position: "relative", flexShrink: 0, transition: "background .15s",
+                  }}>
+                    <div style={{
+                      position: "absolute", top: "2px",
+                      left: form.notify_enabled ? "18px" : "2px",
+                      width: "16px", height: "16px", borderRadius: "50%",
+                      background: "white", transition: "left .15s",
+                    }} />
+                  </div>
+                </button>
+              )}
 
               {/* Categoria — texto livre com sugestões */}
               <div>

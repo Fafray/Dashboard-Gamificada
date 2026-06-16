@@ -22,8 +22,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ task });
   }
 
-  const { name, emoji, due_date, due_time, category, notes } = body;
-  const task = await updateScheduledTask(taskId, { name, emoji, due_date, due_time, category, notes });
+  const { name, emoji, due_date, due_time, category, notes, notify_enabled } = body;
+  const task = await updateScheduledTask(taskId, { name, emoji, due_date, due_time, category, notes, notify_enabled: typeof notify_enabled === "boolean" ? notify_enabled : undefined });
   return NextResponse.json({ task });
 }
 

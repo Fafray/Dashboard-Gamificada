@@ -125,6 +125,7 @@ function init(): Promise<void> {
     `);
     // PWA — lembretes por atividade e assinaturas push
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS notify_at TEXT`);
+    await pool.query(`ALTER TABLE scheduled_tasks ADD COLUMN IF NOT EXISTS notify_enabled BOOLEAN DEFAULT FALSE`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (
         id         SERIAL PRIMARY KEY,
@@ -787,8 +788,9 @@ export interface ScheduledTask {
   emoji: string | null;
   due_date: string;        // yyyy-MM-dd
   due_time: string | null; // HH:mm
-  category: string | null; // pessoal | saude | trabalho | financeiro
+  category: string | null;
   notes: string | null;
+  notify_enabled: boolean;
   completed_at: string | null;
   created_at: string;
 }
@@ -813,26 +815,36 @@ export async function createScheduledTask(
 ): Promise<ScheduledTask> {
   await init();
   const res = await pool.query(
-    `INSERT INTO scheduled_tasks (name, emoji, due_date, due_time, category, notes, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    `INSERT INTO scheduled_tasks (name, emoji, due_date, due_time, category, notes, notify_enabled, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
     [data.name, data.emoji ?? null, data.due_date, data.due_time ?? null,
-     data.category ?? null, data.notes ?? null, localISOString()]
+     data.category ?? null, data.notes ?? null, data.notify_enabled ?? false, localISOString()]
   );
   return (await getScheduledTask(res.rows[0].id))!;
 }
 
 export async function updateScheduledTask(
   id: number,
-  data: Partial<Pick<ScheduledTask, "name" | "emoji" | "due_date" | "due_time" | "category" | "notes" | "completed_at">>
+  data: Partial<Pick<ScheduledTask, "name" | "emoji" | "due_date" | "due_time" | "category" | "notes" | "notify_enabled" | "completed_at">>
 ): Promise<ScheduledTask | null> {
   await init();
-  const allowed = ["name", "emoji", "due_date", "due_time", "category", "notes", "completed_at"];
+  const allowed = ["name", "emoji", "due_date", "due_time", "category", "notes", "notify_enabled", "completed_at"];
   const keys = Object.keys(data).filter((k) => allowed.includes(k));
   if (keys.length === 0) return getScheduledTask(id);
   const setClause = keys.map((k, i) => `${k} = $${i + 1}`).join(", ");
   const values = keys.map((k) => (data as Record<string, unknown>)[k]);
   await pool.query(`UPDATE scheduled_tasks SET ${setClause} WHERE id = $${keys.length + 1}`, [...values, id]);
   return getScheduledTask(id);
+}
+
+export async function getAgendaTasksForNotification(timeStr: string, todayStr: string): Promise<ScheduledTask[]> {
+  await init();
+  const res = await pool.query(
+    `SELECT * FROM scheduled_tasks
+     WHERE notify_enabled = TRUE AND due_time = $1 AND due_date = $2 AND completed_at IS NULL`,
+    [timeStr, todayStr]
+  );
+  return res.rows;
 }
 
 export async function deleteScheduledTask(id: number): Promise<void> {

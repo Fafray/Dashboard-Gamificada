@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   themeColor: "#7c3aed",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Daily Quest" },
+  icons: {
+    apple: "/characters/e-rank.jpg",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
