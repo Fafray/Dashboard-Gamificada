@@ -862,6 +862,18 @@ export async function getAgendaTasksForNotification(nowISO: string): Promise<Sch
   return res.rows;
 }
 
+export async function getNotifyDiagnostics(): Promise<{
+  subscriptions_count: number;
+  notify_tasks: { id: number; name: string; notify_date: string | null; notify_time: string | null; due_date: string; due_time: string | null; notified_at: string | null; completed_at: string | null }[];
+}> {
+  await init();
+  const [subRes, taskRes] = await Promise.all([
+    pool.query(`SELECT COUNT(*) as cnt FROM push_subscriptions`),
+    pool.query(`SELECT id, name, notify_date, notify_time, due_date, due_time, notified_at, completed_at FROM scheduled_tasks WHERE notify_enabled = TRUE ORDER BY due_date`),
+  ]);
+  return { subscriptions_count: parseInt(subRes.rows[0].cnt), notify_tasks: taskRes.rows };
+}
+
 export async function markAgendaTaskNotified(id: number): Promise<void> {
   await init();
   await pool.query(`UPDATE scheduled_tasks SET notified_at = $1 WHERE id = $2`, [localISOString(), id]);
