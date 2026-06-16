@@ -107,6 +107,8 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS is_keystone BOOLEAN NOT NULL DEFAULT FALSE`);
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS graduation_count INTEGER NOT NULL DEFAULT 0`);
     await pool.query(`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS checkin_level VARCHAR(10)`);
+    // Dias específicos da semana para atividades semanais
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS scheduled_days TEXT`);
     // Agenda — tarefas pontuais com data futura
     await pool.query(`
       CREATE TABLE IF NOT EXISTS scheduled_tasks (
@@ -146,6 +148,7 @@ export interface Activity {
   anchor_context: string | null;
   is_keystone: boolean;
   graduation_count: number;
+  scheduled_days: string | null; // "1,3,5" = Seg/Qua/Sex (JS: 0=Dom...6=Sáb)
 }
 
 export interface Checkin {
@@ -199,12 +202,13 @@ export async function createActivity(
 ): Promise<Activity> {
   await init();
   const res = await pool.query(
-    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, micro_version, anchor_context, is_keystone, graduation_count, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id`,
+    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, micro_version, anchor_context, is_keystone, graduation_count, scheduled_days, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
     [data.name, data.frequency, data.xp_base, data.emoji, data.color,
      data.target_value ?? null, data.target_unit ?? null, data.weekly_target ?? null,
      data.categoria ?? null, data.micro_version ?? null, data.anchor_context ?? null,
-     data.is_keystone ?? false, data.graduation_count ?? 0, localISOString()]
+     data.is_keystone ?? false, data.graduation_count ?? 0,
+     data.scheduled_days ?? null, localISOString()]
   );
   return (await getActivity(res.rows[0].id))!;
 }
@@ -213,6 +217,7 @@ const ACTIVITY_ALLOWED_KEYS = new Set([
   "name", "frequency", "xp_base", "emoji", "color", "archived",
   "target_value", "target_unit", "weekly_target", "categoria",
   "micro_version", "anchor_context", "is_keystone", "graduation_count",
+  "scheduled_days",
 ]);
 
 export async function updateActivity(

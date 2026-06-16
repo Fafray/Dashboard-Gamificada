@@ -34,6 +34,16 @@ const CATEGORIA_OPTIONS = [
   { value: "foco",       label: "Foco",        attr: "PER", emoji: "🎯" },
 ] as const;
 
+const DAYS = [
+  { label: "Dom", value: 0 },
+  { label: "Seg", value: 1 },
+  { label: "Ter", value: 2 },
+  { label: "Qua", value: 3 },
+  { label: "Qui", value: 4 },
+  { label: "Sex", value: 5 },
+  { label: "Sáb", value: 6 },
+];
+
 interface FormValues {
   name: string;
   frequency: "daily" | "weekly" | "free" | "nx_week";
@@ -47,6 +57,7 @@ interface FormValues {
   micro_version: string;
   anchor_context: string;
   is_keystone: boolean;
+  scheduled_days: string;
 }
 
 interface ActivityFormProps {
@@ -75,6 +86,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
     micro_version:  (activity as Activity & { micro_version?: string })?.micro_version ?? "",
     anchor_context: (activity as Activity & { anchor_context?: string })?.anchor_context ?? "",
     is_keystone:    (activity as Activity & { is_keystone?: boolean })?.is_keystone ?? false,
+    scheduled_days: (activity as Activity & { scheduled_days?: string })?.scheduled_days ?? "",
   });
   const [hasTarget, setHasTarget] = useState(!!activity?.target_value);
   const [hasMicro, setHasMicro] = useState(!!(activity as Activity & { micro_version?: string })?.micro_version);
@@ -205,6 +217,53 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                     style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
                   >+</button>
                 </div>
+              </div>
+            )}
+
+            {/* Seletor de dias específicos */}
+            {(values.frequency === "weekly" || values.frequency === "nx_week") && (
+              <div className="mt-3 p-3 rounded-xl" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>
+                  Dias específicos <span style={{ opacity: 0.6 }}>— aparece só nesses dias no painel</span>
+                </p>
+                <div style={{ display: "flex", gap: "5px" }}>
+                  {DAYS.map((d) => {
+                    const selected = values.scheduled_days
+                      ? values.scheduled_days.split(",").map(Number).includes(d.value)
+                      : false;
+                    return (
+                      <button
+                        key={d.value}
+                        type="button"
+                        onClick={() => {
+                          const current = values.scheduled_days
+                            ? values.scheduled_days.split(",").map(Number)
+                            : [];
+                          const next = selected
+                            ? current.filter((x) => x !== d.value)
+                            : [...current, d.value].sort((a, b) => a - b);
+                          set("scheduled_days", next.join(","));
+                        }}
+                        style={{
+                          flex: 1, padding: "6px 0", borderRadius: "8px", fontSize: "11px",
+                          fontWeight: selected ? 700 : 500, cursor: "pointer",
+                          border: `1px solid ${selected ? values.color : "var(--border)"}`,
+                          background: selected ? `${values.color}22` : "transparent",
+                          color: selected ? values.color : "var(--text-muted)",
+                          transition: "all .12s",
+                          fontFamily: "var(--font-space-grotesk), sans-serif",
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {!values.scheduled_days && (
+                  <p style={{ fontSize: "10.5px", color: "var(--text-muted)", marginTop: "6px" }}>
+                    Nenhum selecionado = aparece todos os dias
+                  </p>
+                )}
               </div>
             )}
           </div>

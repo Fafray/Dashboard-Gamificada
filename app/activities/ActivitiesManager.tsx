@@ -67,6 +67,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
     target_value?: number | null;
     target_unit?: string;
     categoria?: string | null;
+    scheduled_days?: string;
   }) {
     if (formMode?.kind === "edit") {
       await fetch(`/api/activities/${formMode.activity.id}`, {

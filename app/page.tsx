@@ -51,8 +51,17 @@ export default async function DashboardPage() {
 
   const levelInfo = getLevelInfo(rawStats.total_xp);
 
+  const todayDow = now.getDay(); // 0=Dom ... 6=Sáb
+
+  // Filtra atividades com dias específicos — só mostra se hoje for um dos dias agendados
+  const activitiesToShow = activities.filter((a) => {
+    if (!a.scheduled_days) return true;
+    const days = a.scheduled_days.split(",").map(Number);
+    return days.includes(todayDow);
+  });
+
   const activitiesWithStatus = await Promise.all(
-    activities.map(async (activity) => {
+    activitiesToShow.map(async (activity) => {
       const isNxWeek = activity.frequency === "nx_week";
 
       const [checkinDates, doneRaw, todayCheckin, weeklyCount] = await Promise.all([
