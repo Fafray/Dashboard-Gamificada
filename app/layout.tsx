@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="grain" aria-hidden="true" />
         <ServiceWorkerSetup />
         <Nav />
-        <main className="flex-1 overflow-y-auto" style={{ position: "relative", zIndex: 2, paddingLeft: "80px" }}>
+        <main className="flex-1 overflow-y-auto main-content">
           {children}
         </main>
       </body>
