@@ -5,11 +5,48 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const links = [
-  { href: "/", label: "Sistema", icon: "◈" },
-  { href: "/activities", label: "Missões", icon: "⚡" },
-  { href: "/achievements", label: "Títulos", icon: "◆" },
-  { href: "/history", label: "Registros", icon: "▣" },
-  { href: "/agenda", label: "Agenda", icon: "📅" },
+  {
+    href: "/", label: "Sistema",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/activities", label: "Missões",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/achievements", label: "Títulos",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/history", label: "Registros",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/agenda", label: "Agenda",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    ),
+  },
 ];
 
 export function Nav() {
@@ -46,89 +83,105 @@ export function Nav() {
   return (
     <nav
       style={{
-        position: "relative",
-        zIndex: 10,
+        position: "fixed",
+        right: "20px",
+        top: "50%",
+        transform: "translateY(-50%)",
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "2px",
+        padding: "10px 8px",
         background: "var(--bg-surface)",
-        borderBottom: "1px solid var(--border)",
+        border: "1px solid var(--border)",
+        borderRadius: "28px",
+        boxShadow: "0 8px 32px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.12)",
       }}
     >
-      <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "0 32px" }}>
-        <div className="topbar" style={{ marginBottom: 0, height: "60px" }}>
-          {/* Brand */}
-          <div className="brand">
-            <div className="mark">◈</div>
-            <div>
-              <div className="brand-title">[ SISTEMA ]</div>
-              <div className="brand-tag">RPG · Vida Real</div>
-            </div>
-          </div>
-
-          {/* Links */}
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            {links.map((l) => {
-              const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
-              const isAgenda = l.href === "/agenda";
-              return (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "6px 14px",
-                    borderRadius: "10px",
-                    fontSize: "12.5px",
-                    fontWeight: active ? 700 : 500,
-                    textDecoration: "none",
-                    transition: "all .18s",
-                    background: active ? "rgba(0,150,200,.12)" : "transparent",
-                    color: active ? "var(--accent-violet-bright)" : "var(--text-muted)",
-                    border: active ? "1px solid rgba(0,180,232,.25)" : "1px solid transparent",
-                    letterSpacing: ".08em",
-                    fontFamily: "var(--font-space-grotesk), sans-serif",
-                    textTransform: "uppercase" as const,
-                    textShadow: active ? "0 0 16px rgba(0,180,232,.5)" : "none",
-                    position: "relative",
-                  }}
-                >
-                  <span>{l.icon}</span>
-                  {l.label}
-                  {isAgenda && agendaCount > 0 && (
-                    <span style={{
-                      position: "absolute", top: "3px", right: "3px",
-                      width: "16px", height: "16px", borderRadius: "50%",
-                      background: "#ef4444", color: "white",
-                      fontSize: "9px", fontWeight: 800, display: "flex",
-                      alignItems: "center", justifyContent: "center",
-                      lineHeight: 1, fontFamily: "sans-serif",
-                    }}>
-                      {agendaCount > 9 ? "9+" : agendaCount}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-
-          {/* Theme toggle */}
-          <button className="theme-toggle" onClick={toggleTheme} title="Alternar tema">
-            {theme === "dark" ? (
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="5"/>
-                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </svg>
-            ) : (
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-            )}
-          </button>
-        </div>
+      {/* Brand mark */}
+      <div
+        style={{
+          width: "40px", height: "40px", borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "18px", color: "var(--accent-violet-bright)",
+          marginBottom: "2px",
+        }}
+      >
+        ◈
       </div>
+
+      {/* Separator */}
+      <div style={{ width: "22px", height: "1px", background: "var(--border)", margin: "4px 0 6px" }} />
+
+      {/* Nav links */}
+      {links.map((l) => {
+        const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
+        const isAgenda = l.href === "/agenda";
+
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            title={l.label}
+            style={{
+              position: "relative",
+              width: "42px", height: "42px",
+              borderRadius: "14px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: active ? "var(--text-primary)" : "transparent",
+              color: active ? "var(--bg-base)" : "var(--text-muted)",
+              textDecoration: "none",
+              transition: "background .15s, color .15s",
+            }}
+          >
+            {l.icon}
+            {isAgenda && agendaCount > 0 && (
+              <span
+                style={{
+                  position: "absolute", top: "4px", right: "4px",
+                  width: "14px", height: "14px", borderRadius: "50%",
+                  background: "#ef4444", color: "white",
+                  fontSize: "8px", fontWeight: 800,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  lineHeight: 1,
+                }}
+              >
+                {agendaCount > 9 ? "9+" : agendaCount}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+
+      {/* Separator */}
+      <div style={{ width: "22px", height: "1px", background: "var(--border)", margin: "6px 0 4px" }} />
+
+      {/* Theme toggle */}
+      <button
+        onClick={toggleTheme}
+        title="Alternar tema"
+        style={{
+          width: "42px", height: "42px", borderRadius: "14px",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "transparent", border: "none", cursor: "pointer",
+          color: "var(--text-muted)", transition: "color .15s",
+        }}
+      >
+        {theme === "dark" ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        )}
+      </button>
     </nav>
   );
 }
