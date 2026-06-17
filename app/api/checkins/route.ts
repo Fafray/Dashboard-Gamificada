@@ -23,6 +23,7 @@ import {
   getTotalGraduationCount,
   useVitShield,
   vitShieldAvailable,
+  archiveActivity,
 } from "@/lib/db";
 import {
   agiMorningBonus,
@@ -91,6 +92,10 @@ export async function POST(req: Request) {
     const count = await getWeeklyCheckinCount(activity_id, weekStart, weekEnd);
     if (count >= (activity.weekly_target ?? 1)) {
       return NextResponse.json({ error: "Meta semanal já atingida!" }, { status: 409 });
+    }
+  } else if (activity.frequency === "once") {
+    if (await hasCheckinToday(activity_id, todayStr)) {
+      return NextResponse.json({ error: "Missão já concluída!" }, { status: 409 });
     }
   }
 
@@ -184,6 +189,11 @@ export async function POST(req: Request) {
         await registrarEvento("rank_down", `Rebaixado para ${newRank}-RANK`, { nivel: newLevel, rank: newRank });
       }
     }
+  }
+
+  // Missão única: arquiva automaticamente após concluir
+  if (activity.frequency === "once") {
+    await archiveActivity(activity_id);
   }
 
   // Verificar títulos

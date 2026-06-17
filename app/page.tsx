@@ -12,6 +12,7 @@ import {
   getLastCheckinThisWeek,
   aplicarDecaySeNecessario,
   fecharDiasPassados,
+  penalizeExpiredOnce,
   updateLevel,
   getScheduledTasks,
 } from "@/lib/db";
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
   const statsPreDecay = await getUserStats();
   await fecharDiasPassados().catch(() => {});
   await aplicarDecaySeNecessario(statsPreDecay.titulo_ativo_id);
+  await penalizeExpiredOnce(todayStr).catch(() => {});
 
   const [rawStats, activities, xpToday] = await Promise.all([
     getUserStats(),
@@ -54,7 +56,9 @@ export default async function DashboardPage() {
   const todayDow = now.getDay(); // 0=Dom ... 6=Sáb
 
   // Filtra atividades com dias específicos — só mostra se hoje for um dos dias agendados
+  // Missões únicas (once) sempre aparecem (até o prazo)
   const activitiesToShow = activities.filter((a) => {
+    if (a.frequency === "once") return true;
     if (!a.scheduled_days) return true;
     const days = a.scheduled_days.split(",").map(Number);
     return days.includes(todayDow);
@@ -66,7 +70,7 @@ export default async function DashboardPage() {
 
       const [checkinDates, doneRawBase, todayCheckin, weeklyCount] = await Promise.all([
         getCheckinDatesForActivity(activity.id),
-        activity.frequency === "daily"
+        activity.frequency === "daily" || activity.frequency === "once"
           ? hasCheckinToday(activity.id, todayStr)
           : activity.frequency === "weekly"
           ? hasCheckinThisWeek(activity.id, weekStart, weekEnd)

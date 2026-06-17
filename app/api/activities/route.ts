@@ -15,11 +15,11 @@ export async function POST(req: Request) {
   if (!name || !frequency) {
     return NextResponse.json({ error: "name and frequency are required" }, { status: 400 });
   }
-  if (!["daily", "weekly", "free", "nx_week"].includes(frequency)) {
-    return NextResponse.json({ error: "frequency must be daily, weekly, free, or nx_week" }, { status: 400 });
+  if (!["daily", "weekly", "free", "nx_week", "once"].includes(frequency)) {
+    return NextResponse.json({ error: "frequency must be daily, weekly, free, nx_week, or once" }, { status: 400 });
   }
 
-  const { weekly_target, target_value, target_unit, categoria, micro_version, anchor_context, is_keystone, scheduled_days, notify_at } = body;
+  const { weekly_target, target_value, target_unit, categoria, micro_version, anchor_context, is_keystone, scheduled_days, notify_at, due_date } = body;
 
   const activity = await createActivity({
     name,
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
     graduation_count: 0,
     scheduled_days: scheduled_days ?? null,
     notify_at:      notify_at ?? null,
+    due_date:       due_date ?? null,
   });
 
   if (activity.is_keystone) {

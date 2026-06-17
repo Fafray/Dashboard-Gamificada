@@ -109,6 +109,13 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS checkin_level VARCHAR(10)`);
     // Dias específicos da semana para atividades semanais
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS scheduled_days TEXT`);
+    // Missão única com deadline
+    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS due_date TEXT`);
+    await pool.query(`ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_frequency_check`);
+    await pool.query(`
+      ALTER TABLE activities ADD CONSTRAINT activities_frequency_check
+        CHECK(frequency IN ('daily', 'weekly', 'free', 'nx_week', 'once'))
+    `);
     // Agenda — tarefas pontuais com data futura
     await pool.query(`
       CREATE TABLE IF NOT EXISTS scheduled_tasks (
@@ -146,7 +153,7 @@ function init(): Promise<void> {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type Frequency = "daily" | "weekly" | "free" | "nx_week";
+export type Frequency = "daily" | "weekly" | "free" | "nx_week" | "once";
 
 export interface Activity {
   id: number;
@@ -167,6 +174,7 @@ export interface Activity {
   graduation_count: number;
   scheduled_days: string | null; // "1,3,5" = Seg/Qua/Sex (JS: 0=Dom...6=Sáb)
   notify_at: string | null;     // "HH:MM" horário do lembrete diário
+  due_date: string | null;      // "YYYY-MM-DD" deadline para missões únicas (once)
 }
 
 export interface Checkin {
@@ -220,13 +228,14 @@ export async function createActivity(
 ): Promise<Activity> {
   await init();
   const res = await pool.query(
-    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, micro_version, anchor_context, is_keystone, graduation_count, scheduled_days, notify_at, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING id`,
+    `INSERT INTO activities (name, frequency, xp_base, emoji, color, target_value, target_unit, weekly_target, categoria, micro_version, anchor_context, is_keystone, graduation_count, scheduled_days, notify_at, due_date, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING id`,
     [data.name, data.frequency, data.xp_base, data.emoji, data.color,
      data.target_value ?? null, data.target_unit ?? null, data.weekly_target ?? null,
      data.categoria ?? null, data.micro_version ?? null, data.anchor_context ?? null,
      data.is_keystone ?? false, data.graduation_count ?? 0,
-     data.scheduled_days ?? null, data.notify_at ?? null, localISOString()]
+     data.scheduled_days ?? null, data.notify_at ?? null,
+     data.due_date ?? null, localISOString()]
   );
   return (await getActivity(res.rows[0].id))!;
 }
@@ -235,7 +244,7 @@ const ACTIVITY_ALLOWED_KEYS = new Set([
   "name", "frequency", "xp_base", "emoji", "color", "archived",
   "target_value", "target_unit", "weekly_target", "categoria",
   "micro_version", "anchor_context", "is_keystone", "graduation_count",
-  "scheduled_days", "notify_at",
+  "scheduled_days", "notify_at", "due_date",
 ]);
 
 export async function updateActivity(
@@ -341,6 +350,34 @@ export async function getTotalGraduationCount(): Promise<number> {
 export async function clearOtherKeystones(keepId: number): Promise<void> {
   await init();
   await pool.query(`UPDATE activities SET is_keystone = FALSE WHERE id != $1 AND is_keystone = TRUE`, [keepId]);
+}
+
+// Penaliza missões únicas (once) que venceram sem ser concluídas e as arquiva
+export async function penalizeExpiredOnce(todayStr: string): Promise<void> {
+  await init();
+  const res = await pool.query(
+    `SELECT * FROM activities WHERE frequency = 'once' AND archived = 0 AND due_date < $1`,
+    [todayStr]
+  );
+  for (const activity of res.rows) {
+    const checkinRes = await pool.query(
+      `SELECT COUNT(*) as cnt FROM checkins WHERE activity_id = $1`,
+      [activity.id]
+    );
+    const hasDone = parseInt(checkinRes.rows[0].cnt) > 0;
+    if (!hasDone) {
+      const penalty = Math.max(30, activity.xp_base * 3);
+      await pool.query(
+        `UPDATE user_stats SET total_xp = GREATEST(0, total_xp - $1) WHERE id = 1`,
+        [penalty]
+      );
+      await pool.query(
+        `INSERT INTO events (tipo, texto, data, extra) VALUES ($1, $2, $3, $4)`,
+        ["once_failed", `💀 Missão única falhada: "${activity.name}" (−${penalty} XP)`, todayStr, JSON.stringify({ penalty, activity_id: activity.id })]
+      );
+    }
+    await pool.query(`UPDATE activities SET archived = 1 WHERE id = $1`, [activity.id]);
+  }
 }
 
 export async function useVitShield(dateStr: string): Promise<void> {

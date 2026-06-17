@@ -17,20 +17,23 @@ const COR_ATTR: Record<string, string> = {
 
 function enrich(a: Activity) {
   const tipo =
-    a.frequency === "daily" ? "diaria" :
-    a.frequency === "free"  ? "livre"  : "semanal";
+    a.frequency === "daily"  ? "diaria"  :
+    a.frequency === "free"   ? "livre"   :
+    a.frequency === "once"   ? "missao"  : "semanal";
   const attr = a.categoria ? CATEGORIA_ATRIBUTO[a.categoria] ?? null : null;
   const dificuldade =
     a.xp_base <= 10 ? "Fácil" :
     a.xp_base <= 25 ? "Média" : "Difícil";
   const freqLabel =
     a.frequency === "nx_week" ? `${a.weekly_target}x/semana` :
-    a.frequency === "daily"   ? "Diária"  :
-    a.frequency === "weekly"  ? "Semanal" : "Livre";
+    a.frequency === "daily"   ? "Diária"        :
+    a.frequency === "weekly"  ? "Semanal"        :
+    a.frequency === "once"    ? "Missão única"   : "Livre";
   return { ...a, tipo, attr, dificuldade, freqLabel };
 }
 
 const GRUPOS = [
+  { tipo: "missao",  rotulo: "MISSÕES ÚNICAS" },
   { tipo: "diaria",  rotulo: "DIÁRIAS" },
   { tipo: "semanal", rotulo: "SEMANAIS" },
   { tipo: "livre",   rotulo: "LIVRES" },

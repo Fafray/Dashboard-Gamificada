@@ -36,7 +36,7 @@ interface UndoResult {
 interface Activity {
   id: number;
   name: string;
-  frequency: "daily" | "weekly" | "free" | "nx_week";
+  frequency: "daily" | "weekly" | "free" | "nx_week" | "once";
   xp_base: number;
   emoji: string | null;
   color: string;
@@ -53,6 +53,7 @@ interface Activity {
   anchor_context: string | null;
   is_keystone: boolean;
   graduation_count: number;
+  due_date?: string | null;
 }
 
 interface ActivityCardProps {
@@ -106,7 +107,19 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   const cardRef = useRef<HTMLDivElement>(null);
 
   const isNxWeek    = activity.frequency === "nx_week";
+  const isOnce      = activity.frequency === "once";
   const hasTarget   = !!activity.target_value;
+
+  // Prazo para missões únicas
+  const daysLeft = (() => {
+    if (!isOnce || !activity.due_date) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    const due   = activity.due_date;
+    if (due < today) return -1;
+    if (due === today) return 0;
+    const diff = Math.ceil((new Date(due + "T23:59:59").getTime() - Date.now()) / 86400000);
+    return diff;
+  })();
 
   // Categoria / atributo
   const attrKey      = activity.categoria ? CATEGORIA_ATRIBUTO[activity.categoria] : null;
@@ -292,6 +305,8 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
             <span className="freq-dot" />
             {isNxWeek
               ? `${weekTarget}x ${FREQ_LABEL.nx_week}`
+              : isOnce
+              ? "MISSÃO ÚNICA"
               : FREQ_LABEL[activity.frequency]}
             {hasTarget && (
               <span style={{ marginLeft: "6px", color: "var(--accent-teal)" }}>
@@ -319,8 +334,25 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
           )}
         </div>
 
-        {/* Streak ou pips semanais */}
-        {isNxWeek ? (
+        {/* Streak, pips semanais ou prazo de missão única */}
+        {isOnce ? (
+          daysLeft !== null && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
+              <span style={{
+                fontSize: "9px", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase",
+                color: daysLeft <= 0 ? "#ef4444" : daysLeft <= 2 ? "#f97316" : "#efa527",
+                background: daysLeft <= 0 ? "rgba(239,68,68,.12)" : daysLeft <= 2 ? "rgba(249,115,22,.12)" : "rgba(239,165,39,.12)",
+                border: `1px solid ${daysLeft <= 0 ? "rgba(239,68,68,.4)" : daysLeft <= 2 ? "rgba(249,115,22,.4)" : "rgba(239,165,39,.4)"}`,
+                borderRadius: "5px", padding: "2px 6px",
+              }}>
+                {daysLeft <= 0 ? "HOJE" : daysLeft === 1 ? "AMANHÃ" : `${daysLeft}d`}
+              </span>
+              <span style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
+                PRAZO
+              </span>
+            </div>
+          )
+        ) : isNxWeek ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
             <div className="week-pips">
               {Array.from({ length: weekTarget }).map((_, i) => (
@@ -509,6 +541,8 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
               ? `REGISTRAR ${numValue} ${activity.target_unit ?? ""}`
               : isNxWeek
               ? `EXECUTAR ${weeklyCount + 1}/${weekTarget}`
+              : isOnce
+              ? `CONCLUIR MISSÃO · +${xpEfetivo} XP`
               : `COMPLETAR · +${xpEfetivo} XP`}
           </button>
         )}

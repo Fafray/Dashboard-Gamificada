@@ -10,10 +10,11 @@ const COLOR_PRESETS = [
 ];
 
 const FREQ_OPTIONS = [
-  { value: "daily",   label: "Diário",    desc: "Todo dia" },
-  { value: "weekly",  label: "Semanal",   desc: "1x por semana" },
-  { value: "nx_week", label: "Nx/semana", desc: "Ex: 3x/semana" },
-  { value: "free",    label: "Livre",     desc: "Sem frequência" },
+  { value: "daily",   label: "Diário",      desc: "Todo dia" },
+  { value: "weekly",  label: "Semanal",     desc: "1x por semana" },
+  { value: "nx_week", label: "Nx/semana",   desc: "Ex: 3x/semana" },
+  { value: "free",    label: "Livre",       desc: "Sem frequência" },
+  { value: "once",    label: "Missão única", desc: "Fazer uma vez, tem prazo" },
 ] as const;
 
 const UNIT_OPTIONS = ["L", "h", "min", "km", "páginas", "vezes", "ml"];
@@ -46,7 +47,7 @@ const DAYS = [
 
 interface FormValues {
   name: string;
-  frequency: "daily" | "weekly" | "free" | "nx_week";
+  frequency: "daily" | "weekly" | "free" | "nx_week" | "once";
   xp_base: number;
   emoji: string;
   color: string;
@@ -59,6 +60,7 @@ interface FormValues {
   is_keystone: boolean;
   scheduled_days: string;
   notify_at: string;
+  due_date: string;
 }
 
 interface ActivityFormProps {
@@ -89,6 +91,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
     is_keystone:    (activity as Activity & { is_keystone?: boolean })?.is_keystone ?? false,
     scheduled_days: (activity as Activity & { scheduled_days?: string })?.scheduled_days ?? "",
     notify_at:      (activity as Activity & { notify_at?: string })?.notify_at ?? "",
+    due_date:       (activity as Activity & { due_date?: string })?.due_date ?? "",
   });
   const [hasTarget, setHasTarget] = useState(!!activity?.target_value);
   const [hasMicro, setHasMicro] = useState(!!(activity as Activity & { micro_version?: string })?.micro_version);
@@ -102,6 +105,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
   async function handleSubmit(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!values.name.trim()) { setError("Nome é obrigatório"); return; }
+    if (values.frequency === "once" && !values.due_date) { setError("Prazo é obrigatório para missão única"); return; }
     setSaving(true);
     setError("");
     try {
@@ -219,6 +223,28 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                     style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
                   >+</button>
                 </div>
+              </div>
+            )}
+
+            {/* Prazo para missão única */}
+            {values.frequency === "once" && (
+              <div className="mt-3 p-3 rounded-xl" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
+                <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>
+                  Prazo <span style={{ opacity: 0.6 }}>— se não concluir até esta data, perde XP</span>
+                </p>
+                <input
+                  type="date"
+                  value={values.due_date}
+                  min={new Date().toISOString().slice(0, 10)}
+                  onChange={(e) => set("due_date", e.target.value)}
+                  className={inputClass}
+                  style={{ ...fieldStyle, maxWidth: "200px" }}
+                />
+                {!values.due_date && (
+                  <p style={{ fontSize: "10.5px", color: "#ef4444", marginTop: "6px" }}>
+                    Obrigatório para missão única
+                  </p>
+                )}
               </div>
             )}
 
@@ -533,6 +559,8 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {values.frequency === "nx_week"
                   ? `${values.weekly_target}x/semana`
+                  : values.frequency === "once" && values.due_date
+                  ? `Missão única · prazo ${values.due_date}`
                   : FREQ_OPTIONS.find(f => f.value === values.frequency)?.label}
                 {" · +"}
                 {values.xp_base} XP

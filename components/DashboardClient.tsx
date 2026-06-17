@@ -25,7 +25,7 @@ interface TodayTask {
 interface Activity {
   id: number;
   name: string;
-  frequency: "daily" | "weekly" | "free" | "nx_week";
+  frequency: "daily" | "weekly" | "free" | "nx_week" | "once";
   xp_base: number;
   emoji: string | null;
   color: string;
@@ -44,6 +44,7 @@ interface Activity {
   is_keystone: boolean;
   graduation_count: number;
   scheduled_days: string | null;
+  due_date: string | null;
 }
 
 interface LevelInfo {
@@ -254,8 +255,8 @@ export function DashboardClient({
             <>
               {/* Filtros */}
               {(() => {
-                // nx_week com dias fixos é tratado como "diária" porque já foi filtrado para aparecer só hoje
-                const isDailyLike = (a: Activity) => a.frequency === "daily" || (a.frequency === "nx_week" && !!a.scheduled_days);
+                // nx_week com dias fixos e once são tratados como "diária"
+                const isDailyLike = (a: Activity) => a.frequency === "daily" || a.frequency === "once" || (a.frequency === "nx_week" && !!a.scheduled_days);
                 const isSemansal = (a: Activity) => a.frequency === "weekly" || (a.frequency === "nx_week" && !a.scheduled_days);
                 const chips = [
                   { k: "daily"   as const, l: "Diárias", cnt: initialActivities.filter(isDailyLike).length },
@@ -304,7 +305,7 @@ export function DashboardClient({
                 {initialActivities
                   .filter((a) =>
                     filtro === "todas" ? true :
-                    filtro === "daily" ? (a.frequency === "daily" || (a.frequency === "nx_week" && !!a.scheduled_days)) :
+                    filtro === "daily" ? (a.frequency === "daily" || a.frequency === "once" || (a.frequency === "nx_week" && !!a.scheduled_days)) :
                     (a.frequency === "weekly" || (a.frequency === "nx_week" && !a.scheduled_days))
                   )
                   .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0))
