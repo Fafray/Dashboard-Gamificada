@@ -69,12 +69,6 @@ function init(): Promise<void> {
     await pool.query(`ALTER TABLE checkins   ADD COLUMN IF NOT EXISTS actual_value NUMERIC`);
     // Frequência Nx por semana
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS weekly_target INTEGER`);
-    // Expand frequency constraint to include nx_week
-    await pool.query(`ALTER TABLE activities DROP CONSTRAINT IF EXISTS activities_frequency_check`);
-    await pool.query(`
-      ALTER TABLE activities ADD CONSTRAINT activities_frequency_check
-        CHECK(frequency IN ('daily', 'weekly', 'free', 'nx_week'))
-    `);
     // Atributos + Classe
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS categoria TEXT`);
     await pool.query(`
