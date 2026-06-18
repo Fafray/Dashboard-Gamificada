@@ -431,7 +431,7 @@ export function DashboardClient({
               </div>
             )}
 
-            <div className="act-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div className="act-grid" style={{ gridTemplateColumns: "1fr 1fr", alignItems: "stretch" }}>
               {initialActivities
                 .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0))
                 .map((activity) => (

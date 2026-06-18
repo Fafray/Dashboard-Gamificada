@@ -13,6 +13,14 @@ const COR_ATTR: Record<string, string> = {
   PER: "#45cdf0",
 };
 
+const CATEGORIA_COR: Record<string, string> = {
+  saude:      "#25d99a",
+  treino:     "#f0556a",
+  estudo:     "#45cdf0",
+  disciplina: "#ffce47",
+  foco:       "#8b5cf6",
+};
+
 interface LevelInfo {
   level: number;
   totalXP: number;
@@ -270,11 +278,18 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   const milestone = getStreakMilestone(streak);
   const isDone = isNxWeek ? weeklyDone : done;
 
+  const borderColor = activity.categoria ? (CATEGORIA_COR[activity.categoria] ?? "var(--accent-violet-bright)") : "var(--accent-violet-bright)";
+
   return (
     <div
       ref={cardRef}
       className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}`}
-      style={isBonusMission && !isDone ? { border: "1px solid rgba(239,165,39,.5)", boxShadow: "0 0 16px rgba(239,165,39,.08)" } : undefined}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        ...(isBonusMission && !isDone ? { border: "1px solid rgba(239,165,39,.5)", boxShadow: "0 0 16px rgba(239,165,39,.08)" } : {}),
+        borderTop: `3px solid ${borderColor}`,
+      }}
     >
       <div className="pulse-ring" />
 
@@ -490,7 +505,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
       )}
 
       {/* Footer */}
-      <div className="act-foot">
+      <div className="act-foot" style={{ marginTop: "auto", paddingTop: 12 }}>
         {/* Incremental: footer só mostra estado de conclusão */}
         {isIncremental ? (
           isDone ? (
