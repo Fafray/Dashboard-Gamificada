@@ -486,10 +486,15 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
       )}
 
       {/* Zona de ação — sempre no rodapé via margin-top: auto */}
-      <div className="act-foot" style={{ marginTop: "auto", paddingTop: 12 }}>
+      <div style={{ marginTop: "auto", paddingTop: 11, display: "flex", alignItems: "center", gap: 8 }}>
         {isIncremental ? (
           isDone ? (
-            <button className="btn-checkin" disabled style={{ opacity: 0.7 }}>
+            <button disabled style={{
+              flex: 1, height: 36, borderRadius: 7, border: "1px solid rgba(69,205,240,.3)",
+              background: "rgba(69,205,240,.08)", color: "var(--accent-violet-bright)",
+              fontWeight: 700, fontSize: 12.5, fontFamily: "var(--font-space-grotesk), sans-serif",
+              cursor: "default", opacity: 0.7,
+            }}>
               ✓ META ATINGIDA · +{xpEfetivo} XP
             </button>
           ) : (
@@ -503,28 +508,48 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         ) : activity.micro_version && !isDone ? (
           <>
             <button
-              className="btn-checkin"
               onClick={() => handleCheckin("minimum")}
               disabled={loading}
               title={activity.micro_version}
-              style={{ flex: 1, background: "transparent", border: `1px solid ${activity.color}55`, color: "var(--text-secondary)" }}
+              style={{
+                flex: 1, height: 36, borderRadius: 7,
+                border: "1px solid rgba(26,169,214,.3)",
+                background: "var(--bg-base)", color: "var(--text-secondary)",
+                fontWeight: 600, fontSize: 12,
+                fontFamily: "var(--font-space-grotesk), sans-serif",
+                cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1,
+              }}
             >
               {loading ? "..." : `Mínimo · +${xpEfetivo} XP`}
             </button>
             <button
-              className="btn-checkin"
               onClick={() => handleCheckin("beyond")}
               disabled={loading}
-              style={{ flex: 1, background: activity.color, color: "#04121c" }}
+              style={{
+                flex: 1, height: 36, borderRadius: 7,
+                border: "none", background: "#ffce47", color: "#1a1206",
+                fontWeight: 700, fontSize: 12,
+                fontFamily: "var(--font-space-grotesk), sans-serif",
+                cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.6 : 1,
+              }}
             >
               {loading ? "..." : `Além · +${Math.round(xpEfetivo * 1.25)} XP`}
             </button>
           </>
         ) : (
           <button
-            className="btn-checkin"
             onClick={() => handleCheckin()}
             disabled={isDone || loading || (isNxWeek && weeklyDone)}
+            style={{
+              flex: 1, height: 36, borderRadius: 7,
+              border: "1px solid rgba(69,205,240,.3)",
+              background: isDone ? "rgba(37,217,154,.08)" : "rgba(69,205,240,.08)",
+              color: isDone ? "#25d99a" : "var(--accent-violet-bright)",
+              fontWeight: 700, fontSize: 12.5,
+              fontFamily: "var(--font-space-grotesk), sans-serif",
+              cursor: isDone || loading ? "default" : "pointer",
+              opacity: loading ? 0.6 : 1,
+            }}
           >
             {loading ? "..."
               : isDone ? (isNxWeek ? "✓ Semana completa" : "✓ Missão concluída")
@@ -536,7 +561,16 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         )}
 
         {checkinId && (
-          <button className="btn-undo" onClick={handleUndo} title="Desfazer último check-in">↩</button>
+          <button
+            onClick={handleUndo}
+            title="Desfazer último check-in"
+            style={{
+              height: 36, width: 36, flexShrink: 0, borderRadius: 7,
+              border: "1px solid var(--border)", background: "var(--bg-surface)",
+              color: "var(--text-muted)", cursor: "pointer", fontSize: 16,
+              display: "grid", placeItems: "center",
+            }}
+          >↩</button>
         )}
       </div>
 
