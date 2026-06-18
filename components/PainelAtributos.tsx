@@ -17,6 +17,7 @@ interface PainelAtributosProps {
   initialPontos: number;
   initialClasse: ClasseInfo;
   onClasseChange?: (classe: ClasseInfo) => void;
+  compact?: boolean;
 }
 
 export function PainelAtributos({
@@ -24,6 +25,7 @@ export function PainelAtributos({
   initialPontos,
   initialClasse,
   onClasseChange,
+  compact = false,
 }: PainelAtributosProps) {
   const [atributos, setAtributos] = useState<Atributos>(initialAtributos);
   const [pontos, setPontos]       = useState(initialPontos);
@@ -95,9 +97,9 @@ export function PainelAtributos({
         )}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: "20px", alignItems: "center" }}>
-        {/* Radar */}
-        <svg viewBox="0 0 220 220" width="100%" role="img" aria-label="Radar de atributos">
+      <div style={{ display: "grid", gridTemplateColumns: compact ? "1fr" : "180px 1fr", gap: "20px", alignItems: "center" }}>
+        {/* Radar — hidden in compact mode */}
+        {!compact && <svg viewBox="0 0 220 220" width="100%" role="img" aria-label="Radar de atributos">
           {aneis.map((f, idx) => (
             <polygon key={idx} fill="none" stroke="rgba(0,140,200,.15)" strokeWidth="1"
               points={ATTR_ORDER.map((_, i) => pontoRadar(i, 78 * f).map((n) => n.toFixed(1)).join(",")).join(" ")}
@@ -125,7 +127,7 @@ export function PainelAtributos({
               >{k}</text>
             );
           })}
-        </svg>
+        </svg>}
 
         {/* Barras + botões */}
         <div style={{ display: "flex", flexDirection: "column", gap: "11px" }}>

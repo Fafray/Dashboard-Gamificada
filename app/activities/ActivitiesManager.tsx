@@ -15,29 +15,26 @@ const COR_ATTR: Record<string, string> = {
   PER: "#45cdf0",
 };
 
-function enrich(a: Activity) {
-  const tipo =
-    a.frequency === "daily"  ? "diaria"  :
-    a.frequency === "free"   ? "livre"   :
-    a.frequency === "once"   ? "missao"  : "semanal";
-  const attr = a.categoria ? CATEGORIA_ATRIBUTO[a.categoria] ?? null : null;
-  const dificuldade =
-    a.xp_base <= 10 ? "Fácil" :
-    a.xp_base <= 25 ? "Média" : "Difícil";
-  const freqLabel =
-    a.frequency === "nx_week" ? `${a.weekly_target}x/semana` :
-    a.frequency === "daily"   ? "Diária"        :
-    a.frequency === "weekly"  ? "Semanal"        :
-    a.frequency === "once"    ? "Missão única"   : "Livre";
-  return { ...a, tipo, attr, dificuldade, freqLabel };
-}
+const CATEGORIA_COR: Record<string, string> = {
+  saude:      "#25d99a",
+  treino:     "#f0556a",
+  estudo:     "#45cdf0",
+  disciplina: "#ffce47",
+  foco:       "#8b5cf6",
+};
 
-const GRUPOS = [
-  { tipo: "missao",  rotulo: "MISSÕES ÚNICAS" },
-  { tipo: "diaria",  rotulo: "DIÁRIAS" },
-  { tipo: "semanal", rotulo: "SEMANAIS" },
-  { tipo: "livre",   rotulo: "LIVRES" },
-] as const;
+const CATEGORIAS_ORDEM = ["saude", "treino", "estudo", "disciplina", "foco"] as const;
+const SEM_CATEGORIA = "__sem_categoria__";
+
+function enrich(a: Activity) {
+  const attr = a.categoria ? CATEGORIA_ATRIBUTO[a.categoria] ?? null : null;
+  const freqLabel =
+    a.frequency === "nx_week" ? `${a.weekly_target}x/sem.` :
+    a.frequency === "daily"   ? "Diária"      :
+    a.frequency === "weekly"  ? "Semanal"     :
+    a.frequency === "once"    ? "Missão única" : "Livre";
+  return { ...a, attr, freqLabel };
+}
 
 interface ActivitiesManagerProps {
   active: Activity[];
@@ -52,6 +49,8 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
   const [archived, setArchived] = useState(initialArchived);
   const [formMode, setFormMode] = useState<FormMode>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [filtro, setFiltro] = useState<string>("todas");
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/activities?include_archived=true");
@@ -61,29 +60,17 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
   }, []);
 
   async function handleSave(values: {
-    name: string;
-    frequency: string;
-    xp_base: number;
-    emoji: string;
-    color: string;
-    weekly_target?: number;
-    target_value?: number | null;
-    target_unit?: string;
-    categoria?: string | null;
-    scheduled_days?: string;
-    notify_at?: string;
+    name: string; frequency: string; xp_base: number; emoji: string; color: string;
+    weekly_target?: number; target_value?: number | null; target_unit?: string;
+    categoria?: string | null; scheduled_days?: string; notify_at?: string;
   }) {
     if (formMode?.kind === "edit") {
       await fetch(`/api/activities/${formMode.activity.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
       });
     } else {
       await fetch("/api/activities", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(values),
       });
     }
     setFormMode(null);
@@ -99,8 +86,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
 
   async function handleUnarchive(id: number) {
     await fetch(`/api/activities/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ archived: 0 }),
     });
     await refresh();
@@ -113,9 +99,47 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
     router.refresh();
   }
 
+  const enriched = active.map(enrich);
+
+  // Filter tabs
+  const filtered = filtro === "todas"
+    ? enriched
+    : enriched.filter((a) => (a.categoria ?? SEM_CATEGORIA) === filtro);
+
+  // Group by category
+  const grupos: { key: string; label: string; cor: string; attr: string | null; items: ReturnType<typeof enrich>[] }[] = [];
+
+  // Ordered categories present in filtered list
+  const catKeys = [
+    ...CATEGORIAS_ORDEM.filter((c) => filtered.some((a) => a.categoria === c)),
+    ...(filtered.some((a) => !a.categoria) ? [SEM_CATEGORIA] : []),
+  ];
+
+  for (const cat of catKeys) {
+    const items = filtered.filter((a) => (a.categoria ?? SEM_CATEGORIA) === cat);
+    if (items.length === 0) continue;
+    const attrKey = cat !== SEM_CATEGORIA ? (CATEGORIA_ATRIBUTO[cat] ?? null) : null;
+    grupos.push({
+      key: cat,
+      label: cat === SEM_CATEGORIA ? "Sem categoria" : (CATEGORIA_LABELS[cat] ?? cat),
+      cor: CATEGORIA_COR[cat] ?? "var(--accent-violet)",
+      attr: attrKey,
+      items,
+    });
+  }
+
+  const toggleCollapse = (key: string) =>
+    setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const catTabs = [
+    { key: "todas", label: "Todas" },
+    ...CATEGORIAS_ORDEM
+      .filter((c) => enriched.some((a) => a.categoria === c))
+      .map((c) => ({ key: c, label: CATEGORIA_LABELS[c] ?? c })),
+  ];
+
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-      {/* Modal */}
+    <div className="max-w-5xl mx-auto px-6 py-8">
       {formMode && (
         <ActivityForm
           activity={formMode.kind === "edit" ? formMode.activity : undefined}
@@ -125,107 +149,178 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
-            Atividades
+          <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+            Missões
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-muted)" }}>
+          <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "3px" }}>
             {active.length} ativa{active.length !== 1 ? "s" : ""}
             {archived.length > 0 && ` · ${archived.length} arquivada${archived.length !== 1 ? "s" : ""}`}
           </p>
         </div>
         <button
           onClick={() => setFormMode({ kind: "create" })}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold"
           style={{
-            background: "var(--accent-violet)",
-            color: "white",
-            boxShadow: "0 0 16px rgba(124,58,237,0.4)",
+            display: "flex", alignItems: "center", gap: "6px",
+            padding: "8px 16px", borderRadius: "10px", fontSize: "12.5px", fontWeight: 700,
+            background: "var(--accent-violet)", color: "#04121c",
+            border: "none", cursor: "pointer",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
           }}
         >
-          + Nova
+          + Nova missão
         </button>
       </div>
 
-      {/* Medidor de equilíbrio */}
+      {/* Medidor */}
       {active.length > 0 && (
-        <div>
+        <div style={{ marginBottom: "20px" }}>
           <MedidorEquilibrio atividades={active} />
         </div>
       )}
 
-      {/* Active activities */}
-      {active.length === 0 ? (
-        <div
-          className="rounded-xl p-8 text-center"
-          style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }}
-        >
-          <p className="text-3xl mb-3">⚔️</p>
-          <p className="font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
-            Nenhuma atividade ainda
-          </p>
-          <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-            Crie sua primeira atividade para começar a ganhar XP
-          </p>
-          <button
-            onClick={() => setFormMode({ kind: "create" })}
-            className="px-5 py-2 rounded-xl text-sm font-bold"
-            style={{ background: "var(--accent-violet)", color: "white" }}
-          >
-            Criar atividade
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {GRUPOS.map((g) => {
-            const itens = active.map(enrich).filter((a) => a.tipo === g.tipo);
-            if (itens.length === 0) return null;
+      {/* Filter tabs */}
+      {active.length > 0 && (
+        <div style={{ display: "flex", gap: "6px", marginBottom: "24px", flexWrap: "wrap" }}>
+          {catTabs.map((tab) => {
+            const isActive = filtro === tab.key;
+            const cor = tab.key !== "todas" ? CATEGORIA_COR[tab.key] : "var(--accent-violet)";
             return (
-              <div key={g.tipo}>
-                <p
-                  className="text-xs font-semibold tracking-widest mb-2"
-                  style={{ color: "var(--text-muted)" }}
-                >
-                  {g.rotulo} · {itens.length}
-                </p>
-                <div className="space-y-2">
-                  {itens.map((a) => (
-                    <ActivityRow
-                      key={a.id}
-                      activity={a}
-                      onEdit={() => setFormMode({ kind: "edit", activity: a })}
-                      onArchive={() => handleArchive(a.id)}
-                    />
-                  ))}
-                </div>
-              </div>
+              <button
+                key={tab.key}
+                onClick={() => setFiltro(tab.key)}
+                style={{
+                  padding: "5px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
+                  cursor: "pointer", transition: "all .15s",
+                  background: isActive ? cor : `${cor}18`,
+                  border: `1px solid ${isActive ? cor : `${cor}44`}`,
+                  color: isActive ? "#04121c" : cor,
+                  fontFamily: "var(--font-space-grotesk), sans-serif",
+                }}
+              >
+                {tab.label}
+              </button>
             );
           })}
         </div>
       )}
 
-      {/* Archived section */}
+      {/* Empty state */}
+      {active.length === 0 ? (
+        <div
+          style={{
+            background: "var(--bg-card)", border: "1px solid var(--border)",
+            borderRadius: "var(--r-lg)", padding: "48px", textAlign: "center",
+          }}
+        >
+          <p style={{ fontSize: "36px", marginBottom: "12px" }}>⚔️</p>
+          <p style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px", fontFamily: "var(--font-space-grotesk)" }}>
+            Nenhuma atividade ainda
+          </p>
+          <p style={{ fontSize: "12.5px", color: "var(--text-muted)", marginBottom: "20px" }}>
+            Crie sua primeira missão para começar a ganhar XP
+          </p>
+          <button
+            onClick={() => setFormMode({ kind: "create" })}
+            style={{
+              padding: "9px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 700,
+              background: "var(--accent-violet)", color: "#04121c", border: "none", cursor: "pointer",
+            }}
+          >
+            Criar missão
+          </button>
+        </div>
+      ) : grupos.length === 0 ? (
+        <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
+          Nenhuma missão nesta categoria
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+          {grupos.map((g) => (
+            <div key={g.key}>
+              {/* Group header */}
+              <button
+                onClick={() => toggleCollapse(g.key)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  width: "100%", background: "none", border: "none", cursor: "pointer",
+                  padding: "0 0 12px", textAlign: "left",
+                }}
+              >
+                <div style={{ width: "3px", height: "18px", borderRadius: "2px", background: g.cor, flexShrink: 0 }} />
+                <span style={{
+                  fontFamily: "var(--font-space-grotesk)", fontSize: "13px", fontWeight: 700,
+                  letterSpacing: ".08em", textTransform: "uppercase", color: g.cor,
+                }}>
+                  {g.label}
+                </span>
+                {g.attr && (
+                  <span style={{
+                    fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "5px",
+                    background: `${COR_ATTR[g.attr]}22`, color: COR_ATTR[g.attr],
+                    border: `1px solid ${COR_ATTR[g.attr]}44`,
+                    fontFamily: "var(--font-space-grotesk)", letterSpacing: ".06em",
+                  }}>
+                    +{g.attr}
+                  </span>
+                )}
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "2px" }}>
+                  {g.items.length}
+                </span>
+                <span style={{
+                  marginLeft: "auto", fontSize: "11px", color: "var(--text-muted)",
+                  transform: collapsed[g.key] ? "rotate(0)" : "rotate(90deg)",
+                  display: "inline-block", transition: "transform .2s",
+                }}>
+                  ▶
+                </span>
+              </button>
+
+              {!collapsed[g.key] && (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                  gap: "12px",
+                }}>
+                  {g.items.map((a) => (
+                    <MissionCard
+                      key={a.id}
+                      activity={a}
+                      cor={g.cor}
+                      onEdit={() => setFormMode({ kind: "edit", activity: a })}
+                      onArchive={() => handleArchive(a.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Archived */}
       {archived.length > 0 && (
-        <div>
+        <div style={{ marginTop: "36px" }}>
           <button
             onClick={() => setShowArchived((v) => !v)}
-            className="flex items-center gap-2 text-sm font-medium mb-3"
-            style={{ color: "var(--text-muted)" }}
+            style={{
+              display: "flex", alignItems: "center", gap: "8px",
+              background: "none", border: "none", cursor: "pointer",
+              color: "var(--text-muted)", fontSize: "13px", fontWeight: 500, padding: 0,
+              marginBottom: showArchived ? "12px" : 0,
+            }}
           >
-            <span style={{ transform: showArchived ? "rotate(90deg)" : "rotate(0)", display: "inline-block", transition: "transform 0.2s" }}>
-              ▶
-            </span>
+            <span style={{ transform: showArchived ? "rotate(90deg)" : "none", display: "inline-block", transition: "transform .2s" }}>▶</span>
             Arquivadas ({archived.length})
           </button>
 
           {showArchived && (
-            <div className="space-y-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
               {archived.map((a) => (
-                <ActivityRow
+                <ArchivedRow
                   key={a.id}
                   activity={enrich(a)}
-                  archived
                   onUnarchive={() => handleUnarchive(a.id)}
                   onDelete={() => handleDelete(a.id)}
                 />
@@ -238,146 +333,150 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
   );
 }
 
-type EnrichedActivity = Activity & {
-  tipo?: string;
-  attr?: string | null;
-  dificuldade?: string;
-  freqLabel?: string;
-};
+// ─── Mission Card ─────────────────────────────────────────────────────────────
 
-interface ActivityRowProps {
+type EnrichedActivity = Activity & { attr?: string | null; freqLabel?: string };
+
+function MissionCard({
+  activity: a, cor, onEdit, onArchive,
+}: {
   activity: EnrichedActivity;
-  archived?: boolean;
-  onEdit?: () => void;
-  onArchive?: () => void;
-  onUnarchive?: () => void;
-  onDelete?: () => void;
-}
-
-function ActivityRow({ activity: a, archived, onEdit, onArchive, onUnarchive, onDelete }: ActivityRowProps) {
+  cor: string;
+  onEdit: () => void;
+  onArchive: () => void;
+}) {
   const [confirming, setConfirming] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function requestArchive() {
-    if (confirming) {
-      onArchive?.();
-      setConfirming(false);
-    } else {
-      setConfirming(true);
-      setTimeout(() => setConfirming(false), 3000);
-    }
-  }
-
-  function requestDelete() {
-    if (confirmingDelete) {
-      onDelete?.();
-      setConfirmingDelete(false);
-    } else {
-      setConfirmingDelete(true);
-      setTimeout(() => setConfirmingDelete(false), 3000);
-    }
+    if (confirming) { onArchive(); setConfirming(false); }
+    else { setConfirming(true); setTimeout(() => setConfirming(false), 3000); }
   }
 
   return (
-    <div
-      className="activity-card rounded-xl px-4 py-3 flex items-center gap-3"
-      style={{
-        background: "var(--bg-card)",
-        border: "1px solid var(--border)",
-        opacity: archived ? 0.6 : 1,
-      }}
-    >
-      {/* Icon */}
-      <div
-        style={{ position: "relative", flexShrink: 0 }}
+    <div style={{
+      background: "var(--bg-card)", border: "1px solid var(--border)",
+      borderRadius: "var(--r-lg)", padding: "14px",
+      display: "flex", flexDirection: "column", gap: "10px",
+      position: "relative",
+      boxShadow: "var(--shadow-card)",
+    }}>
+      {/* Archive icon — top-right */}
+      <button
+        onClick={requestArchive}
+        title={confirming ? "Confirmar arquivamento?" : "Arquivar missão"}
+        style={{
+          position: "absolute", top: "10px", right: "10px",
+          width: "24px", height: "24px", borderRadius: "6px",
+          background: confirming ? "rgba(240,85,106,.15)" : "transparent",
+          border: confirming ? "1px solid rgba(240,85,106,.4)" : "1px solid transparent",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "13px", color: confirming ? "#f0556a" : "var(--text-muted)",
+          transition: "all .15s",
+        }}
       >
-        <div
-          className="flex items-center justify-center w-10 h-10 rounded-lg text-xl"
-          style={{
-            background: a.color + "20",
-            border: `1px solid ${a.color}40`,
-            filter: archived ? "grayscale(1)" : "none",
-          }}
-        >
-          {a.emoji || "⚡"}
+        🗄️
+      </button>
+
+      {/* Emoji box */}
+      <div style={{
+        width: "44px", height: "44px", borderRadius: "10px",
+        background: `${cor}22`, border: `1px solid ${cor}44`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "22px",
+      }}>
+        {a.emoji ?? "⚡"}
+      </div>
+
+      {/* Name + meta */}
+      <div style={{ flex: 1 }}>
+        <div style={{
+          fontWeight: 700, fontSize: "14px", color: "var(--text-primary)",
+          lineHeight: 1.3, paddingRight: "20px",
+        }}>
+          {a.name}
+        </div>
+        <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
+          {a.freqLabel} · +{a.xp_base} XP
+          {a.target_value ? ` · meta ${a.target_value}${a.target_unit ?? ""}` : ""}
         </div>
       </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p
-          className="font-medium text-sm"
+      {/* Edit button */}
+      <button
+        onClick={onEdit}
+        style={{
+          width: "100%", padding: "7px", borderRadius: "8px", fontSize: "11.5px", fontWeight: 700,
+          background: `${cor}18`, border: `1px solid ${cor}44`, color: cor,
+          cursor: "pointer", fontFamily: "var(--font-space-grotesk), sans-serif",
+          letterSpacing: ".06em", transition: "all .15s",
+        }}
+      >
+        Editar
+      </button>
+    </div>
+  );
+}
+
+// ─── Archived Row ─────────────────────────────────────────────────────────────
+
+function ArchivedRow({
+  activity: a, onUnarchive, onDelete,
+}: {
+  activity: EnrichedActivity;
+  onUnarchive: () => void;
+  onDelete: () => void;
+}) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  function requestDelete() {
+    if (confirmingDelete) { onDelete(); setConfirmingDelete(false); }
+    else { setConfirmingDelete(true); setTimeout(() => setConfirmingDelete(false), 3000); }
+  }
+
+  return (
+    <div style={{
+      background: "var(--bg-card)", border: "1px solid var(--border)",
+      borderRadius: "var(--r-lg)", padding: "10px 14px",
+      display: "flex", alignItems: "center", gap: "10px", opacity: 0.6,
+    }}>
+      <div style={{
+        width: "32px", height: "32px", borderRadius: "8px", flexShrink: 0,
+        background: "var(--bg-surface)", display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "16px", filter: "grayscale(1)",
+      }}>
+        {a.emoji ?? "⚡"}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {a.name}
+        </div>
+        <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
+          {a.freqLabel} · +{a.xp_base} XP
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+        <button
+          onClick={onUnarchive}
           style={{
-            color: "var(--text-primary)",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            padding: "5px 10px", borderRadius: "7px", fontSize: "11px", fontWeight: 600,
+            background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)",
+            cursor: "pointer",
           }}
         >
-          {a.name}
-        </p>
-        <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
-          {a.categoria && a.attr
-            ? `${CATEGORIA_LABELS[a.categoria] ?? a.categoria} +${a.attr} · `
-            : ""}
-          {a.freqLabel ?? a.frequency} · +{a.xp_base} XP
-          {a.target_value ? ` · meta ${a.target_value}${a.target_unit ?? ""}` : ""}
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        {archived ? (
-          <>
-            <button
-              onClick={onUnarchive}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium"
-              style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              Desarquivar
-            </button>
-            <button
-              onClick={requestDelete}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-              style={
-                confirmingDelete
-                  ? { background: "#ef444420", border: "1px solid #ef4444", color: "#ef4444" }
-                  : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }
-              }
-              title={confirmingDelete ? "Clique novamente para excluir permanentemente" : "Excluir permanentemente"}
-            >
-              {confirmingDelete ? "Confirmar?" : "Excluir"}
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={onEdit}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium"
-              style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                color: "var(--text-secondary)",
-              }}
-            >
-              Editar
-            </button>
-            <button
-              onClick={requestArchive}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
-              style={
-                confirming
-                  ? { background: "#ef444420", border: "1px solid #ef4444", color: "#ef4444" }
-                  : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }
-              }
-              title={confirming ? "Clique novamente para confirmar" : "Arquivar atividade"}
-            >
-              {confirming ? "Confirmar?" : "Arquivar"}
-            </button>
-          </>
-        )}
+          Restaurar
+        </button>
+        <button
+          onClick={requestDelete}
+          style={{
+            padding: "5px 10px", borderRadius: "7px", fontSize: "11px", fontWeight: 600,
+            cursor: "pointer", transition: "all .15s",
+            ...(confirmingDelete
+              ? { background: "rgba(240,85,106,.15)", border: "1px solid rgba(240,85,106,.5)", color: "#f0556a" }
+              : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }),
+          }}
+        >
+          {confirmingDelete ? "Confirmar?" : "Excluir"}
+        </button>
       </div>
     </div>
   );

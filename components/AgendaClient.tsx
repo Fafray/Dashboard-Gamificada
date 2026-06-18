@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { format, isToday, isTomorrow, isPast, isThisWeek, parseISO } from "date-fns";
+import {
+  format, isToday, isTomorrow, isPast, isThisWeek, parseISO,
+  startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths, isSameDay,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface ScheduledTask {
@@ -36,12 +39,20 @@ const CATEGORY_SUGGESTIONS = [
 ];
 
 const URGENCY_CONFIG: Record<Urgency, { label: string; color: string; dimColor: string }> = {
-  overdue:  { label: "Atrasadas",    color: "#f0556a", dimColor: "rgba(240,85,106,.10)" },
+  overdue:  { label: "Atrasada",     color: "#f0556a", dimColor: "rgba(240,85,106,.10)" },
   today:    { label: "Hoje",         color: "#45cdf0", dimColor: "rgba(69,205,240,.10)" },
   tomorrow: { label: "Amanhã",       color: "#86a6c8", dimColor: "rgba(134,166,200,.08)" },
   week:     { label: "Esta semana",  color: "#86a6c8", dimColor: "rgba(134,166,200,.06)" },
-  later:    { label: "Mais adiante", color: "#5f7a9c", dimColor: "rgba(95,122,156,.06)" },
+  later:    { label: "Mais adiante", color: "#3a526e", dimColor: "rgba(58,82,110,.06)" },
 };
+
+// Kanban shows 4 columns: overdue | today | week (tomorrow+week) | later
+const KANBAN_COLS: { key: Urgency | "week_all"; label: string; color: string; urgencies: Urgency[] }[] = [
+  { key: "overdue",  label: "Atrasada",      color: "#f0556a", urgencies: ["overdue"] },
+  { key: "today",    label: "Hoje",          color: "#45cdf0", urgencies: ["today"] },
+  { key: "week_all", label: "Esta semana",   color: "#86a6c8", urgencies: ["tomorrow", "week"] },
+  { key: "later",    label: "Mais adiante",  color: "#3a526e", urgencies: ["later"] },
+];
 
 const EMOJI_GROUPS = [
   { label: "Agenda",    emojis: ["📌", "📋", "✅", "🗓️", "⏰", "📞", "📩", "🔔", "📝", "🎯"] },
@@ -82,6 +93,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
   const [saving, setSaving] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const [completingId, setCompletingId] = useState<number | null>(null);
+  const [calMonth, setCalMonth] = useState(new Date());
 
   const pendingTasks = tasks.filter((t) => !t.completed_at);
   const completedTasks = tasks.filter((t) => t.completed_at);
@@ -94,51 +106,38 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
     return groups;
   }, [pendingTasks]);
 
-  function openAdd() {
+  function openAdd(prefillDate?: string) {
     setEditingTask(null);
-    setForm(EMPTY_FORM);
+    setForm({ ...EMPTY_FORM, due_date: prefillDate ?? "" });
     setShowForm(true);
   }
 
   function openEdit(task: ScheduledTask) {
     setEditingTask(task);
     setForm({
-      name: task.name,
-      emoji: task.emoji ?? "",
-      due_date: task.due_date,
-      due_time: task.due_time ?? "",
-      category: task.category ?? "",
-      notes: task.notes ?? "",
-      notify_enabled: task.notify_enabled ?? false,
-      notify_date: task.notify_date ?? "",
-      notify_time: task.notify_time ?? "",
+      name: task.name, emoji: task.emoji ?? "", due_date: task.due_date,
+      due_time: task.due_time ?? "", category: task.category ?? "",
+      notes: task.notes ?? "", notify_enabled: task.notify_enabled ?? false,
+      notify_date: task.notify_date ?? "", notify_time: task.notify_time ?? "",
       notify_repeat: task.notify_repeat ?? false,
     });
     setShowForm(true);
   }
 
-  function closeForm() {
-    setShowForm(false);
-    setEditingTask(null);
-  }
+  function closeForm() { setShowForm(false); setEditingTask(null); }
 
   async function handleSave() {
     if (!form.name.trim() || !form.due_date) return;
     setSaving(true);
     try {
       const body = {
-        name: form.name.trim(),
-        emoji: form.emoji.trim() || null,
-        due_date: form.due_date,
-        due_time: form.due_time || null,
-        category: form.category.trim() || null,
-        notes: form.notes.trim() || null,
-        notify_enabled: form.notify_enabled,
+        name: form.name.trim(), emoji: form.emoji.trim() || null, due_date: form.due_date,
+        due_time: form.due_time || null, category: form.category.trim() || null,
+        notes: form.notes.trim() || null, notify_enabled: form.notify_enabled,
         notify_date: form.notify_enabled ? (form.notify_date || null) : null,
         notify_time: form.notify_enabled ? (form.notify_time || null) : null,
         notify_repeat: form.notify_enabled ? form.notify_repeat : false,
       };
-
       if (editingTask) {
         const res = await fetch(`/api/agenda/${editingTask.id}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -176,106 +175,214 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
     setTasks((prev) => prev.filter((t) => t.id !== task.id));
   }
 
-  const urgencyOrder: Urgency[] = ["overdue", "today", "tomorrow", "week", "later"];
+  // Calendar data
+  const calDays = useMemo(() => {
+    const first = startOfMonth(calMonth);
+    const last  = endOfMonth(calMonth);
+    const days  = eachDayOfInterval({ start: first, end: last });
+    const taskDateSet = new Set(pendingTasks.map((t) => t.due_date));
+    const overdueDates = new Set(pendingTasks.filter((t) => getUrgency(t) === "overdue").map((t) => t.due_date));
+    return days.map((d) => {
+      const dateStr = format(d, "yyyy-MM-dd");
+      return {
+        date: d, dateStr,
+        isToday: isToday(d),
+        hasTask: taskDateSet.has(dateStr),
+        isOverdue: overdueDates.has(dateStr),
+        startPad: getDay(first),
+      };
+    });
+  }, [calMonth, pendingTasks]);
 
   return (
     <div className="page">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div>
           <p className="eyebrow">[ AGENDA ]</p>
-          <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px", letterSpacing: ".06em" }}>
-            Tarefas e compromissos
-          </p>
+          <h1 style={{ fontSize: "22px", fontWeight: 700, margin: "4px 0 0" }}>
+            Agenda
+          </h1>
         </div>
         <button
-          onClick={openAdd}
+          onClick={() => openAdd()}
           style={{
             padding: "8px 18px", borderRadius: "10px", fontSize: "12.5px", fontWeight: 700,
-            background: "rgba(0,184,232,.15)", border: "1px solid rgba(0,184,232,.35)",
-            color: "var(--accent-teal)", cursor: "pointer", letterSpacing: ".08em",
-            fontFamily: "var(--font-space-grotesk), sans-serif", textTransform: "uppercase",
+            background: "var(--accent-violet)", color: "#04121c",
+            border: "none", cursor: "pointer",
+            fontFamily: "var(--font-space-grotesk), sans-serif",
           }}
         >
-          + Nova Tarefa
+          + Nova tarefa
         </button>
       </div>
 
-      {/* Stats row */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "24px", flexWrap: "wrap" }}>
-        {(["overdue", "today"] as Urgency[]).map((u) => sections[u].length > 0 && (
-          <div key={u} style={{
-            padding: "6px 14px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
-            background: URGENCY_CONFIG[u].dimColor, border: `1px solid ${URGENCY_CONFIG[u].color}44`,
-            color: URGENCY_CONFIG[u].color, letterSpacing: ".06em",
-          }}>
-            {sections[u].length} {URGENCY_CONFIG[u].label.toLowerCase()}
+      {/* Split layout */}
+      <div style={{ display: "flex", gap: "24px", alignItems: "flex-start" }}>
+
+        {/* ── Left panel: mini-calendar ── */}
+        <div style={{
+          width: "210px", flexShrink: 0,
+          background: "var(--bg-card)", border: "1px solid var(--border)",
+          borderRadius: "var(--r-lg)", padding: "16px",
+          position: "sticky", top: "20px",
+        }}>
+          {/* Month nav */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
+            <button
+              onClick={() => setCalMonth((m) => subMonths(m, 1))}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px", padding: "2px 6px" }}
+            >
+              ‹
+            </button>
+            <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "12px", fontWeight: 700, color: "var(--text-primary)", textTransform: "capitalize" }}>
+              {format(calMonth, "MMMM yyyy", { locale: ptBR })}
+            </span>
+            <button
+              onClick={() => setCalMonth((m) => addMonths(m, 1))}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "14px", padding: "2px 6px" }}
+            >
+              ›
+            </button>
           </div>
-        ))}
-        {pendingTasks.length === 0 && (
-          <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>Nenhuma tarefa pendente</div>
-        )}
+
+          {/* Day labels */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px", marginBottom: "4px" }}>
+            {["D","S","T","Q","Q","S","S"].map((l, i) => (
+              <div key={i} style={{ textAlign: "center", fontSize: "9px", color: "var(--text-muted)", fontWeight: 700, fontFamily: "var(--font-space-grotesk)" }}>
+                {l}
+              </div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "2px" }}>
+            {/* Padding cells */}
+            {Array.from({ length: calDays[0]?.startPad ?? 0 }).map((_, i) => (
+              <div key={`pad-${i}`} />
+            ))}
+            {calDays.map((d) => (
+              <button
+                key={d.dateStr}
+                onClick={() => openAdd(d.dateStr)}
+                title={d.dateStr}
+                style={{
+                  width: "100%", aspectRatio: "1", borderRadius: "5px",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  fontSize: "10px", fontWeight: d.isToday ? 700 : 400,
+                  cursor: "pointer", position: "relative",
+                  background: d.isToday ? "var(--accent-violet)" : d.isOverdue ? "rgba(240,85,106,.18)" : "transparent",
+                  border: d.isToday ? "1px solid var(--accent-violet-bright)" : "1px solid transparent",
+                  color: d.isToday ? "#04121c" : d.isOverdue ? "#f0556a" : "var(--text-secondary)",
+                  transition: "background .12s",
+                }}
+              >
+                {d.date.getDate()}
+                {d.hasTask && !d.isToday && (
+                  <div style={{
+                    width: "4px", height: "4px", borderRadius: "50%",
+                    background: d.isOverdue ? "#f0556a" : "var(--accent-teal)",
+                    position: "absolute", bottom: "2px",
+                  }} />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Legend */}
+          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+            {[
+              { color: "#f0556a", label: "Atrasada" },
+              { color: "var(--accent-violet)", label: "Hoje" },
+              { color: "var(--accent-teal)", label: "Futura" },
+            ].map((l) => (
+              <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: l.color, flexShrink: 0 }} />
+                <span style={{ fontSize: "10px", color: "var(--text-muted)" }}>{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Kanban columns ── */}
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px", minWidth: 0 }}>
+          {KANBAN_COLS.map((col) => {
+            const items = col.urgencies.flatMap((u) => sections[u]);
+            return (
+              <div key={col.key}>
+                {/* Column header */}
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px", paddingBottom: "8px", borderBottom: `2px solid ${col.color}33` }}>
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: col.color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "11px", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: col.color }}>
+                    {col.label}
+                  </span>
+                  {items.length > 0 && (
+                    <span style={{
+                      marginLeft: "auto", minWidth: "18px", height: "18px",
+                      background: col.color, color: "#04121c",
+                      borderRadius: "999px", fontSize: "9px", fontWeight: 800,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      padding: "0 4px", fontFamily: "var(--font-space-grotesk)",
+                    }}>
+                      {items.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Cards */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {items.map((task) => (
+                    <KanbanCard
+                      key={task.id}
+                      task={task}
+                      colColor={col.color}
+                      completing={completingId === task.id}
+                      onComplete={() => handleComplete(task)}
+                      onEdit={() => openEdit(task)}
+                      onDelete={() => handleDelete(task)}
+                    />
+                  ))}
+                  {items.length === 0 && (
+                    <div style={{
+                      padding: "20px 10px", textAlign: "center",
+                      border: `1px dashed ${col.color}22`, borderRadius: "var(--r-md)",
+                      color: "var(--text-muted)", fontSize: "11px",
+                    }}>
+                      —
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Sections */}
-      {urgencyOrder.map((urgency) => {
-        const items = sections[urgency];
-        if (items.length === 0) return null;
-        const cfg = URGENCY_CONFIG[urgency];
-        return (
-          <div key={urgency} className="section">
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-              <div style={{ width: "3px", height: "16px", borderRadius: "2px", background: cfg.color }} />
-              <h2 style={{ margin: 0, fontSize: "13px", color: cfg.color, letterSpacing: ".1em", textTransform: "uppercase" }}>
-                {cfg.label}
-              </h2>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{items.length}</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              {items.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  urgency={urgency}
-                  completing={completingId === task.id}
-                  onComplete={() => handleComplete(task)}
-                  onEdit={() => openEdit(task)}
-                  onDelete={() => handleDelete(task)}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Concluídas */}
+      {/* Completed tasks */}
       {completedTasks.length > 0 && (
-        <div className="section">
+        <div style={{ marginTop: "32px" }}>
           <button
             onClick={() => setShowCompleted((v) => !v)}
             style={{
-              display: "flex", alignItems: "center", gap: "8px", background: "none",
-              border: "none", cursor: "pointer", padding: "0", marginBottom: showCompleted ? "12px" : "0",
+              display: "flex", alignItems: "center", gap: "8px",
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              color: "var(--text-muted)", fontSize: "12px", fontWeight: 600,
+              marginBottom: showCompleted ? "12px" : 0,
             }}
           >
-            <div style={{ width: "3px", height: "16px", borderRadius: "2px", background: "#10b981" }} />
-            <h2 style={{ margin: 0, fontSize: "13px", color: "#10b981", letterSpacing: ".1em", textTransform: "uppercase" }}>
-              Concluídas
-            </h2>
-            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{completedTasks.length}</span>
-            <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "4px" }}>
-              {showCompleted ? "▲" : "▼"}
-            </span>
+            <span style={{ color: "#25d99a" }}>✓</span>
+            Concluídas ({completedTasks.length})
+            <span style={{ fontSize: "10px" }}>{showCompleted ? "▲" : "▼"}</span>
           </button>
           {showCompleted && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
               {completedTasks.map((task) => (
-                <TaskCard
+                <KanbanCard
                   key={task.id}
                   task={task}
-                  urgency="later"
-                  completing={completingId === task.id}
+                  colColor="#25d99a"
                   done
+                  completing={completingId === task.id}
                   onComplete={() => handleComplete(task)}
                   onEdit={() => openEdit(task)}
                   onDelete={() => handleDelete(task)}
@@ -288,12 +395,12 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
 
       {/* Empty state */}
       {pendingTasks.length === 0 && completedTasks.length === 0 && (
-        <div className="card" style={{ padding: "40px", textAlign: "center" }}>
+        <div className="card" style={{ padding: "48px", textAlign: "center", marginTop: "24px" }}>
           <p style={{ fontSize: "36px", marginBottom: "12px" }}>📅</p>
-          <p style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px", letterSpacing: ".1em", fontFamily: "var(--font-space-grotesk), sans-serif", textTransform: "uppercase" }}>
-            Agenda Vazia
+          <p style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px", fontFamily: "var(--font-space-grotesk)" }}>
+            Agenda vazia
           </p>
-          <p style={{ fontSize: "12.5px", color: "var(--text-muted)", letterSpacing: ".04em" }}>
+          <p style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
             Adicione tarefas e compromissos futuros
           </p>
         </div>
@@ -315,11 +422,11 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Emoji picker + Nome */}
+              {/* Emoji + Nome */}
               <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
                 <div style={{ flexShrink: 0 }}>
                   <label style={labelStyle}>Emoji</label>
-                  <EmojiPicker value={form.emoji} onChange={(e) => setForm((f) => ({ ...f, emoji: e })) } />
+                  <EmojiPicker value={form.emoji} onChange={(e) => setForm((f) => ({ ...f, emoji: e }))} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Nome *</label>
@@ -337,21 +444,11 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
               <div style={{ display: "flex", gap: "10px" }}>
                 <div style={{ flex: 1 }}>
                   <label style={labelStyle}>Data *</label>
-                  <input
-                    type="date"
-                    value={form.due_date}
-                    onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))}
-                    style={inputStyle}
-                  />
+                  <input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} style={inputStyle} />
                 </div>
                 <div style={{ width: "110px" }}>
                   <label style={labelStyle}>Hora</label>
-                  <input
-                    type="time"
-                    value={form.due_time}
-                    onChange={(e) => setForm((f) => ({ ...f, due_time: e.target.value }))}
-                    style={inputStyle}
-                  />
+                  <input type="time" value={form.due_time} onChange={(e) => setForm((f) => ({ ...f, due_time: e.target.value }))} style={inputStyle} />
                 </div>
               </div>
 
@@ -361,15 +458,12 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                 border: `1px solid ${form.notify_enabled ? "rgba(0,240,192,.35)" : "var(--border)"}`,
                 transition: "border-color .15s",
               }}>
-                {/* Toggle row */}
                 <button
                   type="button"
                   onClick={() => {
                     const next = !form.notify_enabled;
                     setForm((f) => ({
-                      ...f,
-                      notify_enabled: next,
-                      // pré-preenche com a data/hora da tarefa se não tiver
+                      ...f, notify_enabled: next,
                       notify_date: next && !f.notify_date ? f.due_date : f.notify_date,
                       notify_time: next && !f.notify_time ? f.due_time : f.notify_time,
                     }));
@@ -408,35 +502,18 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                   </div>
                 </button>
 
-                {/* Data + hora + repeat — expande quando ativo */}
                 {form.notify_enabled && (
-                  <div style={{
-                    display: "flex", flexDirection: "column", gap: "10px",
-                    padding: "12px 14px",
-                    background: "rgba(0,240,192,.04)",
-                    borderTop: "1px solid rgba(0,240,192,.15)",
-                  }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "12px 14px", background: "rgba(0,240,192,.04)", borderTop: "1px solid rgba(0,240,192,.15)" }}>
                     <div style={{ display: "flex", gap: "10px" }}>
                       <div style={{ flex: 1 }}>
                         <label style={labelStyle}>Data do aviso</label>
-                        <input
-                          type="date"
-                          value={form.notify_date}
-                          onChange={(e) => setForm((f) => ({ ...f, notify_date: e.target.value }))}
-                          style={inputStyle}
-                        />
+                        <input type="date" value={form.notify_date} onChange={(e) => setForm((f) => ({ ...f, notify_date: e.target.value }))} style={inputStyle} />
                       </div>
                       <div style={{ width: "110px" }}>
                         <label style={labelStyle}>Hora do aviso</label>
-                        <input
-                          type="time"
-                          value={form.notify_time}
-                          onChange={(e) => setForm((f) => ({ ...f, notify_time: e.target.value }))}
-                          style={inputStyle}
-                        />
+                        <input type="time" value={form.notify_time} onChange={(e) => setForm((f) => ({ ...f, notify_time: e.target.value }))} style={inputStyle} />
                       </div>
                     </div>
-                    {/* Toggle repetir */}
                     <button
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, notify_repeat: !f.notify_repeat }))}
@@ -450,9 +527,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                     >
                       <span style={{ fontSize: "16px" }}>🔁</span>
                       <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-                          Repetir lembrete
-                        </p>
+                        <p style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>Repetir lembrete</p>
                         <p style={{ fontSize: "10.5px", color: "var(--text-muted)", margin: "1px 0 0" }}>
                           {form.notify_repeat ? "Avisa 2x mais: +5min e +10min depois" : "Avisa só uma vez"}
                         </p>
@@ -463,8 +538,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                         position: "relative", flexShrink: 0, transition: "background .15s",
                       }}>
                         <div style={{
-                          position: "absolute", top: "2px",
-                          left: form.notify_repeat ? "16px" : "2px",
+                          position: "absolute", top: "2px", left: form.notify_repeat ? "16px" : "2px",
                           width: "14px", height: "14px", borderRadius: "50%",
                           background: "white", transition: "left .15s",
                         }} />
@@ -474,7 +548,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                 )}
               </div>
 
-              {/* Categoria — texto livre com sugestões */}
+              {/* Categoria */}
               <div>
                 <label style={labelStyle}>Categoria</label>
                 <input
@@ -502,7 +576,6 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
               </div>
             </div>
 
-            {/* Buttons */}
             <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
               <button onClick={closeForm} style={{ ...btnStyle, flex: 1, background: "transparent", border: "1px solid rgba(120,150,180,.25)", color: "var(--text-muted)" }}>
                 Cancelar
@@ -510,9 +583,9 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
               <button
                 onClick={handleSave}
                 disabled={saving || !form.name.trim() || !form.due_date}
-                style={{ ...btnStyle, flex: 2, background: "rgba(0,184,232,.15)", border: "1px solid rgba(0,184,232,.35)", color: "var(--accent-teal)", opacity: (saving || !form.name.trim() || !form.due_date) ? 0.5 : 1 }}
+                style={{ ...btnStyle, flex: 2, background: "var(--accent-violet)", border: "none", color: "#04121c", opacity: (saving || !form.name.trim() || !form.due_date) ? 0.5 : 1 }}
               >
-                {saving ? "Salvando..." : editingTask ? "Salvar" : "Criar Tarefa"}
+                {saving ? "Salvando..." : editingTask ? "Salvar" : "Criar tarefa"}
               </button>
             </div>
           </div>
@@ -522,90 +595,96 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
   );
 }
 
-// ─── Task Card ────────────────────────────────────────────────────────────────
+// ─── Kanban Card ──────────────────────────────────────────────────────────────
 
-interface TaskCardProps {
+function KanbanCard({
+  task, colColor, done, completing, onComplete, onEdit, onDelete,
+}: {
   task: ScheduledTask;
-  urgency: Urgency;
+  colColor: string;
   done?: boolean;
   completing: boolean;
   onComplete: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}
-
-function TaskCard({ task, urgency, done, completing, onComplete, onEdit, onDelete }: TaskCardProps) {
-  const cfg = URGENCY_CONFIG[urgency];
+}) {
   const catColor = getCategoryColor();
 
   return (
     <div
-      className="card"
       style={{
-        padding: "14px 16px",
-        display: "flex",
-        alignItems: "flex-start",
-        gap: "12px",
+        background: "var(--bg-card)", border: "1px solid var(--border)",
+        borderRadius: "var(--r-md)", padding: "10px 12px",
+        borderTop: `3px solid ${done ? "#25d99a" : colColor}`,
         opacity: done ? 0.55 : 1,
         transition: "opacity .2s",
-        borderLeft: `3px solid ${done ? "#10b981" : cfg.color}`,
       }}
     >
-      {/* Complete button */}
-      <button
-        onClick={onComplete}
-        disabled={completing}
-        style={{
-          flexShrink: 0, width: "26px", height: "26px", borderRadius: "50%",
-          border: `2px solid ${done ? "#10b981" : cfg.color}`,
-          background: done ? "#10b981" : "transparent",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          marginTop: "1px", transition: "all .15s",
-          color: "white", fontSize: "13px", fontWeight: 700,
-        }}
-      >
-        {done ? "✓" : completing ? "…" : ""}
-      </button>
-
-      {/* Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-          {task.emoji && <span style={{ fontSize: "16px" }}>{task.emoji}</span>}
-          <span style={{
-            fontWeight: 700, fontSize: "14px", color: "var(--text-primary)",
-            textDecoration: done ? "line-through" : "none", letterSpacing: ".03em",
-          }}>
-            {task.name}
-          </span>
-          {task.category && (
-            <span style={{
-              fontSize: "10px", padding: "2px 7px", borderRadius: "5px", fontWeight: 600,
-              background: `${catColor}22`, color: catColor, letterSpacing: ".07em",
-              textTransform: "uppercase", fontFamily: "var(--font-space-grotesk), sans-serif",
-            }}>
-              {task.category}
-            </span>
-          )}
-        </div>
-        <div style={{ fontSize: "11.5px", color: done ? "var(--text-muted)" : cfg.color, marginTop: "4px", fontWeight: 500 }}>
-          📅 {formatDueDate(task)}
-          {done && task.completed_at && (
-            <span style={{ color: "#10b981", marginLeft: "10px" }}>✓ concluída</span>
-          )}
-        </div>
-        {task.notes && (
-          <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "5px", lineHeight: 1.45 }}>
-            {task.notes}
-          </div>
-        )}
+      {/* Name */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
+        {task.emoji && <span style={{ fontSize: "14px", flexShrink: 0, marginTop: "1px" }}>{task.emoji}</span>}
+        <span style={{
+          fontWeight: 700, fontSize: "13px", color: "var(--text-primary)",
+          textDecoration: done ? "line-through" : "none", lineHeight: 1.3, flex: 1,
+        }}>
+          {task.name}
+        </span>
       </div>
 
+      {/* Date */}
+      <div style={{ fontSize: "10.5px", color: done ? "var(--text-muted)" : colColor, marginTop: "5px", fontWeight: 500 }}>
+        📅 {formatDueDate(task)}
+      </div>
+
+      {/* Category chip */}
+      {task.category && (
+        <span style={{
+          display: "inline-block", marginTop: "5px",
+          fontSize: "9.5px", padding: "1px 6px", borderRadius: "4px", fontWeight: 600,
+          background: `${catColor}22`, color: catColor, letterSpacing: ".06em",
+          textTransform: "uppercase", fontFamily: "var(--font-space-grotesk)",
+        }}>
+          {task.category}
+        </span>
+      )}
+
       {/* Actions */}
-      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+      <div style={{ display: "flex", gap: "5px", marginTop: "8px" }}>
         {!done && (
-          <button onClick={onEdit} style={iconBtnStyle} title="Editar">✏️</button>
+          <button
+            onClick={onEdit}
+            style={{
+              flex: 1, padding: "4px 0", borderRadius: "6px", fontSize: "11px", fontWeight: 600,
+              background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)",
+              cursor: "pointer",
+            }}
+          >
+            ✏️
+          </button>
         )}
-        <button onClick={onDelete} style={{ ...iconBtnStyle, opacity: 0.6 }} title="Excluir">✕</button>
+        <button
+          onClick={onComplete}
+          disabled={completing}
+          style={{
+            flex: 2, padding: "4px 0", borderRadius: "6px", fontSize: "11px", fontWeight: 700,
+            background: done ? "rgba(37,217,154,.12)" : `${colColor}18`,
+            border: `1px solid ${done ? "rgba(37,217,154,.35)" : `${colColor}44`}`,
+            color: done ? "#25d99a" : colColor,
+            cursor: "pointer",
+          }}
+        >
+          {completing ? "…" : done ? "Desfazer" : "✓ Concluir"}
+        </button>
+        <button
+          onClick={onDelete}
+          style={{
+            width: "28px", borderRadius: "6px", fontSize: "11px",
+            background: "transparent", border: "1px solid var(--border)", color: "var(--text-muted)",
+            cursor: "pointer", opacity: 0.7,
+          }}
+        >
+          ✕
+        </button>
       </div>
     </div>
   );
@@ -648,13 +727,10 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (e: string)
           width: "260px", background: "var(--bg-card)", border: "1px solid var(--border-light)",
           borderRadius: "12px", boxShadow: "0 12px 40px rgba(0,0,0,.6)", overflow: "hidden",
         }}>
-          {/* Tabs */}
           <div style={{ display: "flex", borderBottom: "1px solid var(--border)", overflowX: "auto" }}>
             {EMOJI_GROUPS.map((g, i) => (
               <button
-                key={i}
-                type="button"
-                onClick={() => setTab(i)}
+                key={i} type="button" onClick={() => setTab(i)}
                 style={{
                   flex: "1 0 auto", padding: "7px 5px", fontSize: "9.5px",
                   fontWeight: tab === i ? 700 : 400,
@@ -668,35 +744,25 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (e: string)
               </button>
             ))}
           </div>
-
-          {/* Grid */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: "4px", padding: "10px" }}>
             {EMOJI_GROUPS[tab].emojis.map((e) => (
               <button
-                key={e}
-                type="button"
+                key={e} type="button"
                 onClick={() => { onChange(e); setOpen(false); }}
                 style={{
                   fontSize: "22px", padding: "6px", borderRadius: "8px", border: "none",
                   background: value === e ? "rgba(0,184,232,.15)" : "transparent",
                   cursor: "pointer", transition: "background .12s",
                 }}
-                onMouseEnter={(ev) => (ev.currentTarget.style.background = "rgba(255,255,255,.07)")}
-                onMouseLeave={(ev) => (ev.currentTarget.style.background = value === e ? "rgba(0,184,232,.15)" : "transparent")}
               >
                 {e}
               </button>
             ))}
           </div>
-
-          {/* Input manual */}
           <div style={{ padding: "0 10px 10px", borderTop: "1px solid var(--border)" }}>
             <input
-              type="text"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="Ou cole qualquer emoji"
-              maxLength={2}
+              type="text" value={value} onChange={(e) => onChange(e.target.value)}
+              placeholder="Ou cole qualquer emoji" maxLength={2}
               style={{
                 width: "100%", padding: "7px 10px", marginTop: "8px",
                 background: "var(--bg-surface)", border: "1px solid var(--border)",
@@ -728,11 +794,5 @@ const labelStyle: React.CSSProperties = {
 const btnStyle: React.CSSProperties = {
   padding: "10px 16px", borderRadius: "9px", fontSize: "12.5px", fontWeight: 700,
   cursor: "pointer", letterSpacing: ".08em", fontFamily: "var(--font-space-grotesk), sans-serif",
-  textTransform: "uppercase", transition: "opacity .15s",
-};
-
-const iconBtnStyle: React.CSSProperties = {
-  width: "28px", height: "28px", borderRadius: "7px", border: "1px solid var(--border)",
-  background: "transparent", cursor: "pointer", fontSize: "12px",
-  display: "flex", alignItems: "center", justifyContent: "center",
+  transition: "opacity .15s",
 };
