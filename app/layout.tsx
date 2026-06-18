@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Daily Quest" },
   icons: {
-    apple: "/characters/e-rank.jpg",
+    apple: "/characters/e-rank.jpg.png",
   },
 };
 
