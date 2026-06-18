@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
-import { format, startOfISOWeek, endOfISOWeek } from "date-fns";
+import { format, subDays, parseISO, startOfISOWeek, endOfISOWeek } from "date-fns";
 import {
   getActivity,
   getActivities,
-  createCheckin,
+  createCheckinAtomic,
   hasCheckinToday,
   hasCheckinThisWeek,
   getWeeklyCheckinCount,
   getCheckinDatesForActivity,
   getAllCheckins,
+  getAchievements,
   getTotalCheckinsCount,
   addXP,
-  updateLevel,
   unlockAchievement,
   hasAchievement,
   getCheckinsByDate,
   getUserStats,
-  sincronizarNivelMaximo,
   setUltimaAtividade,
   registrarEvento,
   getXpSumTodayExcluding,
@@ -25,6 +24,7 @@ import {
   vitShieldAvailable,
   archiveActivity,
 } from "@/lib/db";
+import { BALANCE } from "@/lib/config/balance";
 import {
   agiMorningBonus,
   forStreakBoosted,
@@ -53,9 +53,8 @@ export async function GET(req: Request) {
 }
 
 function graduationThreshold(graduationCount: number): number {
-  if (graduationCount === 0) return 21;
-  if (graduationCount === 1) return 42;
-  return 66;
+  const t = BALANCE.graduation.thresholds;
+  return t[graduationCount] ?? t[t.length - 1];
 }
 
 export async function POST(req: Request) {
@@ -108,9 +107,8 @@ export async function POST(req: Request) {
   let shieldActivated = false;
   let checkinDates = checkinDatesRaw;
   if (activity.frequency === "daily" && vitShieldAvailable(playerStats, todayStr)) {
-    const { format: fmt, subDays, parseISO } = await import("date-fns");
-    const yesterday  = fmt(subDays(now, 1), "yyyy-MM-dd");
-    const dayBefore  = fmt(subDays(now, 2), "yyyy-MM-dd");
+    const yesterday  = format(subDays(now, 1), "yyyy-MM-dd");
+    const dayBefore  = format(subDays(now, 2), "yyyy-MM-dd");
     if (!checkinDates.includes(yesterday) && checkinDates.includes(dayBefore)) {
       checkinDates = [...checkinDates, yesterday];
       shieldActivated = true;
@@ -139,7 +137,7 @@ export async function POST(req: Request) {
   const intBonus = intStudyBonus(atributos, activity.categoria);
 
   // Micro-hábito: bônus "além"
-  const levelMult = checkin_level === "beyond" ? 1.25 : 1.0;
+  const levelMult = checkin_level === "beyond" ? BALANCE.checkin.beyondMultiplier : 1.0;
 
   const xpEarned = Math.round(
     xpComBonus(xpBase, activity.categoria, atributos)
@@ -158,8 +156,9 @@ export async function POST(req: Request) {
   let checkin;
   let updatedStats;
   try {
-    checkin      = await createCheckin(activity_id, xpEarned, actual_value ?? null, undefined, checkin_level ?? null);
-    updatedStats = await addXP(xpEarned);
+    ({ checkin, stats: updatedStats } = await createCheckinAtomic(
+      activity_id, xpEarned, actual_value ?? null, checkin_level ?? null, nivelDoXp
+    ));
   } catch (err: unknown) {
     if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "23505") {
       return NextResponse.json({ error: "Já feito hoje!" }, { status: 409 });
@@ -168,8 +167,6 @@ export async function POST(req: Request) {
   }
 
   const levelInfo = getLevelInfo(updatedStats.total_xp);
-  await updateLevel(levelInfo.level);
-  await sincronizarNivelMaximo(levelInfo.level);
   await setUltimaAtividade(now.toISOString());
 
   // Eventos de mudança de nível / rank
@@ -220,8 +217,7 @@ export async function POST(req: Request) {
     : null;
 
   const totalCheckins = await getTotalCheckinsCount();
-  const desbloqueados = (await import("@/lib/db").then((m) => m.getAchievements()))
-    .map((a) => a.key);
+  const desbloqueados = (await getAchievements()).map((a) => a.key);
 
   const playerEstado: PlayerEstado = {
     streak:    maxStreak,
@@ -275,7 +271,7 @@ export async function POST(req: Request) {
   let keystoneBonusXP = 0;
   if (activity.is_keystone) {
     const otherXpToday = await getXpSumTodayExcluding(activity_id, todayStr);
-    keystoneBonusXP = Math.round(otherXpToday * 0.10);
+    keystoneBonusXP = Math.round(otherXpToday * BALANCE.checkin.keystoneBonus);
     if (keystoneBonusXP > 0) {
       updatedStats = await addXP(keystoneBonusXP);
       await registrarEvento("keystone_bonus", `⚓ Bônus âncora: +${keystoneBonusXP} XP`, { bonus: keystoneBonusXP });

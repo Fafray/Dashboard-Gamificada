@@ -16,7 +16,7 @@ import {
   updateLevel,
   getScheduledTasks,
 } from "@/lib/db";
-import { getLevelInfo, computeStreak } from "@/lib/gamification";
+import { getLevelInfo, computeStreak, nivelDoXp } from "@/lib/gamification";
 import { derivarClasse } from "@/lib/attributes";
 import type { Atributos } from "@/lib/attributes";
 import { getDailyBonusMissionId } from "@/lib/perks";
@@ -43,8 +43,7 @@ export default async function DashboardPage() {
   ]);
 
   // Re-derivar nível após decay (pode ter caído)
-  const { nivelDoXp: calcNivel } = await import("@/lib/gamification");
-  const nivelAtual = calcNivel(rawStats.total_xp);
+  const nivelAtual = nivelDoXp(rawStats.total_xp);
   if (nivelAtual !== rawStats.level) await updateLevel(nivelAtual);
 
   const atributos = (rawStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;

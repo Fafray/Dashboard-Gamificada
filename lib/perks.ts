@@ -1,26 +1,27 @@
 import type { Atributos } from "./attributes";
+import { BALANCE } from "./config/balance";
 
-const THRESHOLD = 5;
+const { threshold: THRESHOLD, agi, int, per, for: forPerk } = BALANCE.perks;
 
-// AGI: +15% XP em qualquer check-in antes das 9h
+// AGI: +% XP em qualquer check-in antes das Xh
 export function agiMorningBonus(atributos: Atributos, hour: number): number {
-  if (atributos.AGI < THRESHOLD || hour >= 9) return 0;
-  return 0.15;
+  if (atributos.AGI < THRESHOLD || hour >= agi.hourLimit) return 0;
+  return agi.bonus;
 }
 
 // FOR: sobe um tier de multiplier de streak em atividades de treino
 export function forStreakBoosted(streak: number, atributos: Atributos, categoria: string | null): number {
   if (atributos.FOR < THRESHOLD || categoria !== "treino") return streak;
-  if (streak >= 14) return streak; // já no máximo
-  if (streak >= 7)  return 14;    // 1.5x → 2.0x
-  if (streak >= 3)  return 7;     // 1.25x → 1.5x
-  return 3;                        // 1.0x → 1.25x
+  if (streak >= forPerk.tier2Max) return streak;  // já no máximo
+  if (streak >= forPerk.tier1To2) return forPerk.tier2Max;
+  if (streak >= forPerk.tier0To1) return forPerk.tier1To2;
+  return forPerk.tier0To1;
 }
 
-// INT: +10% XP em atividades de estudo
+// INT: +% XP em atividades de estudo
 export function intStudyBonus(atributos: Atributos, categoria: string | null): number {
   if (atributos.INT < THRESHOLD || categoria !== "estudo") return 0;
-  return 0.10;
+  return int.bonus;
 }
 
 // PER: missão bônus do dia — ID determinístico baseado na data
@@ -32,10 +33,10 @@ export function getDailyBonusMissionId(activityIds: number[], date: Date): numbe
   return activityIds[idx];
 }
 
-// PER: +20% XP se a atividade for a missão bônus do dia
+// PER: +% XP se a atividade for a missão bônus do dia
 export function perBonusMissionBonus(atributos: Atributos, activityId: number, bonusMissionId: number | null): number {
   if (atributos.PER < THRESHOLD || activityId !== bonusMissionId) return 0;
-  return 0.20;
+  return per.bonus;
 }
 
 // Descreve quais perks estão ativos (para tooltip / log)

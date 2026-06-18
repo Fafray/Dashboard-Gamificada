@@ -1,4 +1,5 @@
-import { Pool } from "pg";
+import { Pool, type PoolClient } from "pg";
+import { BALANCE } from "./config/balance";
 
 function localISOString(d = new Date()): string {
   const p = (n: number, len = 2) => String(n).padStart(len, "0");
@@ -330,6 +331,57 @@ export async function createCheckin(
   return res.rows[0];
 }
 
+// Cria check-in + soma XP + atualiza nível em uma única transação atômica.
+// Recebe computeLevel como parâmetro para evitar dependência circular com gamification.ts.
+export async function createCheckinAtomic(
+  activityId: number,
+  xpEarned: number,
+  actualValue: number | null,
+  checkinLevel: "minimum" | "beyond" | null,
+  computeLevel: (totalXP: number) => number
+): Promise<{ checkin: Checkin; stats: UserStats }> {
+  await init();
+  const client: PoolClient = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const checkinRes = await client.query(
+      `INSERT INTO checkins (activity_id, checked_at, xp_earned, actual_value, checkin_level)
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [activityId, localISOString(), xpEarned, actualValue, checkinLevel]
+    );
+    const checkin: Checkin = checkinRes.rows[0];
+
+    await client.query(
+      `UPDATE user_stats SET total_xp = total_xp + $1, last_seen = $2 WHERE id = 1`,
+      [xpEarned, localISOString()]
+    );
+    const statsRes = await client.query(`SELECT * FROM user_stats WHERE id = 1`);
+    const stats: UserStats = statsRes.rows[0];
+
+    const newLevel = computeLevel(stats.total_xp);
+    await client.query(`UPDATE user_stats SET level = $1 WHERE id = 1`, [newLevel]);
+
+    // sincronizarNivelMaximo inline
+    const nivelMax = stats.nivel_maximo_atingido ?? 1;
+    if (newLevel > nivelMax) {
+      const pontos = (newLevel - nivelMax) * BALANCE.attributes.pointsPerLevel;
+      await client.query(
+        `UPDATE user_stats SET nivel_maximo_atingido = $1, pontos_disponiveis = pontos_disponiveis + $2 WHERE id = 1`,
+        [newLevel, pontos]
+      );
+    }
+
+    await client.query("COMMIT");
+    return { checkin, stats: { ...stats, level: newLevel } };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function getXpSumTodayExcluding(excludeActivityId: number, todayStr: string): Promise<number> {
   await init();
   const res = await pool.query(
@@ -366,7 +418,7 @@ export async function penalizeExpiredOnce(todayStr: string): Promise<void> {
     );
     const hasDone = parseInt(checkinRes.rows[0].cnt) > 0;
     if (!hasDone) {
-      const penalty = Math.max(30, activity.xp_base * 3);
+      const penalty = Math.max(BALANCE.penalty.once.min, activity.xp_base * BALANCE.penalty.once.xpBaseMultiplier);
       await pool.query(
         `UPDATE user_stats SET total_xp = GREATEST(0, total_xp - $1) WHERE id = 1`,
         [penalty]
@@ -390,7 +442,7 @@ export function vitShieldAvailable(stats: UserStats, todayStr: string): boolean 
   const used = new Date(stats.vit_shield_used_at);
   const today = new Date(todayStr);
   const diffDays = Math.floor((today.getTime() - used.getTime()) / 86400000);
-  return diffDays >= 30;
+  return diffDays >= BALANCE.perks.vit.shieldCooldownDays;
 }
 
 export async function getCheckinDatesForActivity(activityId: number): Promise<string[]> {
@@ -638,8 +690,8 @@ export async function aplicarDecaySeNecessario(tituloAtivoId: string | null): Pr
   if (diasParado < 1) return 0;
 
   // Título "renascido" reduz decay pela metade
-  const multiplicador = tituloAtivoId === "renascido" ? 0.5 : 1;
-  const taxaPorDia    = 0.03 * multiplicador;
+  const multiplicador = tituloAtivoId === "renascido" ? BALANCE.decay.renascidoReduction : 1;
+  const taxaPorDia    = BALANCE.decay.ratePerDay * multiplicador;
   const perda         = Math.round(stats.total_xp * taxaPorDia * diasParado);
   if (perda <= 0) return 0;
 
@@ -654,7 +706,7 @@ export async function aplicarDecaySeNecessario(tituloAtivoId: string | null): Pr
 // Fecha dias passados sem checkin: aplica −xpPenalidade por dia perdido.
 // Roda na abertura do app (Opção A). Cap de 7 dias para não punir demais quem volta
 // de férias. Só age se o jogador já tem histórico (ultima_atividade preenchida).
-export async function fecharDiasPassados(xpPenalidade = 24): Promise<number> {
+export async function fecharDiasPassados(xpPenalidade = BALANCE.penalty.perMissedDay): Promise<number> {
   await init();
   const stats = await getUserStats();
 
@@ -675,7 +727,7 @@ export async function fecharDiasPassados(xpPenalidade = 24): Promise<number> {
   const cursor = new Date(refStr);
   cursor.setDate(cursor.getDate() + 1);
 
-  while (cursor.toISOString().slice(0, 10) < hojeStr && diasParaVerificar.length < 7) {
+  while (cursor.toISOString().slice(0, 10) < hojeStr && diasParaVerificar.length < BALANCE.penalty.maxMissedDays) {
     diasParaVerificar.push(cursor.toISOString().slice(0, 10));
     cursor.setDate(cursor.getDate() + 1);
   }

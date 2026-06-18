@@ -1,5 +1,6 @@
 import { format, subDays, subWeeks, startOfISOWeek, parseISO, differenceInCalendarDays, differenceInCalendarWeeks } from "date-fns";
 import type { Frequency } from "./db";
+import { BALANCE } from "./config/balance";
 
 // ─── Level System (curva: degrau N → N+1 = floor(100 * N^1.5)) ──────────────
 
@@ -44,9 +45,10 @@ export function xpAteRebaixar(xpTotal: number): { rankAbaixo: string; xp: number
 
 // Streak multiplier
 export function multStreak(streak: number): number {
-  if (streak >= 14) return 2.0;
-  if (streak >= 7)  return 1.5;
-  if (streak >= 3)  return 1.25;
+  const { tier3Min, tier3Mult, tier2Min, tier2Mult, tier1Min, tier1Mult } = BALANCE.streak;
+  if (streak >= tier3Min) return tier3Mult;
+  if (streak >= tier2Min) return tier2Mult;
+  if (streak >= tier1Min) return tier1Mult;
   return 1.0;
 }
 
@@ -264,11 +266,11 @@ export function getStreakMilestone(streak: number): StreakMilestone | null {
 
 // ─── Daily Completion Bonus ───────────────────────────────────────────────────
 
-export const COMBO_BASE = 15;
+export const COMBO_BASE = BALANCE.combo.base;
 
-// Combo XP: base + AGI contributes +1 per 3 points invested
+// Combo XP: base + AGI contributes +1 per N points invested
 export function computeComboXP(agi: number): number {
-  return COMBO_BASE + Math.floor(agi / 3);
+  return COMBO_BASE + Math.floor(agi / BALANCE.combo.agiPerPoints);
 }
 
 export function getDailyCompletionBonus(activitiesCount: number): number {
