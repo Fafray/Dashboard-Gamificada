@@ -8,11 +8,11 @@ import { MedidorEquilibrio } from "@/components/MedidorEquilibrio";
 import { CATEGORIA_ATRIBUTO, CATEGORIA_LABELS } from "@/lib/attributes";
 
 const COR_ATTR: Record<string, string> = {
-  FOR: "#e24b4a",
-  VIT: "#1d9e75",
-  AGI: "#efa527",
-  INT: "#9b8bff",
-  PER: "#3b82f6",
+  FOR: "#f0556a",
+  VIT: "#25d99a",
+  AGI: "#ffce47",
+  INT: "#8b5cf6",
+  PER: "#45cdf0",
 };
 
 function enrich(a: Activity) {
@@ -289,47 +289,39 @@ function ActivityRow({ activity: a, archived, onEdit, onArchive, onUnarchive, on
     >
       {/* Icon */}
       <div
-        className="flex items-center justify-center w-10 h-10 rounded-lg text-xl flex-shrink-0"
-        style={{
-          background: a.color + "20",
-          border: `1px solid ${a.color}40`,
-          filter: archived ? "grayscale(1)" : "none",
-        }}
+        style={{ position: "relative", flexShrink: 0 }}
       >
-        {a.emoji || "⚡"}
+        <div
+          className="flex items-center justify-center w-10 h-10 rounded-lg text-xl"
+          style={{
+            background: a.color + "20",
+            border: `1px solid ${a.color}40`,
+            filter: archived ? "grayscale(1)" : "none",
+          }}
+        >
+          {a.emoji || "⚡"}
+        </div>
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate" style={{ color: "var(--text-primary)" }}>
+        <p
+          className="font-medium text-sm"
+          style={{
+            color: "var(--text-primary)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}
+        >
           {a.name}
         </p>
-        <div className="flex flex-wrap gap-1.5 mt-1">
-          {a.categoria && a.attr && (
-            <span
-              className="text-xs rounded px-1.5 py-0.5 font-medium"
-              style={{
-                color: COR_ATTR[a.attr] ?? "var(--text-muted)",
-                background: (COR_ATTR[a.attr] ?? "#888") + "18",
-              }}
-            >
-              {CATEGORIA_LABELS[a.categoria] ?? a.categoria} · {a.attr}
-            </span>
-          )}
-          <span className="text-xs rounded px-1.5 py-0.5" style={{ color: "var(--text-muted)", background: "var(--bg-surface)" }}>
-            {a.freqLabel ?? a.frequency}
-          </span>
-          <span className="text-xs rounded px-1.5 py-0.5" style={{ color: "var(--text-muted)", background: "var(--bg-surface)" }}>
-            {a.dificuldade ?? "Fácil"} · +{a.xp_base} XP
-          </span>
-        </div>
+        <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
+          {a.categoria && a.attr
+            ? `${CATEGORIA_LABELS[a.categoria] ?? a.categoria} +${a.attr} · `
+            : ""}
+          {a.freqLabel ?? a.frequency} · +{a.xp_base} XP
+          {a.target_value ? ` · meta ${a.target_value}${a.target_unit ?? ""}` : ""}
+        </p>
       </div>
-
-      {/* Color dot */}
-      <div
-        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-        style={{ background: archived ? "#4b5563" : a.color }}
-      />
 
       {/* Actions */}
       <div className="flex items-center gap-1.5 flex-shrink-0">

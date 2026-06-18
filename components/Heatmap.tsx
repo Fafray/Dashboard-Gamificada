@@ -10,11 +10,11 @@ interface HeatmapProps {
 }
 
 const COLORS = [
-  "var(--bg-surface)",    // 0
-  "#14532d",              // 1
-  "#166534",              // 2
-  "#15803d",              // 3-4
-  "#22c55e",              // 5+
+  "var(--heat-0)",
+  "var(--heat-1)",
+  "var(--heat-2)",
+  "var(--heat-3)",
+  "var(--heat-4)",
 ];
 
 function getColor(count: number): string {

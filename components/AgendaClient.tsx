@@ -26,17 +26,8 @@ interface AgendaClientProps {
   initialTasks: ScheduledTask[];
 }
 
-// Cores por categoria (texto livre — heurística por palavras-chave)
-function getCategoryColor(cat: string | null): string {
-  if (!cat) return "#94a3b8";
-  const c = cat.toLowerCase();
-  if (c.includes("saúde") || c.includes("saude") || c.includes("médico") || c.includes("medico") || c.includes("fisio")) return "#10b981";
-  if (c.includes("trabalho") || c.includes("reunião") || c.includes("reuniao")) return "#3b82f6";
-  if (c.includes("financeiro") || c.includes("finance") || c.includes("banco") || c.includes("conta")) return "#f59e0b";
-  if (c.includes("veículo") || c.includes("veiculo") || c.includes("carro") || c.includes("moto")) return "#f97316";
-  if (c.includes("casa") || c.includes("família") || c.includes("familia")) return "#a855f7";
-  if (c.includes("lazer") || c.includes("viagem") || c.includes("férias") || c.includes("ferias")) return "#06b6d4";
-  return "#7c3aed";
+function getCategoryColor(): string {
+  return "#86a6c8";
 }
 
 const CATEGORY_SUGGESTIONS = [
@@ -45,11 +36,11 @@ const CATEGORY_SUGGESTIONS = [
 ];
 
 const URGENCY_CONFIG: Record<Urgency, { label: string; color: string; dimColor: string }> = {
-  overdue:  { label: "Atrasadas",     color: "#ef4444", dimColor: "rgba(239,68,68,.1)" },
-  today:    { label: "Hoje",          color: "#f59e0b", dimColor: "rgba(245,158,11,.1)" },
-  tomorrow: { label: "Amanhã",        color: "#06b6d4", dimColor: "rgba(6,182,212,.1)" },
-  week:     { label: "Esta Semana",   color: "#3b82f6", dimColor: "rgba(59,130,246,.1)" },
-  later:    { label: "Mais Adiante",  color: "#94a3b8", dimColor: "rgba(148,163,184,.06)" },
+  overdue:  { label: "Atrasadas",    color: "#f0556a", dimColor: "rgba(240,85,106,.10)" },
+  today:    { label: "Hoje",         color: "#45cdf0", dimColor: "rgba(69,205,240,.10)" },
+  tomorrow: { label: "Amanhã",       color: "#86a6c8", dimColor: "rgba(134,166,200,.08)" },
+  week:     { label: "Esta semana",  color: "#86a6c8", dimColor: "rgba(134,166,200,.06)" },
+  later:    { label: "Mais adiante", color: "#5f7a9c", dimColor: "rgba(95,122,156,.06)" },
 };
 
 const EMOJI_GROUPS = [
@@ -545,7 +536,7 @@ interface TaskCardProps {
 
 function TaskCard({ task, urgency, done, completing, onComplete, onEdit, onDelete }: TaskCardProps) {
   const cfg = URGENCY_CONFIG[urgency];
-  const catColor = getCategoryColor(task.category);
+  const catColor = getCategoryColor();
 
   return (
     <div

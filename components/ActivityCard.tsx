@@ -6,7 +6,11 @@ import { CATEGORIA_ATRIBUTO, CATEGORIA_LABELS, xpComBonus } from "@/lib/attribut
 import type { Atributos } from "@/lib/attributes";
 
 const COR_ATTR: Record<string, string> = {
-  FOR: "#e24b4a", VIT: "#1d9e75", AGI: "#efa527", INT: "#9b8bff", PER: "#3b82f6",
+  FOR: "#f0556a",
+  VIT: "#25d99a",
+  AGI: "#ffce47",
+  INT: "#8b5cf6",
+  PER: "#45cdf0",
 };
 
 interface LevelInfo {
@@ -66,7 +70,7 @@ interface ActivityCardProps {
 }
 
 const FREQ_LABEL: Record<string, string> = {
-  daily: "DIÁRIA", weekly: "SEMANAL", free: "LIVRE", nx_week: "/ SEM.",
+  daily: "Diária", weekly: "Semanal", free: "Livre", nx_week: "/ sem.",
 };
 
 function defaultIncrement(unit: string | null): number {
@@ -306,7 +310,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
             {isNxWeek
               ? `${weekTarget}x ${FREQ_LABEL.nx_week}`
               : isOnce
-              ? "MISSÃO ÚNICA"
+              ? "Missão única"
               : FREQ_LABEL[activity.frequency]}
             {hasTarget && (
               <span style={{ marginLeft: "6px", color: "var(--accent-teal)" }}>
@@ -386,10 +390,9 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
           margin: "10px 0 0", padding: "6px 10px", borderRadius: "6px",
           background: "rgba(255,215,0,.08)", border: "1px solid rgba(255,215,0,.25)",
           fontSize: "11px", color: "var(--accent-gold)", fontWeight: 700,
-          letterSpacing: ".06em", fontFamily: "var(--font-space-grotesk), sans-serif",
-          textTransform: "uppercase",
+          letterSpacing: ".04em", fontFamily: "var(--font-space-grotesk), sans-serif",
         }}>
-          {milestone.emoji} {milestone.name} — {streak} DIAS CONSECUTIVOS
+          {milestone.emoji} {milestone.name} · {streak} dias consecutivos
         </div>
       )}
 
@@ -435,13 +438,13 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
                 disabled={loading}
                 style={{
                   flex: 1, padding: "7px 12px", borderRadius: "8px",
-                  background: "var(--accent-teal)", color: "white",
+                  background: "var(--accent-teal)", color: "#04121c",
                   fontSize: "12px", fontWeight: 700, cursor: "pointer",
                   border: "none", letterSpacing: ".05em",
                   opacity: loading ? 0.6 : 1,
                 }}
               >
-                {loading ? "..." : "+ ADICIONAR"}
+                {loading ? "..." : "+ Adicionar"}
               </button>
             </div>
           )}
@@ -513,7 +516,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
                 color: "var(--text-secondary)",
               }}
             >
-              {loading ? "..." : `MÍNIMO · +${xpEfetivo} XP`}
+              {loading ? "..." : `Mínimo · +${xpEfetivo} XP`}
             </button>
             <button
               className="btn-checkin"
@@ -522,9 +525,9 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
               title={activity.target_value
                 ? `${activity.name} — ${activity.target_value}${activity.target_unit ?? ""}`
                 : activity.name}
-              style={{ flex: 1, background: activity.color, color: "white" }}
+              style={{ flex: 1, background: activity.color, color: "#04121c" }}
             >
-              {loading ? "..." : `ALÉM · +${Math.round(xpEfetivo * 1.25)} XP`}
+              {loading ? "..." : `Além · +${Math.round(xpEfetivo * 1.25)} XP`}
             </button>
           </>
         ) : (
@@ -536,14 +539,14 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
             {loading
               ? "..."
               : isDone
-              ? (isNxWeek ? `✓ SEMANA COMPLETA` : "✓ MISSÃO CONCLUÍDA")
+              ? (isNxWeek ? `✓ Semana completa` : "✓ Missão concluída")
               : hasTarget && numValue
-              ? `REGISTRAR ${numValue} ${activity.target_unit ?? ""}`
+              ? `Registrar ${numValue} ${activity.target_unit ?? ""}`
               : isNxWeek
-              ? `EXECUTAR ${weeklyCount + 1}/${weekTarget}`
+              ? `Executar ${weeklyCount + 1}/${weekTarget}`
               : isOnce
-              ? `CONCLUIR MISSÃO · +${xpEfetivo} XP`
-              : `COMPLETAR · +${xpEfetivo} XP`}
+              ? `Concluir missão · +${xpEfetivo} XP`
+              : `Completar · +${xpEfetivo} XP`}
           </button>
         )}
 

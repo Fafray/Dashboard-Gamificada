@@ -175,37 +175,41 @@ export function Nav() {
     <nav style={{
       position: "fixed", left: "20px", top: "50%", transform: "translateY(-50%)",
       zIndex: 50, display: "flex", flexDirection: "column",
-      alignItems: "center", gap: "2px", padding: "10px 8px",
+      alignItems: "stretch", gap: "2px", padding: "12px 10px",
       background: "var(--bg-surface)", border: "1px solid var(--border)",
-      borderRadius: "28px",
+      borderRadius: "20px", width: "148px",
       boxShadow: "0 8px 32px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.12)",
     }}>
       <div style={{
-        width: "40px", height: "40px", borderRadius: "50%",
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: "18px", color: "var(--accent-violet-bright)", marginBottom: "2px",
+        height: "36px", fontSize: "18px", color: "var(--accent-violet-bright)", marginBottom: "2px",
       }}>◈</div>
 
-      <div style={{ width: "22px", height: "1px", background: "var(--border)", margin: "4px 0 6px" }} />
+      <div style={{ height: "1px", background: "var(--border)", margin: "4px 0 6px" }} />
 
       {links.map((l) => {
         const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
         const isAgenda = l.href === "/agenda";
         return (
-          <Link key={l.href} href={l.href} title={l.label} style={{
-            position: "relative", width: "42px", height: "42px",
-            borderRadius: "14px", display: "flex", alignItems: "center", justifyContent: "center",
-            background: active ? "var(--text-primary)" : "transparent",
-            color: active ? "var(--bg-base)" : "var(--text-muted)",
+          <Link key={l.href} href={l.href} style={{
+            position: "relative",
+            display: "flex", alignItems: "center", gap: 10,
+            height: 40, padding: "0 10px", borderRadius: 12,
+            background: active ? "var(--accent-violet)" : "transparent",
+            color: active ? "#04121c" : "var(--text-muted)",
             textDecoration: "none", transition: "background .15s, color .15s",
           }}>
             {l.icon}
+            <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: 12.5, fontWeight: active ? 700 : 500, flex: 1 }}>
+              {l.label}
+            </span>
             {isAgenda && agendaCount > 0 && (
               <span style={{
-                position: "absolute", top: "4px", right: "4px",
-                width: "14px", height: "14px", borderRadius: "50%",
-                background: "#ef4444", color: "white", fontSize: "8px", fontWeight: 800,
+                minWidth: 18, height: 18, borderRadius: 999,
+                background: "var(--accent-red)", color: "white",
+                fontSize: 9, fontWeight: 800, fontFamily: "var(--font-space-grotesk)",
                 display: "flex", alignItems: "center", justifyContent: "center",
+                padding: "0 4px",
               }}>
                 {agendaCount > 9 ? "9+" : agendaCount}
               </span>
@@ -214,15 +218,18 @@ export function Nav() {
         );
       })}
 
-      <div style={{ width: "22px", height: "1px", background: "var(--border)", margin: "6px 0 4px" }} />
+      <div style={{ height: "1px", background: "var(--border)", margin: "6px 0 4px" }} />
 
       <button onClick={toggleTheme} title="Alternar tema" style={{
-        width: "42px", height: "42px", borderRadius: "14px",
-        display: "flex", alignItems: "center", justifyContent: "center",
+        display: "flex", alignItems: "center", gap: 10,
+        height: 40, padding: "0 10px", borderRadius: 12,
         background: "transparent", border: "none", cursor: "pointer",
         color: "var(--text-muted)", transition: "color .15s",
       }}>
         {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+        <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: 12.5, fontWeight: 500 }}>
+          Tema
+        </span>
       </button>
     </nav>
   );

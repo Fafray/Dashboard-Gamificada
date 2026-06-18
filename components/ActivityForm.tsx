@@ -3,11 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import type { Activity } from "@/lib/db";
 
-const COLOR_PRESETS = [
-  "#ef4444", "#f97316", "#f59e0b", "#84cc16",
-  "#10b981", "#06b6d4", "#3b82f6", "#8b5cf6",
-  "#ec4899", "#14b8a6", "#d97706", "#6b7280",
-];
+const CATEGORIA_COR: Record<string, string> = {
+  saude:      "#25d99a",
+  treino:     "#f0556a",
+  estudo:     "#45cdf0",
+  disciplina: "#ffce47",
+  foco:       "#8b5cf6",
+};
 
 const FREQ_OPTIONS = [
   { value: "daily",   label: "Diário",      desc: "Todo dia" },
@@ -125,6 +127,8 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
     }
   }
 
+  const cardColor = values.categoria ? (CATEGORIA_COR[values.categoria] ?? "var(--accent-violet)") : "var(--accent-violet)";
+
   const inputClass = "w-full px-3 py-2.5 rounded-lg text-sm outline-none transition";
 
   return (
@@ -183,7 +187,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                     onClick={() => set("frequency", opt.value)}
                     className="py-2.5 rounded-lg text-sm font-medium transition-all text-left px-3"
                     style={active
-                      ? { background: values.color + "25", border: `1px solid ${values.color}`, color: values.color }
+                      ? { background: cardColor + "25", border: `1px solid ${cardColor}`, color: cardColor }
                       : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }
                     }
                   >
@@ -275,9 +279,9 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                         style={{
                           flex: 1, padding: "6px 0", borderRadius: "8px", fontSize: "11px",
                           fontWeight: selected ? 700 : 500, cursor: "pointer",
-                          border: `1px solid ${selected ? values.color : "var(--border)"}`,
-                          background: selected ? `${values.color}22` : "transparent",
-                          color: selected ? values.color : "var(--text-muted)",
+                          border: `1px solid ${selected ? cardColor : "var(--border)"}`,
+                          background: selected ? `${cardColor}22` : "transparent",
+                          color: selected ? cardColor : "var(--text-muted)",
                           transition: "all .12s",
                           fontFamily: "var(--font-space-grotesk), sans-serif",
                         }}
@@ -495,26 +499,6 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
             </div>
           </div>
 
-          {/* Color */}
-          <div>
-            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-              Cor
-            </label>
-            <div className="grid grid-cols-6 gap-2">
-              {COLOR_PRESETS.map((c) => (
-                <button key={c} type="button" onClick={() => set("color", c)}
-                  className="w-full aspect-square rounded-lg transition-transform"
-                  style={{
-                    background: c,
-                    transform: values.color === c ? "scale(1.18)" : "scale(1)",
-                    outline: values.color === c ? "2px solid white" : "none",
-                    outlineOffset: "2px",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
           {/* Lembrete */}
           <div>
             <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
@@ -547,9 +531,9 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
 
           {/* Preview */}
           <div className="rounded-xl p-3 flex items-center gap-3"
-            style={{ background: "var(--bg-surface)", border: `1px solid ${values.color}40` }}>
+            style={{ background: "var(--bg-surface)", border: `1px solid ${cardColor}40` }}>
             <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
-              style={{ background: values.color + "20", border: `1px solid ${values.color}40` }}>
+              style={{ background: cardColor + "20", border: `1px solid ${cardColor}40` }}>
               {values.emoji || "⚡"}
             </div>
             <div className="flex-1 min-w-0">
@@ -581,7 +565,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
             </button>
             <button type="submit" disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold"
-              style={{ background: saving ? values.color + "60" : values.color, color: "white" }}>
+              style={{ background: saving ? cardColor + "60" : cardColor, color: "white" }}>
               {saving ? "Salvando..." : activity ? "Salvar" : "Criar atividade"}
             </button>
           </div>
