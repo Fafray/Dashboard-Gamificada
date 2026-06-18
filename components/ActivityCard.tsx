@@ -105,12 +105,9 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   const [graduationOpen, setGraduationOpen] = useState(false);
   const [newMinimum, setNewMinimum] = useState("");
   const [savingGraduation, setSavingGraduation] = useState(false);
-  // Legacy single-register numeric input
   const [numValue, setNumValue] = useState<string>(
     activity.target_value ? String(activity.target_value) : ""
   );
-  // Incremental tracking state
-  // Incremental só quando não há micro_version — micro hábito tem prioridade
   const isIncremental = activity.frequency === "daily" && !!activity.target_value && !activity.micro_version;
   const [accumulated, setAccumulated] = useState<number>(initialAccumulated ?? 0);
   const [incrementInput, setIncrementInput] = useState<string>(
@@ -118,33 +115,30 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   );
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const isNxWeek    = activity.frequency === "nx_week";
-  const isOnce      = activity.frequency === "once";
-  const hasTarget   = !!activity.target_value;
+  const isNxWeek  = activity.frequency === "nx_week";
+  const isOnce    = activity.frequency === "once";
+  const hasTarget = !!activity.target_value;
 
-  // Prazo para missões únicas
   const daysLeft = (() => {
     if (!isOnce || !activity.due_date) return null;
     const today = new Date().toISOString().slice(0, 10);
     const due   = activity.due_date;
     if (due < today) return -1;
     if (due === today) return 0;
-    const diff = Math.ceil((new Date(due + "T23:59:59").getTime() - Date.now()) / 86400000);
-    return diff;
+    return Math.ceil((new Date(due + "T23:59:59").getTime() - Date.now()) / 86400000);
   })();
 
-  // Categoria / atributo
-  const attrKey      = activity.categoria ? CATEGORIA_ATRIBUTO[activity.categoria] : null;
-  const attrCor      = attrKey ? COR_ATTR[attrKey] : "var(--accent-teal)";
-  const xpEfetivo    = atributos && activity.categoria
+  const attrKey    = activity.categoria ? CATEGORIA_ATRIBUTO[activity.categoria] : null;
+  const attrCor    = attrKey ? COR_ATTR[attrKey] : "var(--accent-teal)";
+  const xpEfetivo  = atributos && activity.categoria
     ? xpComBonus(activity.xp_base, activity.categoria, atributos)
     : activity.xp_base;
-  const weekTarget  = activity.weekly_target ?? 1;
-  const weeklyDone  = isNxWeek && weeklyCount >= weekTarget;
-  const numParsed   = parseFloat(numValue) || 0;
-  const targetVal   = activity.target_value ?? 0;
-  const barPct      = targetVal > 0 ? Math.min(120, (numParsed / targetVal) * 100) : 0;
-  const barStatus   = numParsed >= targetVal * 1.05 ? "over" : numParsed >= targetVal ? "at" : "below";
+  const weekTarget = activity.weekly_target ?? 1;
+  const weeklyDone = isNxWeek && weeklyCount >= weekTarget;
+  const numParsed  = parseFloat(numValue) || 0;
+  const targetVal  = activity.target_value ?? 0;
+  const barPct     = targetVal > 0 ? Math.min(120, (numParsed / targetVal) * 100) : 0;
+  const barStatus  = numParsed >= targetVal * 1.05 ? "over" : numParsed >= targetVal ? "at" : "below";
 
   function addXpPop(xp: number, newStreak: number) {
     const milestone = getStreakMilestone(newStreak);
@@ -168,11 +162,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activity_id: activity.id, increment: inc }),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || "Erro ao registrar");
-        return;
-      }
+      if (!res.ok) { alert((await res.json()).error || "Erro ao registrar"); return; }
       const result = await res.json();
       setAccumulated(result.total);
       setCheckinId(result.checkinId);
@@ -208,11 +198,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const err = await res.json();
-        alert(err.error || "Erro ao registrar check-in");
-        return;
-      }
+      if (!res.ok) { alert((await res.json()).error || "Erro ao registrar check-in"); return; }
       const result: CheckinResult = await res.json();
 
       if (isNxWeek) {
@@ -247,10 +233,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
       await fetch(`/api/activities/${activity.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          micro_version: newMinimum.trim(),
-          graduation_count: activity.graduation_count + 1,
-        }),
+        body: JSON.stringify({ micro_version: newMinimum.trim(), graduation_count: activity.graduation_count + 1 }),
       });
       setGraduationOpen(false);
     } finally {
@@ -275,10 +258,9 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
     }
   }
 
-  const milestone = getStreakMilestone(streak);
-  const isDone = isNxWeek ? weeklyDone : done;
-
-  const borderColor = activity.categoria ? (CATEGORIA_COR[activity.categoria] ?? "var(--accent-violet-bright)") : "var(--accent-violet-bright)";
+  const milestone  = getStreakMilestone(streak);
+  const isDone     = isNxWeek ? weeklyDone : done;
+  const cor        = CATEGORIA_COR[activity.categoria ?? ""] ?? "#1aa9d6";
 
   return (
     <div
@@ -288,133 +270,143 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         display: "flex",
         flexDirection: "column",
         ...(isBonusMission && !isDone ? { border: "1px solid rgba(239,165,39,.5)", boxShadow: "0 0 16px rgba(239,165,39,.08)" } : {}),
-        borderTop: `3px solid ${borderColor}`,
+        borderTop: `3px solid ${cor}`,
       }}
     >
       <div className="pulse-ring" />
-
       {xpPops.map((pop) => (
         <div key={pop.id} className="xp-pop go">{pop.text}</div>
       ))}
 
       {/* Header */}
-      <div className="act-head">
-        <div className="act-emoji" style={{ borderColor: isDone ? "rgba(47,224,166,.4)" : undefined }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+        {/* Emoji box com cor da categoria */}
+        <div style={{
+          width: 42, height: 42, flexShrink: 0, borderRadius: 9,
+          background: `${cor}1a`,
+          border: `1px solid ${cor}38`,
+          display: "grid", placeItems: "center", fontSize: 20,
+          transition: "box-shadow .2s",
+          boxShadow: isDone ? `0 0 8px ${cor}55` : "none",
+        }}>
           {activity.emoji || "⚡"}
         </div>
+
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="act-name" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            {activity.name}
+          {/* Nome + tags + streak/pips (mesma linha) */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+            <span style={{
+              fontFamily: "var(--font-space-grotesk)", fontWeight: 700, fontSize: 14,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>{activity.name}</span>
+
             {activity.is_keystone && (
-              <span style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
+              <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
                 background: "rgba(239,165,39,.15)", border: "1px solid rgba(239,165,39,.4)",
-                color: "#efa527", borderRadius: "4px", padding: "1px 5px",
-              }}>⚓ ÂNCORA</span>
+                color: "#efa527", borderRadius: "4px", padding: "1px 5px" }}>⚓ ÂNCORA</span>
             )}
             {isBonusMission && !isDone && (
-              <span style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
+              <span style={{ fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
                 background: "rgba(239,165,39,.12)", border: "1px solid rgba(239,165,39,.35)",
-                color: "#efa527", borderRadius: "4px", padding: "1px 5px",
-              }}>🎯 MISSÃO</span>
+                color: "#efa527", borderRadius: "4px", padding: "1px 5px" }}>🎯 MISSÃO</span>
+            )}
+
+            {/* Tag categoria */}
+            {activity.categoria && (
+              <span style={{
+                fontSize: 9.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                letterSpacing: ".05em", textTransform: "uppercase",
+                background: `${cor}1a`, color: cor, border: `1px solid ${cor}38`,
+              }}>{CATEGORIA_LABELS[activity.categoria]}</span>
+            )}
+            {/* Tag atributo */}
+            {attrKey && (
+              <span style={{
+                fontSize: 9.5, fontWeight: 700, padding: "2px 6px", borderRadius: 4,
+                letterSpacing: ".05em",
+                background: `${attrCor}1a`, color: attrCor, border: `1px solid ${attrCor}38`,
+              }}>{attrKey}</span>
+            )}
+
+            {/* Streak diário (inline, à direita) */}
+            {!isNxWeek && !isOnce && streak > 0 && (
+              <span
+                style={{ marginLeft: "auto", fontSize: 11.5, color: "#ffce47", fontWeight: 700,
+                  whiteSpace: "nowrap", fontFamily: "var(--font-space-grotesk)" }}
+                className={milestoneFiring ? "streak-milestone" : ""}
+              >
+                🔥 {streak}{milestone ? ` ${milestone.emoji}` : ""}
+              </span>
+            )}
+
+            {/* Pips nx_week */}
+            {isNxWeek && (
+              <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5 }}>
+                <span style={{ display: "flex", gap: 3 }}>
+                  {Array.from({ length: weekTarget }).map((_, i) => (
+                    <span key={i} style={{
+                      width: 9, height: 9, borderRadius: "50%",
+                      background: i < weeklyCount ? "var(--accent-teal)" : "transparent",
+                      border: `1.5px solid ${i < weeklyCount ? "var(--accent-teal)" : "var(--border)"}`,
+                    }} />
+                  ))}
+                </span>
+                <span style={{
+                  fontFamily: "var(--font-space-grotesk)", fontSize: 11, fontWeight: 700,
+                  color: weeklyDone ? "var(--accent-violet-bright)" : "var(--text-muted)",
+                }}>
+                  {weeklyDone ? "✓ SEMANA OK" : `${weeklyCount}/${weekTarget} ESTA SEM.`}
+                </span>
+              </span>
+            )}
+
+            {/* Prazo missão única */}
+            {isOnce && daysLeft !== null && (
+              <span style={{ marginLeft: "auto" }}>
+                <span style={{
+                  fontSize: "9px", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase",
+                  color: daysLeft <= 0 ? "#ef4444" : daysLeft <= 2 ? "#f97316" : "#efa527",
+                  background: daysLeft <= 0 ? "rgba(239,68,68,.12)" : daysLeft <= 2 ? "rgba(249,115,22,.12)" : "rgba(239,165,39,.12)",
+                  border: `1px solid ${daysLeft <= 0 ? "rgba(239,68,68,.4)" : daysLeft <= 2 ? "rgba(249,115,22,.4)" : "rgba(239,165,39,.4)"}`,
+                  borderRadius: "5px", padding: "2px 6px",
+                }}>
+                  {daysLeft <= 0 ? "HOJE" : daysLeft === 1 ? "AMANHÃ" : `${daysLeft}d`}
+                </span>
+              </span>
             )}
           </div>
-          <div className="act-freq">
-            <span className="freq-dot" />
-            {isNxWeek
-              ? `${weekTarget}x ${FREQ_LABEL.nx_week}`
-              : isOnce
-              ? "Missão única"
-              : FREQ_LABEL[activity.frequency]}
-            {hasTarget && (
-              <span style={{ marginLeft: "6px", color: "var(--accent-teal)" }}>
-                · META: {activity.target_value}{activity.target_unit}
-              </span>
-            )}
-            {activity.categoria && attrKey && (
-              <span style={{
-                marginLeft: "6px",
-                fontSize: "9px", letterSpacing: ".1em", fontWeight: 600,
-                color: attrCor,
-                background: `${attrCor}18`,
-                borderRadius: "4px", padding: "1px 5px",
-                textTransform: "uppercase",
-                fontFamily: "var(--font-space-grotesk), sans-serif",
-              }}>
-                {CATEGORIA_LABELS[activity.categoria]} · {attrKey}
-              </span>
+
+          {/* Frequência + meta */}
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 3 }}>
+            <span style={{ marginRight: 3 }}>·</span>
+            {isNxWeek ? `${weekTarget}x / sem.` : isOnce ? "Missão única" : FREQ_LABEL[activity.frequency]}
+            {activity.target_value && (
+              <span style={{ color: "var(--accent-teal)" }}> · META: {activity.target_value}{activity.target_unit}</span>
             )}
           </div>
           {activity.anchor_context && (
-            <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", fontStyle: "italic" }}>
+            <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2, fontStyle: "italic" }}>
               {activity.anchor_context}
             </div>
           )}
-        </div>
 
-        {/* Streak, pips semanais ou prazo de missão única */}
-        {isOnce ? (
-          daysLeft !== null && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-              <span style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase",
-                color: daysLeft <= 0 ? "#ef4444" : daysLeft <= 2 ? "#f97316" : "#efa527",
-                background: daysLeft <= 0 ? "rgba(239,68,68,.12)" : daysLeft <= 2 ? "rgba(249,115,22,.12)" : "rgba(239,165,39,.12)",
-                border: `1px solid ${daysLeft <= 0 ? "rgba(239,68,68,.4)" : daysLeft <= 2 ? "rgba(249,115,22,.4)" : "rgba(239,165,39,.4)"}`,
-                borderRadius: "5px", padding: "2px 6px",
-              }}>
-                {daysLeft <= 0 ? "HOJE" : daysLeft === 1 ? "AMANHÃ" : `${daysLeft}d`}
-              </span>
-              <span style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
-                PRAZO
-              </span>
+          {/* Banner de streak milestone */}
+          {milestone && streak > 0 && !isNxWeek && (
+            <div style={{
+              margin: "8px 0 0", padding: "5px 9px", borderRadius: 6,
+              background: "rgba(255,215,0,.08)", border: "1px solid rgba(255,215,0,.25)",
+              fontSize: 11, color: "var(--accent-gold)", fontWeight: 700,
+              letterSpacing: ".04em", fontFamily: "var(--font-space-grotesk), sans-serif",
+            }}>
+              {milestone.emoji} {milestone.name} · {streak} dias consecutivos
             </div>
-          )
-        ) : isNxWeek ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
-            <div className="week-pips">
-              {Array.from({ length: weekTarget }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`week-pip${i < weeklyCount ? (weeklyDone ? " all-done" : " filled") : ""}`}
-                  style={{ animationDelay: `${i * 60}ms` }}
-                />
-              ))}
-            </div>
-            <span className={`week-count-text ${weeklyDone ? "done" : weeklyCount > 0 ? "progress" : "empty"}`}>
-              {weeklyDone ? "✓ SEMANA OK" : `${weeklyCount}/${weekTarget} ESTA SEM.`}
-            </span>
-          </div>
-        ) : (
-          streak > 0 && (
-            <div className={`act-streak${milestoneFiring ? " streak-milestone" : ""}`}>
-              <span style={{ animation: "flicker 2.4s ease-in-out infinite" }}>🔥</span>
-              <span className="num">{streak}</span>
-              {milestone && (
-                <span style={{ fontSize: "11px", marginLeft: "3px" }}>{milestone.emoji}</span>
-              )}
-            </div>
-          )
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Milestone strip */}
-      {milestone && streak > 0 && !isNxWeek && (
-        <div style={{
-          margin: "10px 0 0", padding: "6px 10px", borderRadius: "6px",
-          background: "rgba(255,215,0,.08)", border: "1px solid rgba(255,215,0,.25)",
-          fontSize: "11px", color: "var(--accent-gold)", fontWeight: 700,
-          letterSpacing: ".04em", fontFamily: "var(--font-space-grotesk), sans-serif",
-        }}>
-          {milestone.emoji} {milestone.name} · {streak} dias consecutivos
-        </div>
-      )}
-
-      {/* HUD — Incremental tracking (daily with target) */}
+      {/* HUD — tracking incremental (daily + target) */}
       {isIncremental && (
         <div className="hud-input-wrap">
-          {/* Progress bar */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
             <span style={{ fontSize: "18px", fontWeight: 700, color: isDone ? "#2fd09a" : "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
               {accumulated % 1 === 0 ? accumulated : accumulated.toFixed(1)}
@@ -425,11 +417,10 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
           </div>
           <div className="hud-bar-track" style={{ marginBottom: "10px" }}>
             <div
-              className={`hud-bar-fill ${accumulated >= (activity.target_value ?? 0) ? "at" : accumulated > 0 ? "below" : "below"}`}
+              className={`hud-bar-fill ${accumulated >= (activity.target_value ?? 0) ? "at" : "below"}`}
               style={{ width: `${Math.min(100, (accumulated / (activity.target_value ?? 1)) * 100)}%`, transition: "width 0.3s ease" }}
             />
           </div>
-          {/* Add increment controls */}
           {!isDone && (
             <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
               <input
@@ -455,8 +446,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
                   flex: 1, padding: "7px 12px", borderRadius: "8px",
                   background: "var(--accent-teal)", color: "#04121c",
                   fontSize: "12px", fontWeight: 700, cursor: "pointer",
-                  border: "none", letterSpacing: ".05em",
-                  opacity: loading ? 0.6 : 1,
+                  border: "none", letterSpacing: ".05em", opacity: loading ? 0.6 : 1,
                 }}
               >
                 {loading ? "..." : "+ Adicionar"}
@@ -473,26 +463,17 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         </div>
       )}
 
-      {/* HUD — Legacy single-register numeric (weekly/nx_week with target) */}
+      {/* HUD — numérico legado (weekly/nx_week com target) */}
       {hasTarget && !isIncremental && !isDone && (
         <div className="hud-input-wrap">
           <div className="hud-input-row">
-            <input
-              type="number"
-              value={numValue}
-              onChange={(e) => setNumValue(e.target.value)}
-              min={0}
-              step={0.1}
-              placeholder={String(activity.target_value)}
-            />
+            <input type="number" value={numValue} onChange={(e) => setNumValue(e.target.value)}
+              min={0} step={0.1} placeholder={String(activity.target_value)} />
             <span className="hud-unit">{activity.target_unit}</span>
             <span className="hud-target-label">/ {activity.target_value}</span>
           </div>
           <div className="hud-bar-track">
-            <div
-              className={`hud-bar-fill ${barStatus}`}
-              style={{ width: `${Math.min(100, barPct)}%` }}
-            />
+            <div className={`hud-bar-fill ${barStatus}`} style={{ width: `${Math.min(100, barPct)}%` }} />
           </div>
         </div>
       )}
@@ -504,17 +485,19 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         </div>
       )}
 
-      {/* Footer */}
+      {/* Zona de ação — sempre no rodapé via margin-top: auto */}
       <div className="act-foot" style={{ marginTop: "auto", paddingTop: 12 }}>
-        {/* Incremental: footer só mostra estado de conclusão */}
         {isIncremental ? (
           isDone ? (
             <button className="btn-checkin" disabled style={{ opacity: 0.7 }}>
               ✓ META ATINGIDA · +{xpEfetivo} XP
             </button>
           ) : (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
-              {accumulated > 0 ? `Em progresso — falta ${((activity.target_value ?? 0) - accumulated).toFixed(1).replace('.0','')} ${activity.target_unit}` : `Adicione acima para registrar`}
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "12px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
+              {accumulated > 0
+                ? `Em progresso — falta ${((activity.target_value ?? 0) - accumulated).toFixed(1).replace(".0", "")} ${activity.target_unit}`
+                : "Adicione acima para registrar"}
             </div>
           )
         ) : activity.micro_version && !isDone ? (
@@ -524,12 +507,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
               onClick={() => handleCheckin("minimum")}
               disabled={loading}
               title={activity.micro_version}
-              style={{
-                flex: 1,
-                background: "transparent",
-                border: `1px solid ${activity.color}55`,
-                color: "var(--text-secondary)",
-              }}
+              style={{ flex: 1, background: "transparent", border: `1px solid ${activity.color}55`, color: "var(--text-secondary)" }}
             >
               {loading ? "..." : `Mínimo · +${xpEfetivo} XP`}
             </button>
@@ -537,9 +515,6 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
               className="btn-checkin"
               onClick={() => handleCheckin("beyond")}
               disabled={loading}
-              title={activity.target_value
-                ? `${activity.name} — ${activity.target_value}${activity.target_unit ?? ""}`
-                : activity.name}
               style={{ flex: 1, background: activity.color, color: "#04121c" }}
             >
               {loading ? "..." : `Além · +${Math.round(xpEfetivo * 1.25)} XP`}
@@ -551,44 +526,28 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
             onClick={() => handleCheckin()}
             disabled={isDone || loading || (isNxWeek && weeklyDone)}
           >
-            {loading
-              ? "..."
-              : isDone
-              ? (isNxWeek ? `✓ Semana completa` : "✓ Missão concluída")
-              : hasTarget && numValue
-              ? `Registrar ${numValue} ${activity.target_unit ?? ""}`
-              : isNxWeek
-              ? `Executar ${weeklyCount + 1}/${weekTarget}`
-              : isOnce
-              ? `Concluir missão · +${xpEfetivo} XP`
+            {loading ? "..."
+              : isDone ? (isNxWeek ? "✓ Semana completa" : "✓ Missão concluída")
+              : hasTarget && numValue ? `Registrar ${numValue} ${activity.target_unit ?? ""}`
+              : isNxWeek ? `Executar ${weeklyCount + 1}/${weekTarget}`
+              : isOnce ? `Concluir missão · +${xpEfetivo} XP`
               : `Completar · +${xpEfetivo} XP`}
           </button>
         )}
 
         {checkinId && (
-          <button className="btn-undo" onClick={handleUndo} title="Desfazer último check-in">
-            ↩
-          </button>
+          <button className="btn-undo" onClick={handleUndo} title="Desfazer último check-in">↩</button>
         )}
       </div>
 
       {/* Modal de graduação */}
       {graduationOpen && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 200,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)",
-            padding: "16px",
-          }}
-        >
+        <div style={{ position: "fixed", inset: 0, zIndex: 200,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)", padding: "16px" }}>
           <div style={{
-            background: "var(--bg-card)",
-            border: "1px solid rgba(255,215,0,.3)",
-            borderRadius: "16px",
-            padding: "24px",
-            maxWidth: "360px",
-            width: "100%",
+            background: "var(--bg-card)", border: "1px solid rgba(255,215,0,.3)",
+            borderRadius: "16px", padding: "24px", maxWidth: "360px", width: "100%",
             boxShadow: "0 0 60px rgba(255,215,0,.1), 0 24px 48px rgba(0,0,0,.8)",
           }}>
             <div style={{ fontSize: "28px", textAlign: "center", marginBottom: "8px" }}>🎯</div>
@@ -606,22 +565,16 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
               style={{
                 width: "100%", padding: "10px 12px", borderRadius: "8px",
                 background: "var(--bg-surface)", border: "1px solid var(--border)",
-                color: "var(--text-primary)", fontSize: "14px", outline: "none",
-                marginBottom: "12px",
+                color: "var(--text-primary)", fontSize: "14px", outline: "none", marginBottom: "12px",
               }}
               autoFocus
             />
             <div style={{ display: "flex", gap: "8px" }}>
-              <button
-                onClick={() => handleGraduation(false)}
-                style={{
-                  flex: 1, padding: "10px", borderRadius: "8px",
-                  background: "var(--bg-surface)", border: "1px solid var(--border)",
-                  color: "var(--text-secondary)", fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                Manter
-              </button>
+              <button onClick={() => handleGraduation(false)} style={{
+                flex: 1, padding: "10px", borderRadius: "8px",
+                background: "var(--bg-surface)", border: "1px solid var(--border)",
+                color: "var(--text-secondary)", fontWeight: 600, cursor: "pointer",
+              }}>Manter</button>
               <button
                 onClick={() => handleGraduation(true)}
                 disabled={!newMinimum.trim() || savingGraduation}
