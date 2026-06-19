@@ -4,6 +4,39 @@ import { useState, useCallback } from "react";
 import { TITULOS, TRILHAS, RARIDADES } from "@/lib/titulos";
 import type { Titulo, TrilhaKey, PlayerEstado, TituloStats } from "@/lib/titulos";
 
+function chaseHint(trilha: string, id: string, restam: number): string {
+  const d = (n: number, s: string) => `${n} ${s}${n !== 1 ? "s" : ""}`;
+  switch (trilha) {
+    case "sequencia":
+      return restam === 1 ? "Mais 1 dia — quase lá!" : `Mantenha a sequência por mais ${d(restam, "dia")}`;
+    case "dedicacao":
+      return restam === 1 ? "Mais 1 check-in para desbloquear!" : `${d(restam, "check-in")} — faça missões hoje`;
+    case "ascensao":
+      return `${d(restam, "nível")} para alcançar`;
+    case "disciplina":
+      if (id === "dia_perfeito") return "Complete todas as missões do dia";
+      return `${d(restam, "dia")} sem falhar`;
+    case "maestria":
+      return "Invista pontos de atributo";
+    case "habitos":
+      if (id === "madrugador") return "Faça um check-in antes das 7h";
+      if (id === "coruja") return "Faça um check-in após as 22h";
+      if (id === "pentatleta") return "Missões de 5 categorias em um dia";
+      return `${d(restam, "missão")} em um único dia`;
+    case "lendas":
+      return "Evento especial necessário";
+    case "vocacao":
+      return `${d(restam, "dia")} na mesma classe`;
+    case "microhabito":
+      if (id === "micro_primeiro_minimo") return "Faça um check-in mínimo";
+      if (id.startsWith("micro_escalada")) return "Evolua um hábito mínimo";
+      if (id === "micro_ancora_30") return "Complete o hábito-âncora hoje";
+      return `${d(restam, "dia")} restante`;
+    default:
+      return `${d(restam, "restante")}`;
+  }
+}
+
 interface GradeTitulosProps {
   desbloqueados: string[];
   tituloAtivoId: string | null;
@@ -42,12 +75,21 @@ export function GradeTitulos({
   const sel   = TITULOS.find((t) => t.id === selId);
   const total = TITULOS.length;
 
-  // Compute "Em progresso": titles where atual > 0 and not done
   const emProgresso = TITULOS.filter((t) => {
     if (initialDesbloqueados.includes(t.id)) return false;
     const [atual] = t.progresso(player, stats);
     return atual > 0;
-  }).slice(0, 6); // max 6
+  }).slice(0, 6);
+
+  const chaseAgora = TITULOS
+    .filter((t) => !initialDesbloqueados.includes(t.id))
+    .map((t) => {
+      const [atual, alvo] = t.progresso(player, stats);
+      return { t, atual, alvo, pct: alvo > 0 ? atual / alvo : 0 };
+    })
+    .filter(({ pct }) => pct > 0)
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 3);
 
   return (
     <div className="page">
@@ -96,6 +138,61 @@ export function GradeTitulos({
           >
             Desequipar
           </button>
+        </div>
+      )}
+
+      {/* ── Chase agora ── */}
+      {chaseAgora.length > 0 && (
+        <div style={{ marginBottom: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
+            <div style={{ width: "3px", height: "16px", borderRadius: "2px", background: "var(--accent-gold)", flexShrink: 0 }} />
+            <h2 style={{ margin: 0, fontSize: "14px", letterSpacing: ".08em", textTransform: "uppercase" }}>Chase agora</h2>
+            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>mais perto de desbloquear</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {chaseAgora.map(({ t, atual, alvo, pct }) => {
+              const R = RARIDADES[t.raridade];
+              const hint = chaseHint(t.trilha, t.id, alvo - Math.min(atual, alvo));
+              return (
+                <div
+                  key={t.id}
+                  onClick={() => setSelId(selId === t.id ? null : t.id)}
+                  style={{
+                    background: "var(--bg-card)",
+                    border: `1px solid ${R.cor}33`,
+                    borderLeft: `3px solid ${R.cor}`,
+                    borderRadius: "var(--r-md)",
+                    padding: "12px 14px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}
+                >
+                  <span style={{ fontSize: "22px", lineHeight: 1, flexShrink: 0 }}>{t.emoji}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "8px", marginBottom: "6px" }}>
+                      <div>
+                        <span style={{ fontWeight: 600, fontSize: "13px", color: "var(--text-primary)" }}>{t.nome}</span>
+                        <span style={{ marginLeft: "7px", fontSize: "9.5px", color: R.cor, letterSpacing: ".1em", textTransform: "uppercase", fontFamily: "var(--font-space-grotesk)" }}>
+                          {R.nome}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-space-grotesk)", fontWeight: 600, flexShrink: 0 }}>
+                        {Math.min(atual, alvo)}/{alvo}
+                      </span>
+                    </div>
+                    <div style={{ height: "3px", borderRadius: "2px", background: "var(--bg-surface)", overflow: "hidden", marginBottom: "6px" }}>
+                      <div style={{ height: "100%", width: `${Math.round(pct * 100)}%`, background: R.cor, borderRadius: "2px", transition: "width .4s" }} />
+                    </div>
+                    <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                      ↗ {hint}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

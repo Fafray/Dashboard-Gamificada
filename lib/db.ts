@@ -1036,3 +1036,40 @@ export async function getActivitiesWithNotifyAt(timeStr: string): Promise<Activi
   );
   return res.rows;
 }
+
+export interface ActivityStats {
+  id: number;
+  name: string;
+  emoji: string | null;
+  color: string;
+  frequency: Frequency;
+  total_checkins: number;
+  total_xp: number;
+  last_checkin: string | null;
+}
+
+export async function getActivityStatsAll(): Promise<ActivityStats[]> {
+  await init();
+  const res = await pool.query(`
+    SELECT
+      a.id, a.name, a.emoji, a.color, a.frequency,
+      COUNT(c.id)::int            AS total_checkins,
+      COALESCE(SUM(c.xp_earned), 0)::int AS total_xp,
+      MAX(LEFT(c.checked_at, 10)) AS last_checkin
+    FROM activities a
+    LEFT JOIN checkins c ON c.activity_id = a.id
+    WHERE a.archived = 0
+    GROUP BY a.id, a.name, a.emoji, a.color, a.frequency
+    ORDER BY COUNT(c.id) DESC
+  `);
+  return res.rows.map((r: Record<string, unknown>) => ({
+    id: Number(r.id),
+    name: r.name as string,
+    emoji: r.emoji as string | null,
+    color: r.color as string,
+    frequency: r.frequency as Frequency,
+    total_checkins: Number(r.total_checkins),
+    total_xp: Number(r.total_xp),
+    last_checkin: r.last_checkin as string | null,
+  }));
+}

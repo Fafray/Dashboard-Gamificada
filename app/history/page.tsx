@@ -7,22 +7,25 @@ import {
   getCheckinDatesForActivity,
   getEvents,
   getLevelHistory,
+  getActivityStatsAll,
 } from "@/lib/db";
 import { computeStreak, getLevelInfo } from "@/lib/gamification";
 import { Heatmap } from "@/components/Heatmap";
 import { XPChart } from "@/components/XPChart";
 import { EvolucaoNivel } from "@/components/EvolucaoNivel";
 import { RegistroSistema } from "@/components/RegistroSistema";
+import { HabitoStatsPanel, type HabitoStatItem } from "@/components/HabitoStatsPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
-  const [heatmapData, xpData, totalCheckins, rawStats, activities] = await Promise.all([
+  const [heatmapData, xpData, totalCheckins, rawStats, activities, actStats] = await Promise.all([
     getCheckinsGroupedByDate(365),
     getXpPerDay(30),
     getTotalCheckinsCount(),
     getUserStats(),
     getActivities(false),
+    getActivityStatsAll(),
   ]);
 
   const { level: currentLevel } = getLevelInfo(rawStats.total_xp);
@@ -32,12 +35,36 @@ export default async function HistoryPage() {
     getLevelHistory(currentLevel).catch(() => [{ date: new Date().toISOString().slice(0, 10), nivel: currentLevel }]),
   ]);
 
+  const statsById = new Map(actStats.map((s) => [s.id, s]));
+  const habitoItems: HabitoStatItem[] = [];
   let bestStreak = 0;
+
   for (const act of activities) {
-    if (act.frequency === "free") continue;
     const dates = await getCheckinDatesForActivity(act.id);
-    const { longest } = computeStreak(dates, act.frequency);
-    bestStreak = Math.max(bestStreak, longest);
+    const { current, longest } = computeStreak(
+      dates,
+      act.frequency,
+      new Date(),
+      act.weekly_target ?? undefined
+    );
+    if (act.frequency !== "free" && act.frequency !== "once") {
+      bestStreak = Math.max(bestStreak, longest);
+    }
+    const s = statsById.get(act.id);
+    if (s) {
+      habitoItems.push({
+        id: act.id,
+        name: act.name,
+        emoji: act.emoji,
+        color: act.color,
+        frequency: act.frequency,
+        total_checkins: s.total_checkins,
+        total_xp: s.total_xp,
+        last_checkin: s.last_checkin,
+        current_streak: act.frequency === "free" || act.frequency === "once" ? 0 : current,
+        best_streak: act.frequency === "free" || act.frequency === "once" ? 0 : longest,
+      });
+    }
   }
 
   const activeDays = heatmapData.filter((d) => d.count > 0).length;
@@ -59,7 +86,6 @@ export default async function HistoryPage() {
         </h1>
       </div>
 
-      {/* Stats */}
       <div className="section">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "14px" }}>
           {stats.map((s) => (
@@ -75,7 +101,6 @@ export default async function HistoryPage() {
         </div>
       </div>
 
-      {/* Heatmap */}
       <div className="section">
         <div className="card panel">
           <div className="panel-head">
@@ -91,7 +116,6 @@ export default async function HistoryPage() {
         </div>
       </div>
 
-      {/* XP Chart */}
       <div className="section">
         <div className="card panel">
           <div className="panel-head">
@@ -107,12 +131,14 @@ export default async function HistoryPage() {
         </div>
       </div>
 
-      {/* Evolução de nível */}
+      <div className="section">
+        <HabitoStatsPanel items={habitoItems} />
+      </div>
+
       <div className="section">
         <EvolucaoNivel historico={levelHistory} />
       </div>
 
-      {/* Registro do sistema */}
       <div className="section">
         <RegistroSistema eventos={eventos} />
       </div>
