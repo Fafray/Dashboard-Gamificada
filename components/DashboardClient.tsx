@@ -275,7 +275,7 @@ export function DashboardClient({
               </div>
             )}
 
-            <div className="act-grid" style={{ gridTemplateColumns: "1fr 1fr", alignItems: "start" }}>
+            <div className="act-grid" style={{ alignItems: "start" }}>
               {initialActivities
                 .filter((a) => filter === "todos" || a.frequency === filter)
                 .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0))

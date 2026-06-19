@@ -76,34 +76,34 @@ export function HeroBand({
       {/* LEFT: Character */}
       <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative" }}>
         <div style={{
-          width: 96, height: 96, flexShrink: 0, borderRadius: "50%",
+          width: 130, height: 130, flexShrink: 0, borderRadius: "50%",
           background: "var(--bg-surface)",
-          border: "2px solid var(--accent-violet)",
+          border: "3px solid var(--accent-violet)",
           overflow: "hidden", position: "relative",
-          boxShadow: `0 0 16px ${portraitGlow}`,
+          boxShadow: `0 0 28px ${portraitGlow}, 0 0 8px ${portraitGlow}`,
         }}>
           {!imgError ? (
             <Image
               src={portraitSrc}
               alt={rank}
               fill
-              style={{ objectFit: "cover", objectPosition: "50% 12%" }}
+              style={{ objectFit: "cover", objectPosition: "50% 5%" }}
               onError={() => setImgError(true)}
               priority
             />
           ) : (
             <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center",
-              fontSize: 30, opacity: .4 }}>⚔</div>
+              fontSize: 38, opacity: .5 }}>⚔</div>
           )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div
             className="level-badge"
-            style={{ "--p": progress, width: 56, height: 56 } as React.CSSProperties}
+            style={{ "--p": progress, width: 64, height: 64 } as React.CSSProperties}
           >
-            <span className="lv-label" style={{ fontSize: "7.5px", top: "13px" }}>LV</span>
-            <span className="lv-num num" style={{ fontSize: "24px", marginTop: "3px" }}>{level}</span>
+            <span className="lv-label" style={{ fontSize: "7.5px", top: "14px" }}>LV</span>
+            <span className="lv-num num" style={{ fontSize: "26px", marginTop: "3px" }}>{level}</span>
           </div>
           <div>
             <div style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "18px", fontWeight: 700,
