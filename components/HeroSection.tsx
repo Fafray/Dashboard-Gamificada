@@ -73,7 +73,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
           alt={rank}
           fill
           unoptimized
-          style={{ objectFit: "cover", objectPosition: "55% 55%", transform: "scale(1.6)", transformOrigin: "55% 55%" }}
+          style={{ objectFit: "cover", objectPosition: "50% 30%" }}
           onError={() => setImgError(true)}
           priority
         />
