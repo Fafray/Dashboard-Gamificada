@@ -10,8 +10,8 @@
   "theme_color": "#7c3aed",
   "icons": [
     {
-      "src": "/characters/e-rank.jpg",
-      "type": "image/jpeg",
+      "src": "/characters/s-rank.jpg.png",
+      "type": "image/png",
       "sizes": "512x512",
       "purpose": "any"
     },
