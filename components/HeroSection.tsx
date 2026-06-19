@@ -72,7 +72,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
     <div style={{
       position: "relative", width: "100%", flex: 1,
       borderRadius: "var(--r-md)", overflow: "hidden",
-      minHeight: "200px",
+      minHeight: "300px",
       background: "var(--bg-surface)",
       border: "1px solid rgba(0,168,232,.15)",
     }}>
