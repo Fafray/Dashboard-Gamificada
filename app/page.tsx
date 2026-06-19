@@ -1,4 +1,4 @@
-import { format, startOfISOWeek, endOfISOWeek, startOfWeek, addDays } from "date-fns";
+import { format, startOfISOWeek, endOfISOWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   getUserStats,
@@ -15,7 +15,6 @@ import {
   penalizeExpiredOnce,
   updateLevel,
   getScheduledTasks,
-  getAllCheckinDatesFlat,
 } from "@/lib/db";
 import { getLevelInfo, computeStreak, nivelDoXp } from "@/lib/gamification";
 import { derivarClasse } from "@/lib/attributes";
@@ -120,17 +119,6 @@ export default async function DashboardPage() {
   const allTasks = await getScheduledTasks(false);
   const todayTasks = allTasks.filter((t) => t.due_date <= todayStr);
 
-  const allCheckinDates = await getAllCheckinDatesFlat();
-  const weekDays = [0, 1, 2, 3, 4, 5, 6].map((i) => {
-    const d = addDays(startOfWeek(now, { weekStartsOn: 0 }), i);
-    const dateStr = format(d, "yyyy-MM-dd");
-    return {
-      label: ["D", "S", "T", "Q", "Q", "S", "S"][i],
-      hasCheckin: allCheckinDates.includes(dateStr),
-      isToday: dateStr === todayStr,
-    };
-  });
-
   const dateLabel = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
   const capitalizedDate = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
@@ -145,7 +133,6 @@ export default async function DashboardPage() {
       classeInfo={classeInfo}
       bonusMissionId={bonusMissionId}
       todayTasks={todayTasks}
-      weekDays={weekDays}
     />
   );
 }

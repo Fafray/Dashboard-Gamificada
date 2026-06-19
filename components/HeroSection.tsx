@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { getPortrait } from "@/lib/portraits";
 
 interface LevelInfo {
   level: number;
@@ -18,10 +17,47 @@ interface HeroSectionProps {
   classeCor?: string;
 }
 
-function CharPortrait({ level, classeCor }: { level: number; classeCor?: string }) {
+function getLevelTitle(level: number): string {
+  if (level < 5)   return "E-RANK";
+  if (level < 10)  return "D-RANK";
+  if (level < 15)  return "C-RANK";
+  if (level < 20)  return "B-RANK";
+  if (level < 30)  return "A-RANK";
+  if (level < 50)  return "S-RANK";
+  if (level < 80)  return "NACIONAL";
+  if (level < 100) return "MONARCA";
+  return "REI DAS SOMBRAS";
+}
+
+const RANK_IMAGE: Record<string, string> = {
+  "E-RANK":         "/characters/e-rank.jpg",
+  "D-RANK":         "/characters/d-rank.jpg",
+  "C-RANK":         "/characters/c-rank.jpg",
+  "B-RANK":         "/characters/b-rank.jpg",
+  "A-RANK":         "/characters/a-rank.jpg",
+  "S-RANK":         "/characters/s-rank.jpg",
+  "NACIONAL":       "/characters/nacional.jpg",
+  "MONARCA":        "/characters/monarca.jpg",
+  "REI DAS SOMBRAS":"/characters/rei-das-sombras.jpg",
+};
+
+const RANK_GLOW: Record<string, string> = {
+  "E-RANK":          "rgba(0,150,200,.6)",
+  "D-RANK":          "rgba(0,180,232,.7)",
+  "C-RANK":          "rgba(0,200,255,.7)",
+  "B-RANK":          "rgba(80,150,255,.7)",
+  "A-RANK":          "rgba(120,80,255,.8)",
+  "S-RANK":          "rgba(180,80,255,.9)",
+  "NACIONAL":        "rgba(255,180,0,.9)",
+  "MONARCA":         "rgba(180,0,255,1)",
+  "REI DAS SOMBRAS": "rgba(100,0,200,1)",
+};
+
+function CharPortrait({ rank, level, classeCor }: { rank: string; level: number; classeCor?: string }) {
   const [imgError, setImgError] = useState(false);
-  const portrait = getPortrait(level);
-  const glow = classeCor ? `${classeCor}99` : portrait.glowColor;
+  const imgSrc = RANK_IMAGE[rank];
+  const rankGlow = RANK_GLOW[rank] ?? "rgba(0,150,200,.6)";
+  const glow = classeCor ? `${classeCor}99` : rankGlow;
 
   return (
     <div style={{
@@ -31,20 +67,20 @@ function CharPortrait({ level, classeCor }: { level: number; classeCor?: string 
       background: "var(--bg-surface)",
       border: "1px solid rgba(0,168,232,.15)",
     }}>
-      {!imgError ? (
+      {!imgError && imgSrc ? (
         <Image
-          key={portrait.src}
-          src={portrait.src}
-          alt={portrait.rank}
+          src={imgSrc}
+          alt={rank}
           fill
-          style={{ objectFit: "cover", objectPosition: "top center", transition: "opacity .6s ease" }}
+          style={{ objectFit: "cover", objectPosition: "top center" }}
           onError={() => setImgError(true)}
           priority
         />
       ) : (
+        /* Fallback sem imagem */
         <div style={{
           position: "absolute", inset: 0,
-          background: `radial-gradient(ellipse 70% 80% at 50% 30%, ${portrait.glowColor.replace("1)", ".18)")}, transparent 70%),
+          background: `radial-gradient(ellipse 70% 80% at 50% 30%, ${glow.replace("1)", ".18)")}, transparent 70%),
                        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(0,50,100,.4), transparent 60%)`,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
@@ -58,18 +94,24 @@ function CharPortrait({ level, classeCor }: { level: number; classeCor?: string 
         </div>
       )}
 
+      {/* Gradient overlay inferior para texto */}
       <div style={{
         position: "absolute", inset: 0,
         background: "linear-gradient(to top, rgba(4,8,16,.95) 0%, rgba(4,8,16,.6) 35%, transparent 65%)",
         pointerEvents: "none",
       }} />
 
+      {/* Lateral glow */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
         boxShadow: `inset 0 0 40px ${glow.replace("1)", ".12)")}`,
       }} />
 
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 14px" }}>
+      {/* Nome + rank overlay */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0,
+        padding: "12px 14px",
+      }}>
         <div style={{
           fontFamily: "var(--font-space-grotesk), sans-serif",
           fontSize: "20px", fontWeight: 700, letterSpacing: ".18em",
@@ -79,14 +121,16 @@ function CharPortrait({ level, classeCor }: { level: number; classeCor?: string 
         }}>
           Fabricio
         </div>
-        <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{
+          marginTop: "4px", display: "flex", alignItems: "center", gap: "8px",
+        }}>
           <span style={{
             fontSize: "10px", letterSpacing: ".2em", fontWeight: 700,
             color: "var(--accent-violet-bright)",
             fontFamily: "var(--font-space-grotesk), sans-serif",
             textShadow: `0 0 12px ${glow}`,
           }}>
-            {portrait.rank}
+            {rank}
           </span>
           <span style={{ width: "1px", height: "10px", background: "rgba(0,168,232,.3)" }} />
           <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: ".1em" }}>
@@ -102,7 +146,7 @@ export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps)
   const { level, currentLevelXP, nextLevelXP, progress, totalXP } = levelInfo;
   const xpRemaining = nextLevelXP - currentLevelXP;
   const nearLevel = progress >= 80;
-  const portrait = getPortrait(level);
+  const rank = getLevelTitle(level);
 
   return (
     <div className="hero-grid">
@@ -119,7 +163,7 @@ export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps)
 
           <div className="hero-meta">
             <div className="hero-title">
-              <b>{portrait.rank}</b>
+              <b>{rank}</b>
             </div>
             <div className="hero-sub">
               {totalXP.toLocaleString("pt-BR")} XP ACUMULADO
@@ -139,6 +183,7 @@ export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps)
           )}
         </div>
 
+        {/* XP bar */}
         <div className="xp-wrap">
           <div className="xp-meta">
             <span className="cur">
@@ -162,10 +207,8 @@ export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps)
       {/* Right: Character portrait */}
       <div className="hero-char" style={{ padding: "16px", gap: "0", borderColor: classeCor ? `${classeCor}40` : undefined }}>
         <span className="eyebrow" style={{ marginBottom: "10px" }}>[ JOGADOR ]</span>
-        <CharPortrait level={level} classeCor={classeCor} />
+        <CharPortrait rank={rank} level={level} classeCor={classeCor} />
       </div>
     </div>
   );
 }
-
-export { CharPortrait };
