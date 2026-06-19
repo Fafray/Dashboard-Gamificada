@@ -30,15 +30,15 @@ function getLevelTitle(level: number): string {
 }
 
 const RANK_IMAGE: Record<string, string> = {
-  "E-RANK":         "/characters/e-rank.jpg",
-  "D-RANK":         "/characters/d-rank.jpg",
-  "C-RANK":         "/characters/c-rank.jpg",
-  "B-RANK":         "/characters/b-rank.jpg",
-  "A-RANK":         "/characters/a-rank.jpg",
-  "S-RANK":         "/characters/s-rank.jpg",
-  "NACIONAL":       "/characters/nacional.jpg",
-  "MONARCA":        "/characters/monarca.jpg",
-  "REI DAS SOMBRAS":"/characters/rei-das-sombras.jpg",
+  "E-RANK":         "/characters/e-rank.jpg.png",
+  "D-RANK":         "/characters/d-rank.jpg.png",
+  "C-RANK":         "/characters/c-rank.jpg.png",
+  "B-RANK":         "/characters/b-rank.jpg.png",
+  "A-RANK":         "/characters/a-rank.jpg.png",
+  "S-RANK":         "/characters/s-rank.jpg.png",
+  "NACIONAL":       "/characters/nacional.jpg.png",
+  "MONARCA":        "/characters/monarca.jpg.png",
+  "REI DAS SOMBRAS":"/characters/rei-das-sombras.jpg.png",
 };
 
 const RANK_GLOW: Record<string, string> = {
