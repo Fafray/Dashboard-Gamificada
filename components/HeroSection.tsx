@@ -56,14 +56,9 @@ const RANK_GLOW: Record<string, string> = {
 function CharPortrait({ rank, level, classeCor }: { rank: string; level: number; classeCor?: string }) {
   const [imgError, setImgError] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [posX, setPosX] = useState(() => {
-    if (typeof window === "undefined") return 50;
-    return Number(localStorage.getItem("portrait-x") ?? 50);
-  });
-  const [posY, setPosY] = useState(() => {
-    if (typeof window === "undefined") return 30;
-    return Number(localStorage.getItem("portrait-y") ?? 30);
-  });
+  const [posX, setPosX] = useState(() => typeof window === "undefined" ? 50 : Number(localStorage.getItem("portrait-x") ?? 50));
+  const [posY, setPosY] = useState(() => typeof window === "undefined" ? 50 : Number(localStorage.getItem("portrait-y") ?? 50));
+  const [zoom, setZoom] = useState(() => typeof window === "undefined" ? 100 : Number(localStorage.getItem("portrait-z") ?? 100));
 
   const imgSrc   = RANK_IMAGE[rank];
   const rankGlow = RANK_GLOW[rank] ?? "rgba(0,150,200,.6)";
@@ -71,6 +66,11 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
 
   function saveX(v: number) { setPosX(v); localStorage.setItem("portrait-x", String(v)); }
   function saveY(v: number) { setPosY(v); localStorage.setItem("portrait-y", String(v)); }
+  function saveZ(v: number) { setZoom(v); localStorage.setItem("portrait-z", String(v)); }
+
+  // posX/posY (0-100) controlam qual parte da imagem ampliada é visível
+  const imgLeft = `${(100 - zoom) * posX / 100}%`;
+  const imgTop  = `${(100 - zoom) * posY / 100}%`;
 
   return (
     <div style={{
@@ -81,14 +81,19 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
       border: "1px solid rgba(0,168,232,.15)",
     }}>
       {!imgError && imgSrc ? (
-        <Image
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
           src={imgSrc}
           alt={rank}
-          fill
-          unoptimized
-          style={{ objectFit: "cover", objectPosition: `${posX}% ${posY}%` }}
           onError={() => setImgError(true)}
-          priority
+          style={{
+            position: "absolute",
+            width: `${zoom}%`,
+            height: `${zoom}%`,
+            objectFit: "cover",
+            left: imgLeft,
+            top: imgTop,
+          }}
         />
       ) : (
         <div style={{
@@ -134,15 +139,21 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
       {editing && (
         <div style={{
           position: "absolute", top: 32, right: 8, zIndex: 10,
-          background: "rgba(4,8,20,.9)", border: "1px solid rgba(69,205,240,.3)",
-          borderRadius: 8, padding: "10px 12px", width: 160,
+          background: "rgba(4,8,20,.92)", border: "1px solid rgba(69,205,240,.3)",
+          borderRadius: 8, padding: "10px 12px", width: 165,
         }}>
           <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: 8, letterSpacing: ".12em", textTransform: "uppercase" }}>Enquadramento</div>
-          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>← → {posX}%</label>
+
+          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>← → {posX}%</label>
           <input type="range" min={0} max={100} value={posX} onChange={(e) => saveX(Number(e.target.value))}
             style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
-          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>↑ ↓ {posY}%</label>
+
+          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>↑ ↓ {posY}%</label>
           <input type="range" min={0} max={100} value={posY} onChange={(e) => saveY(Number(e.target.value))}
+            style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
+
+          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>🔍 zoom {zoom}%</label>
+          <input type="range" min={100} max={300} value={zoom} onChange={(e) => saveZ(Number(e.target.value))}
             style={{ width: "100%", accentColor: "var(--accent-teal)" }} />
         </div>
       )}
