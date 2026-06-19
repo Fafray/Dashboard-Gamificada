@@ -68,10 +68,6 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
   function saveY(v: number) { setPosY(v); localStorage.setItem("portrait-y", String(v)); }
   function saveZ(v: number) { setZoom(v); localStorage.setItem("portrait-z", String(v)); }
 
-  // posX/posY (0-100) controlam qual parte da imagem ampliada é visível
-  const imgLeft = `${(100 - zoom) * posX / 100}%`;
-  const imgTop  = `${(100 - zoom) * posY / 100}%`;
-
   return (
     <div style={{
       position: "relative", width: "100%", flex: 1,
@@ -88,11 +84,12 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
           onError={() => setImgError(true)}
           style={{
             position: "absolute",
-            width: `${zoom}%`,
-            height: `${zoom}%`,
+            width: "100%",
+            height: "100%",
             objectFit: "cover",
-            left: imgLeft,
-            top: imgTop,
+            transformOrigin: `${posX}% ${posY}%`,
+            transform: `scale(${zoom / 100})`,
+            display: "block",
           }}
         />
       ) : (
@@ -153,7 +150,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
             style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
 
           <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>🔍 zoom {zoom}%</label>
-          <input type="range" min={100} max={300} value={zoom} onChange={(e) => saveZ(Number(e.target.value))}
+          <input type="range" min={50} max={300} value={zoom} onChange={(e) => saveZ(Number(e.target.value))}
             style={{ width: "100%", accentColor: "var(--accent-teal)" }} />
         </div>
       )}
