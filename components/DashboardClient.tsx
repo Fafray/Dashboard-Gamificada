@@ -204,16 +204,6 @@ export function DashboardClient({
         {/* Hero */}
         <HeroSection levelInfo={levelInfo} xpToday={xpToday} classeCor={classeInfo.cor} />
 
-        {/* Status do dia */}
-        <div className="section">
-          <PainelStatus
-            maxStreak={maxStreak}
-            doneCount={dailyDoneCount}
-            totalCount={dailyActivities.length}
-            totalXP={levelInfo.totalXP}
-          />
-        </div>
-
         {/* Atributos */}
         <div className="section">
           <PainelAtributos
@@ -222,22 +212,6 @@ export function DashboardClient({
             initialClasse={classeInfo}
             onClasseChange={setClasseInfo}
           />
-        </div>
-
-        {/* Missão do Sistema */}
-        {dailyActivities.length > 0 && (
-          <div className="section">
-            <MissaoDoSistema
-              doneCount={dailyDoneCount}
-              totalCount={dailyActivities.length}
-              comboXp={comboXp}
-            />
-          </div>
-        )}
-
-        {/* Notificações PWA */}
-        <div className="section">
-          <NotificationSetup />
         </div>
 
         {/* Missões */}
@@ -323,6 +297,32 @@ export function DashboardClient({
               </div>
             </>
           )}
+        </div>
+
+        {/* Status do dia */}
+        <div className="section">
+          <PainelStatus
+            maxStreak={maxStreak}
+            doneCount={dailyDoneCount}
+            totalCount={dailyActivities.length}
+            totalXP={levelInfo.totalXP}
+          />
+        </div>
+
+        {/* Missão do Sistema */}
+        {dailyActivities.length > 0 && (
+          <div className="section">
+            <MissaoDoSistema
+              doneCount={dailyDoneCount}
+              totalCount={dailyActivities.length}
+              comboXp={comboXp}
+            />
+          </div>
+        )}
+
+        {/* Notificações PWA */}
+        <div className="section">
+          <NotificationSetup />
         </div>
 
         {/* Agenda de Hoje */}
