@@ -76,7 +76,7 @@ export function HeroBand({
       {/* LEFT: Character */}
       <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative" }}>
         <div style={{
-          width: 72, height: 72, flexShrink: 0, borderRadius: "50%",
+          width: 96, height: 96, flexShrink: 0, borderRadius: "50%",
           background: "radial-gradient(circle, rgba(26,169,214,.22), transparent 70%), var(--bg-surface)",
           border: "2px solid var(--accent-violet)",
           overflow: "hidden", position: "relative",
@@ -100,10 +100,10 @@ export function HeroBand({
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div
             className="level-badge"
-            style={{ "--p": progress, width: 46, height: 46 } as React.CSSProperties}
+            style={{ "--p": progress, width: 56, height: 56 } as React.CSSProperties}
           >
-            <span className="lv-label" style={{ fontSize: "7.5px", top: "11px" }}>LV</span>
-            <span className="lv-num num" style={{ fontSize: "20px", marginTop: "3px" }}>{level}</span>
+            <span className="lv-label" style={{ fontSize: "7.5px", top: "13px" }}>LV</span>
+            <span className="lv-num num" style={{ fontSize: "24px", marginTop: "3px" }}>{level}</span>
           </div>
           <div>
             <div style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "18px", fontWeight: 700,

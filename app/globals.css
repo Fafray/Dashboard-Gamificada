@@ -181,7 +181,7 @@ button { font-family: inherit; cursor: pointer; }
 .page {
   position: relative;
   z-index: 2;
-  max-width: 1180px;
+  max-width: 1240px;
   margin: 0 auto;
   padding: 28px 32px 96px;
 }
