@@ -113,6 +113,7 @@ export function DashboardClient({
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [bonusAwarded, setBonusAwarded] = useState(false);
   const [bonusPop, setBonusPop] = useState<number | null>(null);
+  const [filter, setFilter] = useState<"todos" | "daily" | "nx_week" | "weekly">("todos");
 
   const [doneSet, setDoneSet] = useState<Set<number>>(
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
@@ -211,7 +212,7 @@ export function DashboardClient({
         />
 
         {/* ── Missions ── */}
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "13px" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "10px" }}>
           <h2 style={{ fontFamily: "var(--font-space-grotesk)", fontSize: "16px", fontWeight: 700, margin: 0 }}>
             Missões de hoje
           </h2>
@@ -219,6 +220,31 @@ export function DashboardClient({
             <b style={{ color: "var(--text-primary)", fontFamily: "var(--font-space-grotesk)" }}>{doneCount}</b>
             {" / "}{initialActivities.length} concluídas
           </div>
+        </div>
+
+        {/* Filtros de frequência */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+          {(["todos", "daily", "nx_week", "weekly"] as const).map((key) => {
+            const label = key === "todos" ? "Todos" : key === "daily" ? "Diário" : key === "nx_week" ? "N×/sem." : "Semanal";
+            const active = filter === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setFilter(key)}
+                style={{
+                  padding: "4px 12px", borderRadius: 6, fontSize: 12,
+                  fontWeight: active ? 700 : 500,
+                  fontFamily: "var(--font-space-grotesk), sans-serif",
+                  border: active ? "1px solid rgba(69,205,240,.5)" : "1px solid var(--border)",
+                  background: active ? "rgba(69,205,240,.1)" : "transparent",
+                  color: active ? "var(--accent-violet-bright)" : "var(--text-muted)",
+                  cursor: "pointer",
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {initialActivities.length === 0 ? (
@@ -249,8 +275,9 @@ export function DashboardClient({
               </div>
             )}
 
-            <div className="act-grid" style={{ gridTemplateColumns: "1fr 1fr", alignItems: "stretch" }}>
+            <div className="act-grid" style={{ gridTemplateColumns: "1fr 1fr", alignItems: "start" }}>
               {initialActivities
+                .filter((a) => filter === "todos" || a.frequency === filter)
                 .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0))
                 .map((activity) => (
                   <ActivityCard

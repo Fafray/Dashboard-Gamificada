@@ -77,7 +77,7 @@ export function HeroBand({
       <div style={{ display: "flex", alignItems: "center", gap: "16px", position: "relative" }}>
         <div style={{
           width: 96, height: 96, flexShrink: 0, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(26,169,214,.22), transparent 70%), var(--bg-surface)",
+          background: "var(--bg-surface)",
           border: "2px solid var(--accent-violet)",
           overflow: "hidden", position: "relative",
           boxShadow: `0 0 16px ${portraitGlow}`,
