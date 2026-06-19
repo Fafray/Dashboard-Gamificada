@@ -121,7 +121,15 @@ export function DashboardClient({
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
   );
 
+  const [filtro, setFiltro] = useState<"todas" | "daily" | "semanal">("daily");
   const toggleCollapse = (key: string) => setCollapsed((p) => ({ ...p, [key]: !p[key] }));
+
+  const isDailyLike = (a: Activity) => a.frequency === "daily" || a.frequency === "once" || (a.frequency === "nx_week" && !!a.scheduled_days);
+  const isSemanal   = (a: Activity) => a.frequency === "weekly" || (a.frequency === "nx_week" && !a.scheduled_days) || a.frequency === "free";
+  const applyFiltro = (list: Activity[]) =>
+    filtro === "todas" ? list :
+    filtro === "daily" ? list.filter(isDailyLike) :
+    list.filter(isSemanal);
 
   const handleCheckin = useCallback((activityId: number, result: CheckinResult) => {
     setDoneSet((prev) => new Set([...prev, activityId]));
@@ -235,6 +243,29 @@ export function DashboardClient({
             </span>
           </div>
 
+          {/* Filtros de frequência */}
+          {initialActivities.length > 0 && (() => {
+            const chips = [
+              { k: "daily"  as const, l: "Diárias",  cnt: initialActivities.filter(isDailyLike).length },
+              { k: "semanal"as const, l: "Semanais", cnt: initialActivities.filter(isSemanal).length },
+              { k: "todas"  as const, l: "Todas",    cnt: initialActivities.length },
+            ].filter((c) => c.k === "todas" || c.cnt > 0);
+            return (
+              <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+                {chips.map((c) => (
+                  <button key={c.k} onClick={() => setFiltro(c.k)} style={{
+                    padding: "5px 13px", borderRadius: "8px", fontSize: "12px", fontWeight: 500, cursor: "pointer",
+                    border: filtro === c.k ? "1px solid rgba(0,184,232,.45)" : "1px solid rgba(120,150,180,.18)",
+                    background: filtro === c.k ? "rgba(0,184,232,.12)" : "transparent",
+                    color: filtro === c.k ? "var(--accent-teal)" : "var(--text-muted)",
+                  }}>
+                    {c.l} <span style={{ opacity: 0.6 }}>{c.cnt}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
+
           {initialActivities.length === 0 ? (
             <EmptyState />
           ) : (
@@ -262,8 +293,8 @@ export function DashboardClient({
                 ];
 
                 return catKeys.map((cat) => {
-                  const items = initialActivities
-                    .filter((a) => (a.categoria ?? SEM_CATEGORIA) === cat)
+                  const items = applyFiltro(initialActivities
+                    .filter((a) => (a.categoria ?? SEM_CATEGORIA) === cat))
                     .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0));
                   if (items.length === 0) return null;
 
