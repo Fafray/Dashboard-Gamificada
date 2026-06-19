@@ -57,7 +57,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
   const [imgError, setImgError] = useState(false);
   const [editing, setEditing] = useState(false);
   const [posX, setPosX] = useState(() => typeof window === "undefined" ? 50 : Number(localStorage.getItem("portrait-x") ?? 50));
-  const [posY, setPosY] = useState(() => typeof window === "undefined" ? 50 : Number(localStorage.getItem("portrait-y") ?? 50));
+  const [posY, setPosY] = useState(() => typeof window === "undefined" ? 0 : Number(localStorage.getItem("portrait-y") ?? 0));
   const [zoom, setZoom] = useState(() => typeof window === "undefined" ? 100 : Number(localStorage.getItem("portrait-z") ?? 100));
 
   const imgSrc   = RANK_IMAGE[rank];
@@ -87,6 +87,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
             width: "100%",
             height: "100%",
             objectFit: "cover",
+            objectPosition: `${posX}% ${posY}%`,
             transformOrigin: `${posX}% ${posY}%`,
             transform: `scale(${zoom / 100})`,
             display: "block",
