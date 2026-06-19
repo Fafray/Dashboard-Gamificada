@@ -11,7 +11,17 @@ import { PainelStatus } from "./PainelStatus";
 import { MissaoDoSistema } from "./MissaoDoSistema";
 import { NotificationSetup } from "./NotificationSetup";
 import { computeComboXP } from "@/lib/gamification";
+import { CATEGORIA_ATRIBUTO, CATEGORIA_LABELS } from "@/lib/attributes";
 import type { Atributos, ClasseInfo } from "@/lib/attributes";
+
+const CATEGORIA_COR: Record<string, string> = {
+  saude: "#25d99a", treino: "#f0556a", estudo: "#45cdf0", disciplina: "#ffce47", foco: "#8b5cf6",
+};
+const COR_ATTR: Record<string, string> = {
+  FOR: "#f0556a", VIT: "#25d99a", AGI: "#ffce47", INT: "#8b5cf6", PER: "#45cdf0",
+};
+const CATEGORIAS_ORDEM = ["saude", "treino", "estudo", "disciplina", "foco"] as const;
+const SEM_CATEGORIA = "__sem__";
 
 interface TodayTask {
   id: number;
@@ -105,11 +115,13 @@ export function DashboardClient({
   const [levelUpLevel, setLevelUpLevel]   = useState<number | null>(null);
   const [bonusAwarded, setBonusAwarded]   = useState(false);
   const [bonusPop, setBonusPop]           = useState<number | null>(null);
+  const [collapsed, setCollapsed]         = useState<Record<string, boolean>>({});
 
   const [doneSet, setDoneSet] = useState<Set<number>>(
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
   );
-  const [filtro, setFiltro] = useState<"todas" | "daily" | "semanal">("daily");
+
+  const toggleCollapse = (key: string) => setCollapsed((p) => ({ ...p, [key]: !p[key] }));
 
   const handleCheckin = useCallback((activityId: number, result: CheckinResult) => {
     setDoneSet((prev) => new Set([...prev, activityId]));
@@ -214,12 +226,12 @@ export function DashboardClient({
           />
         </div>
 
-        {/* Missões */}
+        {/* Missões por categoria */}
         <div className="section">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "16px" }}>
             <h2 style={{ margin: 0 }}>Missões do Dia</h2>
             <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              {dailyDoneCount} / {dailyActivities.length} diárias concluídas
+              {doneCount} / {totalCount} concluídas
             </span>
           </div>
 
@@ -227,41 +239,9 @@ export function DashboardClient({
             <EmptyState />
           ) : (
             <>
-              {/* Filtros */}
-              {(() => {
-                // nx_week com dias fixos e once são tratados como "diária"
-                const isDailyLike = (a: Activity) => a.frequency === "daily" || a.frequency === "once" || (a.frequency === "nx_week" && !!a.scheduled_days);
-                const isSemansal = (a: Activity) => a.frequency === "weekly" || (a.frequency === "nx_week" && !a.scheduled_days);
-                const chips = [
-                  { k: "daily"   as const, l: "Diárias", cnt: initialActivities.filter(isDailyLike).length },
-                  { k: "semanal" as const, l: "Semanais",cnt: initialActivities.filter(isSemansal).length },
-                  { k: "todas"   as const, l: "Todas",   cnt: initialActivities.length },
-                ].filter((c) => c.k === "todas" || c.cnt > 0);
-                return (
-                  <div style={{ display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap" }}>
-                    {chips.map((c) => (
-                      <button
-                        key={c.k}
-                        onClick={() => setFiltro(c.k)}
-                        style={{
-                          padding: "5px 13px", borderRadius: "8px", fontSize: "12px",
-                          fontWeight: 500, cursor: "pointer",
-                          border: filtro === c.k ? "1px solid rgba(0,184,232,.45)" : "1px solid rgba(120,150,180,.18)",
-                          background: filtro === c.k ? "rgba(0,184,232,.12)" : "transparent",
-                          color: filtro === c.k ? "var(--accent-teal)" : "var(--text-muted)",
-                        }}
-                      >
-                        {c.l} <span style={{ opacity: 0.6 }}>{c.cnt}</span>
-                      </button>
-                    ))}
-                  </div>
-                );
-              })()}
-
-              {/* Banner Dia Perfeito */}
               {allDailyDone && (
                 <div style={{
-                  marginBottom: "14px", padding: "12px 16px", borderRadius: "12px",
+                  marginBottom: "16px", padding: "12px 16px", borderRadius: "12px",
                   background: "rgba(47,208,154,.07)", border: "1px solid rgba(47,208,154,.4)",
                   display: "flex", alignItems: "center", gap: "10px",
                 }}>
@@ -275,26 +255,78 @@ export function DashboardClient({
                 </div>
               )}
 
-              <div className="act-grid">
-                {initialActivities
-                  .filter((a) =>
-                    filtro === "todas" ? true :
-                    filtro === "daily" ? (a.frequency === "daily" || a.frequency === "once" || (a.frequency === "nx_week" && !!a.scheduled_days)) :
-                    (a.frequency === "weekly" || (a.frequency === "nx_week" && !a.scheduled_days))
-                  )
-                  .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0))
-                  .map((activity) => (
-                    <ActivityCard
-                      key={activity.id}
-                      activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
-                      atributos={atributos}
-                      isBonusMission={bonusMissionId !== null && activity.id === bonusMissionId}
-                      onCheckin={(result) => handleCheckin(activity.id, result)}
-                      onUndo={(result) => handleUndo(activity.id, result)}
-                      initialAccumulated={activity.todayCheckinValue}
-                    />
-                  ))}
-              </div>
+              {(() => {
+                const catKeys = [
+                  ...CATEGORIAS_ORDEM.filter((c) => initialActivities.some((a) => a.categoria === c)),
+                  ...(initialActivities.some((a) => !a.categoria) ? [SEM_CATEGORIA] : []),
+                ];
+
+                return catKeys.map((cat) => {
+                  const items = initialActivities
+                    .filter((a) => (a.categoria ?? SEM_CATEGORIA) === cat)
+                    .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0));
+                  if (items.length === 0) return null;
+
+                  const cor      = CATEGORIA_COR[cat] ?? "var(--accent-violet)";
+                  const label    = cat === SEM_CATEGORIA ? "Sem categoria" : (CATEGORIA_LABELS[cat] ?? cat);
+                  const attrKey  = cat !== SEM_CATEGORIA ? (CATEGORIA_ATRIBUTO[cat] ?? null) : null;
+                  const doneCat  = items.filter((a) => doneSet.has(a.id)).length;
+                  const isOpen   = !collapsed[cat];
+
+                  return (
+                    <div key={cat} style={{ marginBottom: "24px" }}>
+                      <button
+                        onClick={() => toggleCollapse(cat)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: "10px",
+                          width: "100%", background: "none", border: "none",
+                          cursor: "pointer", padding: "0 0 12px", textAlign: "left",
+                        }}
+                      >
+                        <div style={{ width: "3px", height: "18px", borderRadius: "2px", background: cor, flexShrink: 0 }} />
+                        <span style={{
+                          fontFamily: "var(--font-space-grotesk)", fontSize: "13px", fontWeight: 700,
+                          letterSpacing: ".08em", textTransform: "uppercase", color: cor,
+                        }}>
+                          {label}
+                        </span>
+                        {attrKey && (
+                          <span style={{
+                            fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "5px",
+                            background: `${COR_ATTR[attrKey]}22`, color: COR_ATTR[attrKey],
+                            border: `1px solid ${COR_ATTR[attrKey]}44`,
+                            fontFamily: "var(--font-space-grotesk)", letterSpacing: ".06em",
+                          }}>+{attrKey}</span>
+                        )}
+                        <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                          {doneCat}/{items.length}
+                        </span>
+                        <span style={{
+                          marginLeft: "auto", fontSize: "11px", color: "var(--text-muted)",
+                          display: "inline-block", transition: "transform .2s",
+                          transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+                        }}>▶</span>
+                      </button>
+
+                      {isOpen && (
+                        <div className="act-grid">
+                          {items.map((activity) => (
+                            <ActivityCard
+                              key={activity.id}
+                              activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
+                              atributos={atributos}
+                              isBonusMission={bonusMissionId !== null && activity.id === bonusMissionId}
+                              onCheckin={(result) => handleCheckin(activity.id, result)}
+                              onUndo={(result) => handleUndo(activity.id, result)}
+                              initialAccumulated={activity.todayCheckinValue}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
             </>
           )}
         </div>
