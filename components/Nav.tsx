@@ -8,7 +8,7 @@ const links = [
   {
     href: "/", label: "Sistema",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
         <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
       </svg>
@@ -17,33 +17,33 @@ const links = [
   {
     href: "/activities", label: "Missões",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-      </svg>
-    ),
-  },
-  {
-    href: "/achievements", label: "Títulos",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
-      </svg>
-    ),
-  },
-  {
-    href: "/history", label: "Registros",
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
       </svg>
     ),
   },
   {
     href: "/agenda", label: "Agenda",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
         <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/achievements", label: "Títulos",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/history", label: "Histórico",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
       </svg>
     ),
   },
@@ -65,11 +65,18 @@ const MoonIcon = () => (
   </svg>
 );
 
+interface PlayerStatus {
+  level: number;
+  progress: number;
+  rank: string;
+}
+
 export function Nav() {
   const path = usePathname();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [agendaCount, setAgendaCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("dq-theme") as "dark" | "light" | null;
@@ -83,6 +90,13 @@ export function Nav() {
     fetch("/api/agenda/today-count")
       .then((r) => r.json())
       .then((d) => setAgendaCount(d.count ?? 0))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/player/status")
+      .then((r) => r.json())
+      .then((d) => setPlayerStatus(d))
       .catch(() => {});
   }, []);
 
@@ -170,44 +184,63 @@ export function Nav() {
     );
   }
 
-  // Desktop — vertical pill
+  // Desktop — full-height left sidebar
   return (
     <nav style={{
-      position: "fixed", left: "20px", top: "50%", transform: "translateY(-50%)",
-      zIndex: 50, display: "flex", flexDirection: "column",
-      alignItems: "stretch", gap: "2px", padding: "12px 10px",
-      background: "var(--bg-surface)", border: "1px solid var(--border)",
-      borderRadius: "20px", width: "148px",
-      boxShadow: "0 8px 32px rgba(0,0,0,.22), 0 2px 8px rgba(0,0,0,.12)",
+      position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 50,
+      width: 148,
+      background: "var(--bg-surface)", borderRight: "1px solid var(--border)",
+      display: "flex", flexDirection: "column", padding: "18px 10px 18px", gap: 3,
     }}>
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "center",
-        height: "36px", fontSize: "18px", color: "var(--accent-violet-bright)", marginBottom: "2px",
-      }}>◈</div>
+      {/* Logo */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 8px", marginBottom: 20 }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+          background: "rgba(26,169,214,.1)",
+          border: "1px solid rgba(69,205,240,.45)",
+          display: "grid", placeItems: "center",
+          fontSize: 17,
+          boxShadow: "0 0 14px rgba(26,169,214,.2)",
+        }}>◈</div>
+        <div>
+          <div style={{
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: 11.5, fontWeight: 700, letterSpacing: ".18em",
+            color: "var(--accent-violet-bright)", lineHeight: 1,
+          }}>SISTEMA</div>
+          <div style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: ".1em", marginTop: 2, textTransform: "uppercase" }}>
+            v2.0
+          </div>
+        </div>
+      </div>
 
-      <div style={{ height: "1px", background: "var(--border)", margin: "4px 0 6px" }} />
-
+      {/* Nav links */}
       {links.map((l) => {
         const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
         const isAgenda = l.href === "/agenda";
         return (
           <Link key={l.href} href={l.href} style={{
             position: "relative",
-            display: "flex", alignItems: "center", gap: 10,
-            height: 40, padding: "0 10px", borderRadius: 12,
+            display: "flex", alignItems: "center", gap: 9,
+            height: 40, padding: "0 10px", borderRadius: 10,
             background: active ? "var(--accent-violet)" : "transparent",
             color: active ? "#04121c" : "var(--text-muted)",
             textDecoration: "none", transition: "background .15s, color .15s",
           }}>
-            {l.icon}
-            <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: 12.5, fontWeight: active ? 700 : 500, flex: 1 }}>
+            <span style={{ flexShrink: 0, width: 18, textAlign: "center", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {l.icon}
+            </span>
+            <span style={{
+              fontFamily: "var(--font-space-grotesk), sans-serif",
+              fontSize: 12.5, fontWeight: active ? 700 : 500, whiteSpace: "nowrap",
+            }}>
               {l.label}
             </span>
             {isAgenda && agendaCount > 0 && (
               <span style={{
-                minWidth: 18, height: 18, borderRadius: 999,
+                marginLeft: "auto", minWidth: 18, height: 18, borderRadius: 999,
                 background: "var(--accent-red)", color: "white",
-                fontSize: 9, fontWeight: 800, fontFamily: "var(--font-space-grotesk)",
+                fontSize: 9, fontWeight: 800, fontFamily: "var(--font-space-grotesk), sans-serif",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 padding: "0 4px",
               }}>
@@ -218,19 +251,51 @@ export function Nav() {
         );
       })}
 
-      <div style={{ height: "1px", background: "var(--border)", margin: "6px 0 4px" }} />
-
+      {/* Theme toggle */}
       <button onClick={toggleTheme} title="Alternar tema" style={{
-        display: "flex", alignItems: "center", gap: 10,
-        height: 40, padding: "0 10px", borderRadius: 12,
+        display: "flex", alignItems: "center", gap: 9,
+        height: 40, padding: "0 10px", borderRadius: 10,
         background: "transparent", border: "none", cursor: "pointer",
         color: "var(--text-muted)", transition: "color .15s",
       }}>
-        {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-        <span style={{ fontFamily: "var(--font-space-grotesk)", fontSize: 12.5, fontWeight: 500 }}>
+        <span style={{ flexShrink: 0, width: 18, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+        </span>
+        <span style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontSize: 12.5, fontWeight: 500 }}>
           Tema
         </span>
       </button>
+
+      {/* User profile card */}
+      {playerStatus && (
+        <div style={{
+          marginTop: "auto",
+          padding: "12px", borderRadius: 10,
+          background: "var(--bg-card)", border: "1px solid var(--border)",
+        }}>
+          <div style={{
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: 11, fontWeight: 700, color: "var(--text-primary)", letterSpacing: ".08em",
+          }}>
+            FABRICIO
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
+            {playerStatus.rank} · LV.{playerStatus.level}
+          </div>
+          <div style={{ height: 4, background: "var(--border)", borderRadius: 999, marginTop: 8, overflow: "hidden", position: "relative" }}>
+            <div style={{
+              position: "absolute", inset: 0,
+              width: `${playerStatus.progress}%`,
+              background: "linear-gradient(90deg, #1888c8, var(--accent-teal))",
+              borderRadius: 999,
+              transition: "width .6s ease",
+            }} />
+          </div>
+          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4, textAlign: "right" }}>
+            {playerStatus.progress}%
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

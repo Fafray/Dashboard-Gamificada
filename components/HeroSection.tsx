@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
 
 interface LevelInfo {
@@ -28,6 +27,30 @@ function getLevelTitle(level: number): string {
   if (level < 100) return "MONARCA";
   return "REI DAS SOMBRAS";
 }
+
+function getRankRange(level: number): string {
+  if (level < 5)   return "1 → 4";
+  if (level < 10)  return "5 → 9";
+  if (level < 15)  return "10 → 14";
+  if (level < 20)  return "15 → 19";
+  if (level < 30)  return "20 → 29";
+  if (level < 50)  return "30 → 49";
+  if (level < 80)  return "50 → 79";
+  if (level < 100) return "80 → 99";
+  return "100+";
+}
+
+const RANK_EMOJI: Record<string, string> = {
+  "E-RANK":          "🧙‍♂️",
+  "D-RANK":          "⚔️",
+  "C-RANK":          "🛡️",
+  "B-RANK":          "🗡️",
+  "A-RANK":          "🦅",
+  "S-RANK":          "👑",
+  "NACIONAL":        "🌟",
+  "MONARCA":         "🔱",
+  "REI DAS SOMBRAS": "💀",
+};
 
 const RANK_IMAGE: Record<string, string> = {
   "E-RANK":          "/characters/e-rank.jpg.png",
@@ -61,31 +84,32 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
   const [zoom, setZoom] = useState(() => typeof window === "undefined" ? 100 : Number(localStorage.getItem("portrait-z") ?? 100));
 
   const imgSrc   = RANK_IMAGE[rank];
-  const rankGlow = RANK_GLOW[rank] ?? "rgba(0,150,200,.6)";
+  const rankGlow = RANK_GLOW[rank] ?? "rgba(139,92,246,.6)";
   const glow     = classeCor ? `${classeCor}99` : rankGlow;
+  const emoji    = RANK_EMOJI[rank] ?? "🧙‍♂️";
+  const range    = getRankRange(level);
 
   function saveX(v: number) { setPosX(v); localStorage.setItem("portrait-x", String(v)); }
   function saveY(v: number) { setPosY(v); localStorage.setItem("portrait-y", String(v)); }
   function saveZ(v: number) { setZoom(v); localStorage.setItem("portrait-z", String(v)); }
 
-  return (
-    <div style={{
-      position: "relative", width: "100%", flex: 1,
-      borderRadius: "var(--r-md)", overflow: "hidden",
-      minHeight: "300px",
-      background: "var(--bg-surface)",
-      border: "1px solid rgba(0,168,232,.15)",
-    }}>
-      {!imgError && imgSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
+  if (!imgError && imgSrc) {
+    return (
+      <div style={{
+        position: "relative", width: "100%", flex: 1,
+        borderRadius: "var(--r-md)", overflow: "hidden",
+        minHeight: "280px",
+        background: "var(--bg-surface)",
+        border: "1px solid rgba(139,92,246,.35)",
+      }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imgSrc}
           alt={rank}
           onError={() => setImgError(true)}
           style={{
             position: "absolute",
-            width: "100%",
-            height: "100%",
+            width: "100%", height: "100%",
             objectFit: "cover",
             objectPosition: `${posX}% ${posY}%`,
             transformOrigin: `${posX}% ${posY}%`,
@@ -93,90 +117,121 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
             display: "block",
           }}
         />
-      ) : (
+        {/* Ornamental inner frames */}
+        <div style={{ position: "absolute", inset: 8, border: "1px solid rgba(139,92,246,.35)", borderRadius: 6, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 11, border: "1px solid rgba(255,206,71,.18)", borderRadius: 5, pointerEvents: "none" }} />
+
+        {/* Bottom gradient + glow */}
         <div style={{
-          position: "absolute", inset: 0,
-          background: `radial-gradient(ellipse 70% 80% at 50% 30%, ${glow.replace("1)", ".18)")}, transparent 70%),
-                       radial-gradient(ellipse 50% 50% at 50% 100%, rgba(0,50,100,.4), transparent 60%)`,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <span style={{ fontSize: "80px", opacity: .18, fontFamily: "var(--font-space-grotesk), sans-serif", fontWeight: 700, letterSpacing: ".1em", color: "var(--accent-violet-bright)" }}>
-            LV.{level}
-          </span>
-        </div>
-      )}
-
-      {/* gradient overlay para texto */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "linear-gradient(to top, rgba(4,8,16,.95) 0%, rgba(4,8,16,.5) 30%, transparent 60%)",
-        pointerEvents: "none",
-      }} />
-
-      {/* lateral glow */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none",
-        boxShadow: `inset 0 0 40px ${glow.replace("1)", ".12)")}`,
-      }} />
-
-      {/* Botão de ajuste */}
-      <button
-        onClick={() => setEditing((e) => !e)}
-        style={{
-          position: "absolute", top: 8, right: 8, zIndex: 10,
-          background: "rgba(0,0,0,.55)", border: "1px solid rgba(255,255,255,.15)",
-          borderRadius: 6, padding: "3px 7px", cursor: "pointer",
-          fontSize: "11px", color: "rgba(255,255,255,.7)", lineHeight: 1,
-        }}
-        title="Ajustar enquadramento"
-      >
-        ⊹
-      </button>
-
-      {/* Painel de ajuste */}
-      {editing && (
+          position: "absolute", inset: 0, pointerEvents: "none",
+          background: "linear-gradient(to top, rgba(4,8,16,.9) 0%, rgba(4,8,16,.4) 30%, transparent 60%)",
+        }} />
         <div style={{
-          position: "absolute", top: 32, right: 8, zIndex: 10,
-          background: "rgba(4,8,20,.92)", border: "1px solid rgba(69,205,240,.3)",
-          borderRadius: 8, padding: "10px 12px", width: 165,
-        }}>
-          <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: 8, letterSpacing: ".12em", textTransform: "uppercase" }}>Enquadramento</div>
+          position: "absolute", inset: 0, pointerEvents: "none",
+          boxShadow: `inset 0 0 40px ${glow.replace("1)", ".12)")}`,
+        }} />
 
-          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>← → {posX}%</label>
-          <input type="range" min={0} max={100} value={posX} onChange={(e) => saveX(Number(e.target.value))}
-            style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
+        {/* Adjust button */}
+        <button
+          onClick={() => setEditing((e) => !e)}
+          style={{
+            position: "absolute", top: 8, right: 8, zIndex: 10,
+            background: "rgba(0,0,0,.55)", border: "1px solid rgba(255,255,255,.15)",
+            borderRadius: 6, padding: "3px 7px", cursor: "pointer",
+            fontSize: "11px", color: "rgba(255,255,255,.7)", lineHeight: 1,
+          }}
+          title="Ajustar enquadramento"
+        >⊹</button>
 
-          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>↑ ↓ {posY}%</label>
-          <input type="range" min={0} max={100} value={posY} onChange={(e) => saveY(Number(e.target.value))}
-            style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
+        {editing && (
+          <div style={{
+            position: "absolute", top: 32, right: 8, zIndex: 10,
+            background: "rgba(4,8,20,.92)", border: "1px solid rgba(69,205,240,.3)",
+            borderRadius: 8, padding: "10px 12px", width: 165,
+          }}>
+            <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: 8, letterSpacing: ".12em", textTransform: "uppercase" }}>Enquadramento</div>
+            <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>← → {posX}%</label>
+            <input type="range" min={0} max={100} value={posX} onChange={(e) => saveX(Number(e.target.value))}
+              style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
+            <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>↑ ↓ {posY}%</label>
+            <input type="range" min={0} max={100} value={posY} onChange={(e) => saveY(Number(e.target.value))}
+              style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
+            <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>🔍 zoom {zoom}%</label>
+            <input type="range" min={50} max={300} value={zoom} onChange={(e) => saveZ(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "var(--accent-teal)" }} />
+          </div>
+        )}
 
-          <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>🔍 zoom {zoom}%</label>
-          <input type="range" min={50} max={300} value={zoom} onChange={(e) => saveZ(Number(e.target.value))}
-            style={{ width: "100%", accentColor: "var(--accent-teal)" }} />
+        {/* Name + rank overlay */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 14px" }}>
+          <div style={{
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: "20px", fontWeight: 700, letterSpacing: ".18em",
+            color: "#e8f4ff",
+            textShadow: `0 0 20px ${glow}, 0 2px 8px rgba(0,0,0,.8)`,
+            textTransform: "uppercase", lineHeight: 1,
+          }}>Fabricio</div>
+          <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{
+              fontSize: "10px", letterSpacing: ".2em", fontWeight: 700,
+              color: "var(--accent-violet-bright)",
+              fontFamily: "var(--font-space-grotesk), sans-serif",
+              textShadow: `0 0 12px ${glow}`,
+            }}>{rank}</span>
+            <span style={{ width: "1px", height: "10px", background: "rgba(0,168,232,.3)" }} />
+            <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: ".1em" }}>LV.{level}</span>
+          </div>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      {/* Nome + rank overlay */}
+  // Fallback — card-game style (no photo)
+  return (
+    <div style={{
+      position: "relative", flex: 1, borderRadius: "var(--r-md)", overflow: "hidden",
+      background: "radial-gradient(120% 90% at 50% 0%, rgba(139,92,246,.32), transparent 60%), linear-gradient(180deg, #1a1430, #0c0a1c 70%)",
+      border: "1px solid rgba(139,92,246,.4)",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      minHeight: "280px", gap: 0,
+    }}>
+      {/* Ornamental frames */}
+      <div style={{ position: "absolute", inset: 8, border: "1px solid rgba(139,92,246,.35)", borderRadius: 6, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 11, border: "1px solid rgba(255,206,71,.18)", borderRadius: 5, pointerEvents: "none" }} />
+
+      {/* Content */}
+      <div style={{
+        fontFamily: "var(--font-space-grotesk), sans-serif",
+        fontSize: 28, fontWeight: 700, letterSpacing: ".06em",
+        color: "#e7d9ff",
+        textShadow: "0 2px 14px rgba(139,92,246,.7)",
+        lineHeight: 1, marginTop: 16,
+      }}>{rank}</div>
+      <div style={{
+        fontFamily: "var(--font-space-grotesk), sans-serif",
+        fontSize: 11, fontWeight: 600, color: "rgba(231,217,255,.55)",
+        letterSpacing: ".3em", marginTop: 5,
+      }}>{range}</div>
+      <div style={{ fontSize: 72, lineHeight: 1, marginTop: 10, filter: "drop-shadow(0 6px 18px rgba(139,92,246,.55))", animation: "bob 5s ease-in-out infinite" }}>
+        {emoji}
+      </div>
+
+      {/* Name + rank at bottom */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 14px" }}>
         <div style={{
           fontFamily: "var(--font-space-grotesk), sans-serif",
-          fontSize: "20px", fontWeight: 700, letterSpacing: ".18em",
+          fontSize: "18px", fontWeight: 700, letterSpacing: ".18em",
           color: "#e8f4ff",
-          textShadow: `0 0 20px ${glow}, 0 2px 8px rgba(0,0,0,.8)`,
+          textShadow: "0 0 20px rgba(139,92,246,.7), 0 2px 8px rgba(0,0,0,.8)",
           textTransform: "uppercase", lineHeight: 1,
-        }}>
-          Fabricio
-        </div>
+        }}>Fabricio</div>
         <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
           <span style={{
             fontSize: "10px", letterSpacing: ".2em", fontWeight: 700,
             color: "var(--accent-violet-bright)",
             fontFamily: "var(--font-space-grotesk), sans-serif",
-            textShadow: `0 0 12px ${glow}`,
-          }}>
-            {rank}
-          </span>
-          <span style={{ width: "1px", height: "10px", background: "rgba(0,168,232,.3)" }} />
+          }}>{rank}</span>
+          <span style={{ width: "1px", height: "10px", background: "rgba(139,92,246,.4)" }} />
           <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: ".1em" }}>LV.{level}</span>
         </div>
       </div>
@@ -236,9 +291,16 @@ export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps)
         </div>
       </div>
 
-      {/* Right: Character portrait */}
-      <div className="hero-char" style={{ padding: "16px", gap: "0", borderColor: classeCor ? `${classeCor}40` : undefined }}>
-        <span className="eyebrow" style={{ marginBottom: "10px" }}>[ JOGADOR ]</span>
+      {/* Right: Character card */}
+      <div className="hero-char" style={{
+        padding: "14px", gap: "0",
+        borderColor: classeCor ? `${classeCor}40` : "rgba(139,92,246,.3)",
+        background: "var(--bg-card)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+          <span className="eyebrow">[ JOGADOR ]</span>
+          <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>◈</span>
+        </div>
         <CharPortrait rank={rank} level={level} classeCor={classeCor} />
       </div>
     </div>

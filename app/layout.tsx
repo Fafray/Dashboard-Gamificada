@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Exo_2, Rajdhani } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import { ServiceWorkerSetup } from "@/components/ServiceWorkerSetup";
 import "./globals.css";
 
-const exo2 = Exo_2({
+const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-manrope",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
-const rajdhani = Rajdhani({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-space-grotesk",
   weight: ["400", "500", "600", "700"],
@@ -34,7 +34,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${exo2.variable} ${rajdhani.variable} h-full`}>
+    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} h-full`}>
       <body className="h-full flex flex-col">
         <div className="aurora-bg" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />

@@ -168,7 +168,7 @@ button { font-family: inherit; cursor: pointer; }
 .main-content {
   position: relative;
   z-index: 2;
-  padding-left: 188px;
+  padding-left: 148px;
 }
 
 @media (max-width: 767px) {

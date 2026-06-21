@@ -199,12 +199,10 @@ export function GradeTitulos({
       {/* ── Em progresso ── */}
       {emProgresso.length > 0 && (
         <div style={{ marginBottom: "36px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-            <div style={{ width: "3px", height: "16px", borderRadius: "2px", background: "var(--accent-violet)", flexShrink: 0 }} />
-            <h2 style={{ margin: 0, fontSize: "14px", letterSpacing: ".08em", textTransform: "uppercase" }}>Em progresso</h2>
-            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{emProgresso.length}</span>
+          <div style={{ fontSize: "10px", letterSpacing: ".22em", textTransform: "uppercase", color: "var(--text-secondary)", fontWeight: 700, marginBottom: "13px" }}>
+            Em progresso
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "14px" }}>
             {emProgresso.map((t) => {
               const R = RARIDADES[t.raridade];
               const [atual, alvo] = t.progresso(player, stats);
@@ -215,28 +213,41 @@ export function GradeTitulos({
                   onClick={() => setSelId(selId === t.id ? null : t.id)}
                   style={{
                     background: "var(--bg-card)",
-                    border: `1px solid ${R.cor}44`,
-                    borderLeft: `3px solid ${R.cor}`,
-                    borderRadius: "var(--r-md)",
-                    padding: "12px 14px",
+                    border: `1px solid ${R.cor}55`,
+                    borderRadius: 13,
+                    padding: "18px 16px",
+                    boxShadow: `0 0 22px ${R.cor}14`,
+                    position: "relative", overflow: "hidden",
                     cursor: "pointer",
-                    transition: "border-color .15s",
+                    transition: "border-color .15s, box-shadow .15s",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-                    <span style={{ fontSize: "22px", lineHeight: 1 }}>{t.emoji}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: "13px", color: "var(--text-primary)", lineHeight: 1.2 }}>{t.nome}</div>
-                      <div style={{ fontSize: "9.5px", color: R.cor, letterSpacing: ".1em", textTransform: "uppercase", marginTop: "2px", fontFamily: "var(--font-space-grotesk)" }}>
-                        {R.nome}
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, transparent, ${R.cor}, transparent)`, pointerEvents: "none" }} />
+                  <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: `radial-gradient(70% 50% at 15% -5%, ${R.cor}1a, transparent 55%)` }} />
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, position: "relative" }}>
+                    <div style={{
+                      width: 46, height: 46, borderRadius: 11, flexShrink: 0,
+                      background: `${R.cor}26`, border: `1px solid ${R.cor}60`,
+                      display: "grid", placeItems: "center", fontSize: 22,
+                    }}>{t.emoji}</div>
+                    <div>
+                      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase", color: R.cor, marginBottom: 3 }}>{R.nome}</div>
+                      <div style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontWeight: 700, fontSize: 15, lineHeight: 1.2, color: "var(--text-primary)" }}>{t.nome}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 3 }}>
+                        {t.desc.split("·")[0]?.trim() ?? t.trilha}
                       </div>
                     </div>
-                    <span style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "var(--font-space-grotesk)", fontWeight: 600, flexShrink: 0 }}>
-                      {atual}/{alvo}
-                    </span>
                   </div>
-                  <div style={{ height: "4px", borderRadius: "2px", background: "var(--bg-surface)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, background: R.cor, borderRadius: "2px", transition: "width .4s" }} />
+                  <div style={{ marginTop: 14, position: "relative" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--text-muted)", marginBottom: 5 }}>
+                      <span>Progresso</span>
+                      <span style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontWeight: 700, color: "var(--text-primary)" }}>
+                        {Math.min(atual, alvo)} / {alvo}
+                      </span>
+                    </div>
+                    <div style={{ height: 5, borderRadius: 999, background: "var(--bg-base)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: R.cor, borderRadius: 999, boxShadow: `0 0 8px ${R.cor}80`, transition: "width .4s" }} />
+                    </div>
                   </div>
                 </div>
               );
@@ -247,28 +258,33 @@ export function GradeTitulos({
 
       {/* ── Trilhas ── */}
       <div>
-        {(Object.entries(TRILHAS) as [TrilhaKey, typeof TRILHAS[TrilhaKey]][]).map(([chave, tr]) => {
-          const degraus = TITULOS.filter((t) => t.trilha === chave);
-          const feitos  = degraus.filter((t) => initialDesbloqueados.includes(t.id)).length;
+        <div style={{ fontSize: "10px", letterSpacing: ".22em", textTransform: "uppercase", color: "var(--text-secondary)", fontWeight: 700, marginBottom: "20px" }}>
+          Trilhas
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {(Object.entries(TRILHAS) as [TrilhaKey, typeof TRILHAS[TrilhaKey]][]).map(([chave, tr]) => {
+            const degraus = TITULOS.filter((t) => t.trilha === chave);
+            const feitos  = degraus.filter((t) => initialDesbloqueados.includes(t.id)).length;
 
-          return (
-            <TrilhaRow
-              key={chave}
-              trilhaNome={tr.nome}
-              trilhaIcone={tr.icone}
-              degraus={degraus}
-              desbloqueados={initialDesbloqueados}
-              ativoId={ativoId}
-              selId={selId}
-              feitos={feitos}
-              player={player}
-              stats={stats}
-              loading={loading}
-              onEquipar={equipar}
-              onSelect={setSelId}
-            />
-          );
-        })}
+            return (
+              <TrilhaRow
+                key={chave}
+                trilhaNome={tr.nome}
+                trilhaIcone={tr.icone}
+                degraus={degraus}
+                desbloqueados={initialDesbloqueados}
+                ativoId={ativoId}
+                selId={selId}
+                feitos={feitos}
+                player={player}
+                stats={stats}
+                loading={loading}
+                onEquipar={equipar}
+                onSelect={setSelId}
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Painel de detalhe */}
@@ -398,123 +414,156 @@ function TrilhaRow({
   trilhaNome, trilhaIcone, degraus, desbloqueados,
   ativoId, selId, feitos, player, stats, loading, onEquipar, onSelect,
 }: TrilhaRowProps) {
+  const pctFeitos = degraus.length > 0 ? (feitos / degraus.length) * 100 : 0;
+
+  // Cor representativa da trilha (pega a cor do primeiro título desbloqueado, senão do primeiro)
+  const firstR = RARIDADES[degraus[0]?.raridade ?? "comum"];
+  const trilhaCor = firstR?.cor ?? "var(--accent-teal)";
+
   return (
     <div style={{
-      display: "flex", gap: "16px", alignItems: "flex-start",
-      padding: "18px 0", borderBottom: "1px solid rgba(120,150,180,.08)",
+      background: "var(--bg-card)", border: "1px solid var(--border)",
+      borderRadius: 13, overflow: "hidden",
     }}>
-      {/* Track label */}
-      <div style={{ width: "110px", flexShrink: 0, paddingTop: "6px" }}>
+      {/* Header */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "16px 20px", borderBottom: "1px solid var(--border)",
+      }}>
         <div style={{
-          color: "var(--text-primary)", fontSize: "12px", fontWeight: 700,
-          letterSpacing: ".08em", textTransform: "uppercase",
-          fontFamily: "var(--font-space-grotesk), sans-serif",
+          width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+          background: `${trilhaCor}1a`, border: `1px solid ${trilhaCor}4d`,
+          display: "grid", placeItems: "center", fontSize: 17,
         }}>
-          {trilhaIcone} {trilhaNome}
+          {trilhaIcone}
         </div>
-        <div style={{ color: "var(--text-muted)", fontSize: "10px", marginTop: "3px" }}>
-          {feitos} / {degraus.length}
+        <div style={{ flex: 1 }}>
+          <div style={{
+            fontFamily: "var(--font-space-grotesk), sans-serif",
+            fontSize: 13, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase",
+          }}>{trilhaNome}</div>
+          <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1 }}>
+            {feitos} / {degraus.length} desbloqueados
+          </div>
+        </div>
+        {/* Mini progress bar */}
+        <div style={{ height: 5, width: 120, borderRadius: 999, background: "var(--border)", overflow: "hidden", flexShrink: 0 }}>
+          <div style={{ height: "100%", width: `${pctFeitos}%`, background: trilhaCor, borderRadius: 999, transition: "width .5s" }} />
         </div>
       </div>
 
       {/* Nodes */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", overflowX: "auto", paddingBottom: "4px" }}>
-        {degraus.map((t, i) => {
-          const R           = RARIDADES[t.raridade];
-          const done        = desbloqueados.includes(t.id);
-          const emProgresso = !done && i === feitos;
-          const isAtivo     = ativoId === t.id;
-          const isSel       = selId === t.id;
-          const [atual, alvo] = t.progresso(player, stats);
-          const prevDone    = i > 0 && desbloqueados.includes(degraus[i - 1].id);
+      <div style={{ padding: "24px 20px 28px", overflowX: "auto" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", minWidth: `${degraus.length * 88 + (degraus.length - 1) * 36}px` }}>
+          {degraus.map((t, i) => {
+            const R           = RARIDADES[t.raridade];
+            const done        = desbloqueados.includes(t.id);
+            const emProgresso = !done && i === feitos;
+            const isAtivo     = ativoId === t.id;
+            const isSel       = selId === t.id;
+            const [atual, alvo] = t.progresso(player, stats);
+            const prevDone    = i > 0 && desbloqueados.includes(degraus[i - 1].id);
+            const isLocked    = !done && !emProgresso;
 
-          return (
-            <div key={t.id} style={{ display: "flex", alignItems: "center" }}>
-              {/* Connector line */}
-              {i > 0 && (
-                <div style={{
-                  width: "24px", height: "2px", flexShrink: 0,
-                  background: prevDone && done
-                    ? "#1aa9d6"
-                    : prevDone && emProgresso
-                    ? "linear-gradient(to right, #1aa9d6, #1d3050)"
-                    : "#1d3050",
-                }} />
-              )}
-
-              <div
-                onClick={() => onSelect(isSel ? "" : t.id)}
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "center",
-                  width: "72px", flexShrink: 0, cursor: "pointer",
-                  opacity: loading === t.id ? 0.6 : 1,
-                }}
-              >
-                {/* Node circle */}
-                <div style={{
-                  width: "36px", height: "36px", borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: done ? R.cor : emProgresso ? `${R.cor}18` : "var(--bg-surface)",
-                  border: done ? "none" : emProgresso ? `2px solid ${R.cor}` : "1px solid rgba(120,150,180,.18)",
-                  boxShadow: isSel
-                    ? `0 0 0 3px ${R.cor}88`
-                    : isAtivo
-                    ? `0 0 0 3px ${R.cor}55`
-                    : done
-                    ? `0 0 10px ${R.cor}55`
-                    : emProgresso
-                    ? `0 0 10px ${R.cor}44`
-                    : "none",
-                  transition: "all .18s",
-                  color: done ? "#0a1628" : "var(--text-muted)",
-                  fontWeight: 700,
-                }}>
-                  {done ? (
-                    <span style={{ color: "#0a1628", fontSize: "14px" }}>✓</span>
-                  ) : emProgresso ? (
-                    <span style={{ width: "9px", height: "9px", borderRadius: "50%", background: R.cor, display: "block" }} />
-                  ) : (
-                    <span style={{ fontSize: "12px", opacity: 0.4 }}>🔒</span>
-                  )}
-                </div>
-
-                {/* Name */}
-                <div style={{
-                  fontSize: "9.5px", fontWeight: done || emProgresso ? 600 : 400,
-                  color: done || emProgresso ? "var(--text-primary)" : "var(--text-muted)",
-                  marginTop: "6px", textAlign: "center", lineHeight: 1.2,
-                  width: "68px", overflow: "hidden",
-                }}>
-                  {t.nome}
-                </div>
-
-                {/* Rarity label / progress */}
-                <div style={{
-                  fontSize: "8.5px", marginTop: "3px",
-                  color: done || emProgresso ? R.cor : "rgba(120,150,180,.5)",
-                  textAlign: "center",
-                  fontFamily: "var(--font-space-grotesk)",
-                }}>
-                  {done
-                    ? (t.equipavel ? (isAtivo ? "✓ Ativo" : "Equipar") : R.nome)
-                    : emProgresso
-                    ? `${atual}/${alvo}`
-                    : R.nome}
-                </div>
-
-                {/* Progress bar for in-progress nodes */}
-                {emProgresso && atual > 0 && atual < alvo && (
+            return (
+              <div key={t.id} style={{ display: "flex", alignItems: "center" }}>
+                {/* Connector */}
+                {i > 0 && (
                   <div style={{
-                    width: "48px", height: "2px", borderRadius: "2px",
-                    background: "rgba(120,150,180,.12)", overflow: "hidden", marginTop: "4px",
-                  }}>
-                    <div style={{ height: "100%", width: `${Math.round((atual / alvo) * 100)}%`, background: R.cor }} />
-                  </div>
+                    width: 36, height: 2, flexShrink: 0,
+                    background: prevDone && done
+                      ? "var(--accent-violet)"
+                      : prevDone && emProgresso
+                      ? "linear-gradient(to right, var(--accent-violet), #1d3050)"
+                      : "#1d3050",
+                    marginTop: 0,
+                  }} />
                 )}
+
+                <div
+                  onClick={() => onSelect(isSel ? "" : t.id)}
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "center",
+                    width: 88, flexShrink: 0, cursor: "pointer",
+                    opacity: loading === t.id ? 0.6 : 1,
+                  }}
+                >
+                  {/* Node circle — 58px */}
+                  <div style={{
+                    width: 58, height: 58, borderRadius: "50%",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    flexDirection: "column", gap: 1,
+                    background: done
+                      ? `${R.cor}26`
+                      : emProgresso
+                      ? `${R.cor}1a`
+                      : "var(--bg-surface)",
+                    border: done
+                      ? `2px solid ${R.cor}`
+                      : emProgresso
+                      ? `2px solid ${R.cor}`
+                      : "2px solid var(--border)",
+                    boxShadow: isSel
+                      ? `0 0 0 3px ${R.cor}88`
+                      : isAtivo
+                      ? `0 0 0 3px ${R.cor}55`
+                      : done
+                      ? `0 0 16px ${R.cor}4d`
+                      : emProgresso
+                      ? `0 0 14px ${R.cor}55`
+                      : "none",
+                    position: "relative",
+                    transition: "all .18s",
+                    opacity: isLocked ? 0.45 : 1,
+                    animation: emProgresso ? "pulse 2.4s ease-in-out infinite" : "none",
+                  }}>
+                    {/* Emoji inside circle */}
+                    <span style={{ fontSize: done ? 22 : 18, lineHeight: 1 }}>{t.emoji}</span>
+                    {/* Counter for in-progress */}
+                    {emProgresso && (
+                      <span style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontSize: 9.5, fontWeight: 700, color: R.cor, lineHeight: 1 }}>
+                        {atual}/{alvo}
+                      </span>
+                    )}
+                    {/* Check badge for done */}
+                    {done && (
+                      <div style={{
+                        position: "absolute", bottom: -2, right: -2,
+                        width: 18, height: 18, borderRadius: "50%",
+                        background: "var(--accent-green)", border: "2px solid var(--bg-card)",
+                        display: "grid", placeItems: "center",
+                        fontSize: 9, color: "#04121c", fontWeight: 800,
+                      }}>✓</div>
+                    )}
+                  </div>
+
+                  {/* Progress bar under in-progress node */}
+                  {emProgresso && atual > 0 && atual < alvo && (
+                    <div style={{ width: 58, height: 3, background: "var(--border)", borderRadius: 999, overflow: "hidden", marginTop: 5 }}>
+                      <div style={{ height: "100%", width: `${Math.round((atual / alvo) * 100)}%`, background: R.cor, borderRadius: 999 }} />
+                    </div>
+                  )}
+
+                  {/* Name */}
+                  <div style={{ marginTop: done ? 10 : emProgresso ? 6 : 15, textAlign: "center" }}>
+                    <div style={{
+                      fontFamily: "var(--font-space-grotesk), sans-serif",
+                      fontSize: 10.5, fontWeight: 700,
+                      color: done ? R.cor : emProgresso ? R.cor : "var(--text-muted)",
+                    }}>{t.nome}</div>
+                    <div style={{
+                      fontSize: 9, marginTop: 1, textAlign: "center",
+                      color: done || emProgresso ? R.cor : "var(--text-muted)",
+                      opacity: emProgresso ? 0.7 : 1,
+                    }}>
+                      {done && t.equipavel ? (isAtivo ? "✓ Ativo" : "Equipar") : R.nome}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

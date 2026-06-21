@@ -13,6 +13,14 @@ const COR_ATTR: Record<string, string> = {
   PER: "#45cdf0",
 };
 
+const CATEGORIA_COR: Record<string, string> = {
+  saude:      "#25d99a",
+  treino:     "#f0556a",
+  estudo:     "#45cdf0",
+  disciplina: "#ffce47",
+  foco:       "#8b5cf6",
+};
+
 interface LevelInfo {
   level: number;
   totalXP: number;
@@ -126,6 +134,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   })();
 
   // Categoria / atributo
+  const categoriaCor = activity.categoria ? (CATEGORIA_COR[activity.categoria] ?? null) : null;
   const attrKey      = activity.categoria ? CATEGORIA_ATRIBUTO[activity.categoria] : null;
   const attrCor      = attrKey ? COR_ATTR[attrKey] : "var(--accent-teal)";
   const xpEfetivo    = atributos && activity.categoria
@@ -274,7 +283,10 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
     <div
       ref={cardRef}
       className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}`}
-      style={isBonusMission && !isDone ? { border: "1px solid rgba(239,165,39,.5)", boxShadow: "0 0 16px rgba(239,165,39,.08)" } : undefined}
+      style={{
+        ...(isBonusMission && !isDone ? { border: "1px solid rgba(239,165,39,.5)", boxShadow: "0 0 16px rgba(239,165,39,.08)" } : {}),
+        ...(categoriaCor ? { borderTop: `3px solid ${categoriaCor}` } : {}),
+      }}
     >
       <div className="pulse-ring" />
 
