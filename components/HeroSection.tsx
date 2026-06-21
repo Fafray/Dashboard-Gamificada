@@ -16,7 +16,7 @@ interface HeroSectionProps {
   classeCor?: string;
 }
 
-function getLevelTitle(level: number): string {
+export function getLevelTitle(level: number): string {
   if (level < 5)   return "E-RANK";
   if (level < 10)  return "D-RANK";
   if (level < 15)  return "C-RANK";
@@ -239,70 +239,80 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
   );
 }
 
-export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps) {
+export function HeroXPCard({ levelInfo, xpToday, classeCor }: HeroSectionProps) {
   const { level, currentLevelXP, nextLevelXP, progress, totalXP } = levelInfo;
   const xpRemaining = nextLevelXP - currentLevelXP;
   const nearLevel   = progress >= 80;
   const rank        = getLevelTitle(level);
 
   return (
-    <div className="hero-grid">
-      {/* Left: XP + Level */}
-      <div className="hero">
-        <div className="hero-top">
-          <div className="level-badge" style={{ "--p": progress } as React.CSSProperties}>
-            <span className="lv-label">LV</span>
-            <span className="lv-num num">{level}</span>
-          </div>
+    <div className="hero">
+      <div className="hero-top">
+        <div className="level-badge" style={{ "--p": progress } as React.CSSProperties}>
+          <span className="lv-label">LV</span>
+          <span className="lv-num num">{level}</span>
+        </div>
 
-          <div className="hero-meta">
-            <div className="hero-title"><b>{rank}</b></div>
-            <div className="hero-sub">{totalXP.toLocaleString("pt-BR")} XP ACUMULADO</div>
-            {nearLevel && (
-              <div className="near-level-hint" style={{ marginTop: "6px" }}>
-                ⚡ FALTAM {xpRemaining.toLocaleString("pt-BR")} XP → LV.{level + 1}
-              </div>
-            )}
-          </div>
-
-          {xpToday > 0 && (
-            <div className="hero-xptoday">
-              <div className="big num num-pop">+{xpToday}</div>
-              <div className="lbl">XP HOJE</div>
+        <div className="hero-meta">
+          <div className="hero-title"><b>{rank}</b></div>
+          <div className="hero-sub">{totalXP.toLocaleString("pt-BR")} XP ACUMULADO</div>
+          {nearLevel && (
+            <div className="near-level-hint" style={{ marginTop: "6px" }}>
+              ⚡ FALTAM {xpRemaining.toLocaleString("pt-BR")} XP → LV.{level + 1}
             </div>
           )}
         </div>
 
-        <div className="xp-wrap">
-          <div className="xp-meta">
-            <span className="cur"><b className="num">{currentLevelXP.toLocaleString("pt-BR")}</b> XP</span>
-            <span className="next num">
-              {nearLevel
-                ? `⚡ ${xpRemaining.toLocaleString("pt-BR")} XP RESTANTES`
-                : `${nextLevelXP.toLocaleString("pt-BR")} → LV.${level + 1}`}
-            </span>
+        {xpToday > 0 && (
+          <div className="hero-xptoday">
+            <div className="big num num-pop">+{xpToday}</div>
+            <div className="lbl">XP HOJE</div>
           </div>
-          <div className="xp-track">
-            <div
-              className={`xp-fill${nearLevel ? " near-level" : ""}`}
-              style={{ "--xp": `${progress}%` } as React.CSSProperties}
-            />
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Right: Character card */}
-      <div className="hero-char" style={{
-        padding: "14px", gap: "0",
-        borderColor: classeCor ? `${classeCor}40` : "rgba(139,92,246,.3)",
-        background: "var(--bg-card)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-          <span className="eyebrow">[ JOGADOR ]</span>
-          <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>◈</span>
+      <div className="xp-wrap">
+        <div className="xp-meta">
+          <span className="cur"><b className="num">{currentLevelXP.toLocaleString("pt-BR")}</b> XP</span>
+          <span className="next num">
+            {nearLevel
+              ? `⚡ ${xpRemaining.toLocaleString("pt-BR")} XP RESTANTES`
+              : `${nextLevelXP.toLocaleString("pt-BR")} → LV.${level + 1}`}
+          </span>
         </div>
-        <CharPortrait rank={rank} level={level} classeCor={classeCor} />
+        <div className="xp-track">
+          <div
+            className={`xp-fill${nearLevel ? " near-level" : ""}`}
+            style={{ "--xp": `${progress}%` } as React.CSSProperties}
+          />
+        </div>
       </div>
+    </div>
+  );
+}
+
+export function HeroCharCard({ rank, level, classeCor }: { rank: string; level: number; classeCor?: string }) {
+  return (
+    <div className="hero-char" style={{
+      padding: "14px", gap: "0",
+      borderColor: classeCor ? `${classeCor}40` : "rgba(139,92,246,.3)",
+      background: "var(--bg-card)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+        <span className="eyebrow">[ JOGADOR ]</span>
+        <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>◈</span>
+      </div>
+      <CharPortrait rank={rank} level={level} classeCor={classeCor} />
+    </div>
+  );
+}
+
+export function HeroSection({ levelInfo, xpToday, classeCor }: HeroSectionProps) {
+  const rank = getLevelTitle(levelInfo.level);
+  return (
+    <div className="hero-grid">
+      <HeroXPCard levelInfo={levelInfo} xpToday={xpToday} classeCor={classeCor} />
+      <HeroCharCard rank={rank} level={levelInfo.level} classeCor={classeCor} />
     </div>
   );
 }

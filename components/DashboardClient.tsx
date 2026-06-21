@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { ActivityCard } from "./ActivityCard";
-import { HeroSection } from "./HeroSection";
+import { HeroXPCard, HeroCharCard, getLevelTitle } from "./HeroSection";
 import { LevelUpOverlay } from "./LevelUpOverlay";
 import { AchievementToast } from "./AchievementToast";
 import { PainelAtributos } from "./PainelAtributos";
@@ -221,16 +221,21 @@ export function DashboardClient({
           </div>
         </div>
 
-        {/* Hero */}
-        <HeroSection levelInfo={levelInfo} xpToday={xpToday} classeCor={classeInfo.cor} />
-
-        {/* Atributos */}
-        <div className="section">
-          <PainelAtributos
-            initialAtributos={atributos}
-            initialPontos={pontosDisponiveis}
-            initialClasse={classeInfo}
-            onClasseChange={setClasseInfo}
+        {/* Hero + Atributos */}
+        <div className="hero-grid">
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <HeroXPCard levelInfo={levelInfo} xpToday={xpToday} classeCor={classeInfo.cor} />
+            <PainelAtributos
+              initialAtributos={atributos}
+              initialPontos={pontosDisponiveis}
+              initialClasse={classeInfo}
+              onClasseChange={setClasseInfo}
+            />
+          </div>
+          <HeroCharCard
+            rank={getLevelTitle(levelInfo.level)}
+            level={levelInfo.level}
+            classeCor={classeInfo.cor}
           />
         </div>
 
