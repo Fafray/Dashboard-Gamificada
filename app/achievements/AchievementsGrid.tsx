@@ -25,7 +25,7 @@ export function AchievementsGrid({ achievements, unlockedCount, total }: Achieve
   const globalProgress = Math.floor((unlockedCount / total) * 100);
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+    <div className="page" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>

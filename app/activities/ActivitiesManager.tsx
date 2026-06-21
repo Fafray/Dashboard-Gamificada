@@ -139,7 +139,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8">
+    <div className="page">
       {formMode && (
         <ActivityForm
           activity={formMode.kind === "edit" ? formMode.activity : undefined}
