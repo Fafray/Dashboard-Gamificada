@@ -78,20 +78,12 @@ const RANK_GLOW: Record<string, string> = {
 
 function CharPortrait({ rank, level, classeCor }: { rank: string; level: number; classeCor?: string }) {
   const [imgError, setImgError] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [posX, setPosX] = useState(() => typeof window === "undefined" ? 50 : Number(localStorage.getItem("portrait-x-v3") ?? 50));
-  const [posY, setPosY] = useState(() => typeof window === "undefined" ? 30 : Number(localStorage.getItem("portrait-y-v3") ?? 30));
-  const [zoom, setZoom] = useState(() => typeof window === "undefined" ? 100 : Number(localStorage.getItem("portrait-z-v3") ?? 100));
 
   const imgSrc   = RANK_IMAGE[rank] ? `${RANK_IMAGE[rank]}?v=2` : undefined;
   const rankGlow = RANK_GLOW[rank] ?? "rgba(139,92,246,.6)";
   const glow     = classeCor ? `${classeCor}99` : rankGlow;
   const emoji    = RANK_EMOJI[rank] ?? "🧙‍♂️";
   const range    = getRankRange(level);
-
-  function saveX(v: number) { setPosX(v); localStorage.setItem("portrait-x-v3", String(v)); }
-  function saveY(v: number) { setPosY(v); localStorage.setItem("portrait-y-v3", String(v)); }
-  function saveZ(v: number) { setZoom(v); localStorage.setItem("portrait-z-v3", String(v)); }
 
   if (!imgError && imgSrc) {
     return (
@@ -110,10 +102,8 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
           style={{
             position: "absolute",
             width: "100%", height: "100%",
-            objectFit: "cover",
-            objectPosition: `${posX}% ${posY}%`,
-            transformOrigin: `${posX}% ${posY}%`,
-            transform: `scale(${zoom / 100})`,
+            objectFit: "contain",
+            objectPosition: "50% 50%",
             display: "block",
           }}
         />
@@ -121,46 +111,11 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
         <div style={{ position: "absolute", inset: 8, border: "1px solid rgba(139,92,246,.35)", borderRadius: 6, pointerEvents: "none" }} />
         <div style={{ position: "absolute", inset: 11, border: "1px solid rgba(255,206,71,.18)", borderRadius: 5, pointerEvents: "none" }} />
 
-        {/* Bottom gradient + glow */}
-        <div style={{
-          position: "absolute", inset: 0, pointerEvents: "none",
-          background: "linear-gradient(to top, rgba(4,8,16,.85) 0%, rgba(4,8,16,.15) 18%, transparent 32%)",
-        }} />
+        {/* Bottom glow */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
           boxShadow: `inset 0 0 40px ${glow.replace("1)", ".12)")}`,
         }} />
-
-        {/* Adjust button */}
-        <button
-          onClick={() => setEditing((e) => !e)}
-          style={{
-            position: "absolute", top: 8, right: 8, zIndex: 10,
-            background: "rgba(0,0,0,.55)", border: "1px solid rgba(255,255,255,.15)",
-            borderRadius: 6, padding: "3px 7px", cursor: "pointer",
-            fontSize: "11px", color: "rgba(255,255,255,.7)", lineHeight: 1,
-          }}
-          title="Ajustar enquadramento"
-        >⊹</button>
-
-        {editing && (
-          <div style={{
-            position: "absolute", top: 32, right: 8, zIndex: 10,
-            background: "rgba(4,8,20,.92)", border: "1px solid rgba(69,205,240,.3)",
-            borderRadius: 8, padding: "10px 12px", width: 165,
-          }}>
-            <div style={{ fontSize: "10px", color: "var(--text-muted)", marginBottom: 8, letterSpacing: ".12em", textTransform: "uppercase" }}>Enquadramento</div>
-            <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>← → {posX}%</label>
-            <input type="range" min={0} max={100} value={posX} onChange={(e) => saveX(Number(e.target.value))}
-              style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
-            <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>↑ ↓ {posY}%</label>
-            <input type="range" min={0} max={100} value={posY} onChange={(e) => saveY(Number(e.target.value))}
-              style={{ width: "100%", marginBottom: 8, accentColor: "var(--accent-teal)" }} />
-            <label style={{ fontSize: "10px", color: "var(--text-secondary)", display: "block", marginBottom: 3 }}>🔍 zoom {zoom}%</label>
-            <input type="range" min={50} max={300} value={zoom} onChange={(e) => saveZ(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "var(--accent-teal)" }} />
-          </div>
-        )}
 
         {/* Name + rank overlay */}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 14px" }}>
