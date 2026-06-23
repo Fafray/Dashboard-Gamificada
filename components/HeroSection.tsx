@@ -102,7 +102,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
           style={{
             position: "absolute",
             width: "100%", height: "100%",
-            objectFit: "contain",
+            objectFit: "cover",
             objectPosition: "50% 50%",
             display: "block",
           }}
