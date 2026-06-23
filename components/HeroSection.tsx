@@ -79,9 +79,9 @@ const RANK_GLOW: Record<string, string> = {
 function CharPortrait({ rank, level, classeCor }: { rank: string; level: number; classeCor?: string }) {
   const [imgError, setImgError] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [posX, setPosX] = useState(() => typeof window === "undefined" ? 50 : Number(localStorage.getItem("portrait-x") ?? 50));
-  const [posY, setPosY] = useState(() => typeof window === "undefined" ? 0 : Number(localStorage.getItem("portrait-y") ?? 0));
-  const [zoom, setZoom] = useState(() => typeof window === "undefined" ? 100 : Number(localStorage.getItem("portrait-z") ?? 100));
+  const [posX, setPosX] = useState(() => typeof window === "undefined" ? 50 : Number(localStorage.getItem("portrait-x-v3") ?? 50));
+  const [posY, setPosY] = useState(() => typeof window === "undefined" ? 30 : Number(localStorage.getItem("portrait-y-v3") ?? 30));
+  const [zoom, setZoom] = useState(() => typeof window === "undefined" ? 100 : Number(localStorage.getItem("portrait-z-v3") ?? 100));
 
   const imgSrc   = RANK_IMAGE[rank] ? `${RANK_IMAGE[rank]}?v=2` : undefined;
   const rankGlow = RANK_GLOW[rank] ?? "rgba(139,92,246,.6)";
@@ -89,9 +89,9 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
   const emoji    = RANK_EMOJI[rank] ?? "🧙‍♂️";
   const range    = getRankRange(level);
 
-  function saveX(v: number) { setPosX(v); localStorage.setItem("portrait-x", String(v)); }
-  function saveY(v: number) { setPosY(v); localStorage.setItem("portrait-y", String(v)); }
-  function saveZ(v: number) { setZoom(v); localStorage.setItem("portrait-z", String(v)); }
+  function saveX(v: number) { setPosX(v); localStorage.setItem("portrait-x-v3", String(v)); }
+  function saveY(v: number) { setPosY(v); localStorage.setItem("portrait-y-v3", String(v)); }
+  function saveZ(v: number) { setZoom(v); localStorage.setItem("portrait-z-v3", String(v)); }
 
   if (!imgError && imgSrc) {
     return (
@@ -124,7 +124,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
         {/* Bottom gradient + glow */}
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
-          background: "linear-gradient(to top, rgba(4,8,16,.9) 0%, rgba(4,8,16,.4) 30%, transparent 60%)",
+          background: "linear-gradient(to top, rgba(4,8,16,.85) 0%, rgba(4,8,16,.15) 18%, transparent 32%)",
         }} />
         <div style={{
           position: "absolute", inset: 0, pointerEvents: "none",
