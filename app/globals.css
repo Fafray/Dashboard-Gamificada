@@ -242,13 +242,15 @@ button { font-family: inherit; cursor: pointer; }
    Hero — level + XP
    ========================================================= */
 .hero-grid {
-  display: grid;
-  grid-template-columns: 1.75fr 1fr;
+  display: flex;
   gap: 20px;
-  align-items: start;
+  align-items: flex-start;
 }
 
-@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+.hero-grid > :first-child { flex: 1; min-width: 0; }
+
+@media (max-width: 900px) { .hero-grid { flex-direction: column; } }
+@media (max-width: 900px) { .hero-grid > :first-child { width: 100%; } }
 
 .hero {
   padding: 26px 28px; overflow: hidden; position: relative;
@@ -341,7 +343,9 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--r-lg); box-shadow: var(--shadow-card);
   position: relative; overflow: hidden;
-  height: 520px;
+  width: 300px;
+  height: 460px;
+  flex-shrink: 0;
 }
 .hero-char::after { content: none; }
 .hero-char .eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; }
