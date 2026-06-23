@@ -83,7 +83,7 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
   const [posY, setPosY] = useState(() => typeof window === "undefined" ? 0 : Number(localStorage.getItem("portrait-y") ?? 0));
   const [zoom, setZoom] = useState(() => typeof window === "undefined" ? 100 : Number(localStorage.getItem("portrait-z") ?? 100));
 
-  const imgSrc   = RANK_IMAGE[rank];
+  const imgSrc   = RANK_IMAGE[rank] ? `${RANK_IMAGE[rank]}?v=2` : undefined;
   const rankGlow = RANK_GLOW[rank] ?? "rgba(139,92,246,.6)";
   const glow     = classeCor ? `${classeCor}99` : rankGlow;
   const emoji    = RANK_EMOJI[rank] ?? "🧙‍♂️";
