@@ -116,27 +116,6 @@ function CharPortrait({ rank, level, classeCor }: { rank: string; level: number;
           position: "absolute", inset: 0, pointerEvents: "none",
           boxShadow: `inset 0 0 40px ${glow.replace("1)", ".12)")}`,
         }} />
-
-        {/* Name + rank overlay */}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "12px 14px" }}>
-          <div style={{
-            fontFamily: "var(--font-space-grotesk), sans-serif",
-            fontSize: "20px", fontWeight: 700, letterSpacing: ".18em",
-            color: "#e8f4ff",
-            textShadow: `0 0 20px ${glow}, 0 2px 8px rgba(0,0,0,.8)`,
-            textTransform: "uppercase", lineHeight: 1,
-          }}>Fabricio</div>
-          <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{
-              fontSize: "10px", letterSpacing: ".2em", fontWeight: 700,
-              color: "var(--accent-violet-bright)",
-              fontFamily: "var(--font-space-grotesk), sans-serif",
-              textShadow: `0 0 12px ${glow}`,
-            }}>{rank}</span>
-            <span style={{ width: "1px", height: "10px", background: "rgba(0,168,232,.3)" }} />
-            <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: ".1em" }}>LV.{level}</span>
-          </div>
-        </div>
       </div>
     );
   }
@@ -247,15 +226,23 @@ export function HeroXPCard({ levelInfo, xpToday, classeCor }: HeroSectionProps) 
 }
 
 export function HeroCharCard({ rank, level, classeCor }: { rank: string; level: number; classeCor?: string }) {
+  const glow = classeCor ?? "var(--accent-violet-bright)";
   return (
     <div className="hero-char" style={{
-      padding: "14px", gap: "0",
       borderColor: classeCor ? `${classeCor}40` : "rgba(139,92,246,.3)",
       background: "var(--bg-card)",
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-        <span className="eyebrow">[ JOGADOR ]</span>
-        <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>◈</span>
+        <span style={{
+          fontFamily: "var(--font-space-grotesk), sans-serif",
+          fontSize: "15px", fontWeight: 700, letterSpacing: ".12em",
+          color: "var(--text-primary)", textTransform: "uppercase",
+        }}>Fabricio</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: ".18em", color: classeCor ?? "var(--accent-violet-bright)", fontFamily: "var(--font-space-grotesk), sans-serif" }}>{rank}</span>
+          <span style={{ width: "1px", height: "9px", background: "rgba(139,92,246,.3)" }} />
+          <span style={{ fontSize: "10px", color: "var(--text-muted)", letterSpacing: ".08em" }}>LV.{level}</span>
+        </div>
       </div>
       <CharPortrait rank={rank} level={level} classeCor={classeCor} />
     </div>

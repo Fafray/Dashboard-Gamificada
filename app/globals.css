@@ -343,8 +343,8 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--r-lg); box-shadow: var(--shadow-card);
   position: relative; overflow: hidden;
-  width: 300px;
-  height: 460px;
+  width: 360px;
+  height: 520px;
   flex-shrink: 0;
 }
 .hero-char::after { content: none; }
