@@ -341,7 +341,7 @@ button { font-family: inherit; cursor: pointer; }
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: var(--r-lg); box-shadow: var(--shadow-card);
   position: relative; overflow: hidden;
-  aspect-ratio: 3 / 4;
+  height: 520px;
 }
 .hero-char::after { content: none; }
 .hero-char .eyebrow { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; }
