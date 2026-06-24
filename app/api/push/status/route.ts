@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getPushSubscriptions, getAgendaTasksForNotification, getNotifyDiagnostics } from "@/lib/db";
+import { isAuthed } from "@/lib/auth";
 
 function localISO(offsetHours: number): string {
   const now = new Date();
@@ -8,6 +9,7 @@ function localISO(offsetHours: number): string {
 }
 
 export async function GET() {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const localOffset = parseInt(process.env.TZ_OFFSET_HOURS || "-3");
   const nowLocalISO = localISO(localOffset);
 

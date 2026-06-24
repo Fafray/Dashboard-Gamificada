@@ -1,3 +1,5 @@
+import { isAuthed } from "@/lib/auth";
+import { UnlockGate } from "@/components/UnlockGate";
 import { format } from "date-fns";
 import {
   getAchievements,
@@ -19,6 +21,7 @@ import type { Atributos } from "@/lib/attributes";
 export const dynamic = "force-dynamic";
 
 export default async function TitulosPage() {
+  if (!(await isAuthed())) return <UnlockGate />;
   const now = new Date();
 
   const [unlocked, totalCheckins, rawStats, activities, allDates] = await Promise.all([

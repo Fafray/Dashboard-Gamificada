@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserStats } from "@/lib/db";
 import { getLevelInfo } from "@/lib/gamification";
+import { isAuthed } from "@/lib/auth";
 
 function getLevelTitle(level: number): string {
   if (level < 5)   return "E-RANK";
@@ -15,6 +16,7 @@ function getLevelTitle(level: number): string {
 }
 
 export async function GET() {
+  if (!(await isAuthed())) return NextResponse.json(null);
   const stats = await getUserStats();
   const levelInfo = getLevelInfo(stats.total_xp);
   return NextResponse.json({ ...levelInfo, rank: getLevelTitle(levelInfo.level) });

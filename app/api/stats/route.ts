@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAuthed } from "@/lib/auth";
 import { format, startOfISOWeek, endOfISOWeek } from "date-fns";
 import {
   getUserStats,
@@ -12,6 +13,7 @@ import {
 import { getLevelInfo, computeStreak, getAchievementDef } from "@/lib/gamification";
 
 export async function GET() {
+  if (!(await isAuthed())) return NextResponse.json({ stats: null, xpToday: 0, activities: [], achievements: [] });
   const now = new Date();
   const todayStr = format(now, "yyyy-MM-dd");
   const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");

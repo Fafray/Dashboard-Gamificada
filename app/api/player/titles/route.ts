@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { equiparTitulo, getUserStats } from "@/lib/db";
+import { isAuthed } from "@/lib/auth";
 
 export async function POST(req: Request) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { id } = await req.json();
   if (id !== null && typeof id !== "string") {
     return NextResponse.json({ error: "id inválido" }, { status: 400 });

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { updateScheduledTask, deleteScheduledTask, getScheduledTask } from "@/lib/db";
+import { isAuthed } from "@/lib/auth";
 
 function localISOString() {
   const d = new Date();
@@ -8,6 +9,7 @@ function localISOString() {
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { id } = await params;
   const taskId = parseInt(id);
   const body = await req.json();
@@ -36,12 +38,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { id } = await params;
   await deleteScheduledTask(parseInt(id));
   return NextResponse.json({ ok: true });
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { id } = await params;
   const task = await getScheduledTask(parseInt(id));
   if (!task) return NextResponse.json({ error: "not found" }, { status: 404 });

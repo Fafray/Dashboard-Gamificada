@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAuthed } from "@/lib/auth";
 import { format, startOfISOWeek, endOfISOWeek } from "date-fns";
 import {
   getActivity,
@@ -22,6 +23,7 @@ import { bonusXpDoTitulo } from "@/lib/titulos";
 import type { Atributos } from "@/lib/attributes";
 
 export async function POST(req: Request) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const body = await req.json();
   const { activity_id, increment } = body;
 

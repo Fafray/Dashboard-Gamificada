@@ -1,3 +1,5 @@
+import { isAuthed } from "@/lib/auth";
+import { UnlockGate } from "@/components/UnlockGate";
 import { format, startOfISOWeek, endOfISOWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -25,6 +27,7 @@ import { DashboardClient } from "@/components/DashboardClient";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  if (!(await isAuthed())) return <UnlockGate />;
   const now = new Date();
   const todayStr  = format(now, "yyyy-MM-dd");
   const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");

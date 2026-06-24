@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getActivity, updateActivity, archiveActivity, deleteActivityPermanently, clearOtherKeystones } from "@/lib/db";
+import { isAuthed } from "@/lib/auth";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { id } = await params;
   const activityId = parseInt(id);
   if (isNaN(activityId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
@@ -26,6 +28,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { id } = await params;
   const activityId = parseInt(id);
   if (isNaN(activityId)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });

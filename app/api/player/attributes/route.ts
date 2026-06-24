@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { getUserStats, investirPonto } from "@/lib/db";
 import { derivarClasse } from "@/lib/attributes";
+import { isAuthed } from "@/lib/auth";
 import type { Atributos } from "@/lib/attributes";
 
 export async function GET() {
+  if (!(await isAuthed())) return NextResponse.json({ atributos: { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }, pontos_disponiveis: 0, classe: null });
   const stats = await getUserStats();
   const atributos = (stats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
   const classe = derivarClasse(atributos);
@@ -15,6 +17,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const { attr } = await req.json();
   const valid = ["FOR", "VIT", "AGI", "INT", "PER"];
   if (!valid.includes(attr)) {

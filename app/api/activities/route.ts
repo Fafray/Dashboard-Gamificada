@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getActivities, createActivity, clearOtherKeystones } from "@/lib/db";
+import { isAuthed } from "@/lib/auth";
 
 export async function GET(req: Request) {
+  if (!(await isAuthed())) return NextResponse.json([]);
   const { searchParams } = new URL(req.url);
   const includeArchived = searchParams.get("include_archived") === "true";
   const activities = await getActivities(includeArchived);
@@ -9,6 +11,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const body = await req.json();
   const { name, frequency, xp_base, emoji, color } = body;
 

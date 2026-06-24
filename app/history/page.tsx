@@ -1,3 +1,5 @@
+import { isAuthed } from "@/lib/auth";
+import { UnlockGate } from "@/components/UnlockGate";
 import {
   getCheckinsGroupedByDate,
   getXpPerDay,
@@ -19,6 +21,7 @@ import { HabitoStatsPanel, type HabitoStatItem } from "@/components/HabitoStatsP
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
+  if (!(await isAuthed())) return <UnlockGate />;
   const [heatmapData, xpData, totalCheckins, rawStats, activities, actStats] = await Promise.all([
     getCheckinsGroupedByDate(365),
     getXpPerDay(30),

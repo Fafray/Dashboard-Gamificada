@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const links = [
@@ -73,10 +73,12 @@ interface PlayerStatus {
 
 export function Nav() {
   const path = usePathname();
+  const router = useRouter();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [agendaCount, setAgendaCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
+  const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("dq-theme") as "dark" | "light" | null;
@@ -96,7 +98,11 @@ export function Nav() {
   useEffect(() => {
     fetch("/api/player/status")
       .then((r) => r.json())
-      .then((d) => setPlayerStatus(d))
+      .then((d) => { if (d) setPlayerStatus(d); })
+      .catch(() => {});
+    fetch("/api/auth/status")
+      .then((r) => r.json())
+      .then((d) => setAuthed(d.authed === true))
       .catch(() => {});
   }, []);
 
@@ -106,6 +112,13 @@ export function Nav() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setAuthed(false);
+    setPlayerStatus(null);
+    router.refresh();
+  }
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -265,6 +278,27 @@ export function Nav() {
           Tema
         </span>
       </button>
+
+      {/* Logout */}
+      {authed && (
+        <button onClick={handleLogout} title="Sair" style={{
+          display: "flex", alignItems: "center", gap: 9,
+          height: 36, padding: "0 10px", borderRadius: 10,
+          background: "transparent", border: "none", cursor: "pointer",
+          color: "var(--text-muted)", transition: "color .15s",
+        }}>
+          <span style={{ flexShrink: 0, width: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+          </span>
+          <span style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontSize: 12, fontWeight: 500 }}>
+            Sair
+          </span>
+        </button>
+      )}
 
       {/* User profile card */}
       {playerStatus && (

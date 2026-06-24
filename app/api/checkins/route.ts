@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAuthed } from "@/lib/auth";
 import { format, subDays, parseISO, startOfISOWeek, endOfISOWeek } from "date-fns";
 import {
   getActivity,
@@ -46,6 +47,7 @@ import { verificarTitulos, bonusXpDoTitulo, getTituloDef } from "@/lib/titulos";
 import type { TituloStats, PlayerEstado } from "@/lib/titulos";
 
 export async function GET(req: Request) {
+  if (!(await isAuthed())) return NextResponse.json([]);
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date");
   if (date) return NextResponse.json(await getCheckinsByDate(date));
@@ -58,6 +60,7 @@ function graduationThreshold(graduationCount: number): number {
 }
 
 export async function POST(req: Request) {
+  if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const body = await req.json();
   const { activity_id, actual_value, checkin_level } = body;
 
