@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const pwd = process.env.APP_PASSWORD;
+  const pwd = process.env.DQ_PIN;
   const allKeys = Object.keys(process.env).sort();
   return NextResponse.json({
     defined: !!pwd,

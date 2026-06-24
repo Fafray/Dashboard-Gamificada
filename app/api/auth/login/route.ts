@@ -4,7 +4,7 @@ import { createSessionToken, COOKIE_NAME } from "@/lib/auth";
 
 export async function POST(req: Request) {
   const { password } = await req.json();
-  if (!password || password !== process.env.APP_PASSWORD) {
+  if (!password || password !== process.env.DQ_PIN) {
     await new Promise((r) => setTimeout(r, 500));
     return NextResponse.json({ error: "senha incorreta" }, { status: 401 });
   }
