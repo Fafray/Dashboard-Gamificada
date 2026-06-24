@@ -49,6 +49,33 @@ const links = [
   },
 ];
 
+const extraLinks = [
+  {
+    href: "/biblioteca", label: "Biblioteca",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/acervo", label: "Acervo",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 6v6l4 2"/>
+      </svg>
+    ),
+  },
+  {
+    href: "/configuracoes", label: "Config.",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    ),
+  },
+];
+
 const SunIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="5"/>
@@ -79,6 +106,7 @@ export function Nav() {
   const [isMobile, setIsMobile] = useState(false);
   const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
   const [authed, setAuthed] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("dq-theme") as "dark" | "light" | null;
@@ -133,6 +161,7 @@ export function Nav() {
 
   if (isMobile) {
     return (
+      <>
       <nav style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
         display: "flex", flexDirection: "row", alignItems: "center",
@@ -179,7 +208,7 @@ export function Nav() {
           );
         })}
         <button
-          onClick={toggleTheme}
+          onClick={() => setDrawerOpen(true)}
           style={{
             display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
@@ -188,12 +217,76 @@ export function Nav() {
             color: "var(--text-muted)", minWidth: "52px",
           }}
         >
-          {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-          <span style={{ fontSize: "9px", fontWeight: 600, letterSpacing: ".04em" }}>
-            TEMA
-          </span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>
+          </svg>
+          <span style={{ fontSize: "9px", fontWeight: 600, letterSpacing: ".04em" }}>MAIS</span>
         </button>
       </nav>
+
+      {/* Mobile drawer */}
+      {drawerOpen && (
+        <div
+          onClick={() => setDrawerOpen(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(0,0,0,.6)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: "var(--bg-surface)",
+              borderRadius: "20px 20px 0 0",
+              padding: "16px 16px env(safe-area-inset-bottom, 20px)",
+              boxShadow: "0 -8px 32px rgba(0,0,0,.4)",
+            }}
+          >
+            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 99, margin: "0 auto 16px" }} />
+            {extraLinks.map((l) => {
+              const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
+              return (
+                <Link key={l.href} href={l.href} onClick={() => setDrawerOpen(false)} style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  padding: "12px 14px", borderRadius: 12,
+                  background: active ? "rgba(0,240,192,.08)" : "transparent",
+                  color: active ? "var(--accent-teal)" : "var(--text-primary)",
+                  textDecoration: "none", marginBottom: 4,
+                }}>
+                  {l.icon}
+                  <span style={{ fontSize: 15, fontWeight: 600 }}>{l.label}</span>
+                </Link>
+              );
+            })}
+            <div style={{ height: 1, background: "var(--border)", margin: "8px 0" }} />
+            <button onClick={() => { toggleTheme(); setDrawerOpen(false); }} style={{
+              display: "flex", alignItems: "center", gap: 14,
+              width: "100%", padding: "12px 14px", borderRadius: 12,
+              background: "transparent", border: "none", cursor: "pointer",
+              color: "var(--text-primary)", marginBottom: 4,
+            }}>
+              {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+              <span style={{ fontSize: 15, fontWeight: 600 }}>Alternar tema</span>
+            </button>
+            {authed && (
+              <button onClick={() => { handleLogout(); setDrawerOpen(false); }} style={{
+                display: "flex", alignItems: "center", gap: 14,
+                width: "100%", padding: "12px 14px", borderRadius: 12,
+                background: "transparent", border: "none", cursor: "pointer",
+                color: "#f87171",
+              }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                <span style={{ fontSize: 15, fontWeight: 600 }}>Sair</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 
@@ -260,6 +353,28 @@ export function Nav() {
                 {agendaCount > 9 ? "9+" : agendaCount}
               </span>
             )}
+          </Link>
+        );
+      })}
+
+      {/* Divider + extra links */}
+      <div style={{ height: 1, background: "var(--border)", margin: "6px 0" }} />
+      {extraLinks.map((l) => {
+        const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
+        return (
+          <Link key={l.href} href={l.href} style={{
+            display: "flex", alignItems: "center", gap: 9,
+            height: 40, padding: "0 10px", borderRadius: 10,
+            background: active ? "var(--accent-violet)" : "transparent",
+            color: active ? "#04121c" : "var(--text-muted)",
+            textDecoration: "none", transition: "background .15s, color .15s",
+          }}>
+            <span style={{ flexShrink: 0, width: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {l.icon}
+            </span>
+            <span style={{ fontFamily: "var(--font-space-grotesk), sans-serif", fontSize: 12.5, fontWeight: active ? 700 : 500, whiteSpace: "nowrap" }}>
+              {l.label}
+            </span>
           </Link>
         );
       })}
