@@ -901,3 +901,124 @@ a { color: var(--accent-blue); text-decoration: none; }
 .ach-locked-row .prog-label {
   font-size: 10.5px; color: var(--text-muted); margin-top: 3px;
 }
+
+/* =========================================================
+   Neo — Neomorphic Dashboard Theme
+   (scoped to .neo-page — apenas DashboardClient)
+   ========================================================= */
+.neo-page {
+  background: #e8eaf0;
+  min-height: 100%;
+  --text-primary:   #2e3040;
+  --text-secondary: #585a68;
+  --text-muted:     #888a99;
+  --border:         rgba(0,0,0,0.1);
+  --border-light:   rgba(0,0,0,0.08);
+  --bg-surface:     #dce0ea;
+  --bg-base:        #e8eaf0;
+  --bg-card:        #e8eaf0;
+  --bg-card-hover:  #edeef3;
+  --shadow-card:    6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+  --accent-teal:    #6366f1;
+  --accent-green:   #10b981;
+}
+
+/* Cards */
+.neo-page .act {
+  background: #e8eaf0;
+  border: none;
+  border-radius: 1.5rem;
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+}
+.neo-page .act:hover {
+  transform: translateY(-2px);
+  background: #e8eaf0;
+  border-color: transparent;
+  box-shadow: 8px 8px 16px rgba(0,0,0,0.1), -8px -8px 16px rgba(255,255,255,0.75);
+}
+.neo-page .act.done {
+  background: #e8eaf0;
+  border: none;
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+}
+.neo-page .act.done::after { display: none; }
+
+/* Emoji */
+.neo-page .act-emoji {
+  background: #e8eaf0;
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 3px 3px 7px rgba(0,0,0,0.12), -3px -3px 7px rgba(255,255,255,0.8);
+}
+.neo-page .act.done .act-emoji {
+  border-color: transparent;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.08), inset -2px -2px 4px rgba(255,255,255,0.6);
+}
+
+/* Text */
+.neo-page .act-name {
+  color: #2e3040;
+  font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif;
+}
+.neo-page .act-freq { color: #585a68; }
+.neo-page .freq-dot { background: #6366f1; }
+.neo-page .act-streak { color: var(--accent-gold); }
+
+/* Botão principal check-in */
+.neo-page .btn-checkin {
+  background: #6366f1;
+  border: none;
+  color: #fff;
+  border-radius: 1rem;
+  box-shadow: 3px 3px 8px rgba(99,102,241,0.4), -2px -2px 5px rgba(255,255,255,0.5);
+  font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif;
+}
+.neo-page .btn-checkin:hover:not(:disabled) {
+  background: #5558e8;
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 2px 2px 6px rgba(99,102,241,0.35), -1px -1px 4px rgba(255,255,255,0.4);
+}
+.neo-page .act.done .btn-checkin {
+  background: #e8eaf0;
+  border: none;
+  color: #6366f1;
+  box-shadow: inset 3px 3px 6px rgba(0,0,0,0.08), inset -3px -3px 6px rgba(255,255,255,0.6);
+}
+.neo-page .btn-checkin:disabled { opacity: .55; }
+
+/* Undo */
+.neo-page .btn-undo {
+  background: #e8eaf0;
+  border: none;
+  color: #585a68;
+  border-radius: 1rem;
+  box-shadow: 3px 3px 7px rgba(0,0,0,0.1), -3px -3px 7px rgba(255,255,255,0.7);
+}
+.neo-page .btn-undo:hover {
+  color: #ef4444;
+  border-color: transparent;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.08), -2px -2px 5px rgba(255,255,255,0.6);
+}
+
+/* Progress bar */
+.neo-page .hud-bar-track {
+  height: 5px;
+  background: #dce0ea;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.7);
+}
+.neo-page .hud-bar-fill.below { background: #6366f1; box-shadow: none; }
+.neo-page .hud-bar-fill.at    { background: #10b981; box-shadow: none; }
+.neo-page .hud-bar-fill.over  { background: #f59e0b; box-shadow: none; }
+
+/* HUD inputs no contexto neo */
+.neo-page .hud-input-row {
+  background: #dce0ea;
+  border: none;
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1), inset -2px -2px 5px rgba(255,255,255,0.6);
+}
+.neo-page .hud-input-row:focus-within {
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1), inset -2px -2px 5px rgba(255,255,255,0.6), 0 0 0 2px rgba(99,102,241,0.3);
+  border-color: transparent;
+}
+.neo-page .hud-input-row input { color: #6366f1; }

@@ -195,7 +195,7 @@ export function DashboardClient({
         />
       )}
 
-      <div className="page">
+      <div className="page neo-page">
         {/* Cabeçalho */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
           <div>

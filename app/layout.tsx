@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Space_Grotesk, Cormorant_Garamond, Spectral, Playfair_Display, Source_Serif_4 } from "next/font/google";
+import { Manrope, Space_Grotesk, Cormorant_Garamond, Spectral, Playfair_Display, Source_Serif_4, Plus_Jakarta_Sans } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import { ServiceWorkerSetup } from "@/components/ServiceWorkerSetup";
 import "./globals.css";
@@ -46,6 +46,13 @@ const sourceSerif = Source_Serif_4({
   display: "swap",
 });
 
+const jakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-jakarta",
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Sistema — Daily Quest",
   description: "RPG de hábitos — vire o protagonista da sua vida",
@@ -62,7 +69,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} ${cormorant.variable} ${spectral.variable} ${playfair.variable} ${sourceSerif.variable} h-full`}>
+    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} ${cormorant.variable} ${spectral.variable} ${playfair.variable} ${sourceSerif.variable} ${jakartaSans.variable} h-full`}>
       <body className="h-full flex flex-col">
         <div className="aurora-bg" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
