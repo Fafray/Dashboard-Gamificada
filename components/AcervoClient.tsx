@@ -81,6 +81,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   const [form, setForm] = useState<FormState>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [pyramidPreview, setPyramidPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -405,12 +406,13 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                   <div>
                     <span style={lbl}>Pirâmide olfativa</span>
                     <div
-                      onClick={() => pyramidRef.current?.click()}
+                      onClick={() => { if (!pyramidPreview) pyramidRef.current?.click(); }}
                       style={{
                         position: "relative", borderRadius: 8, overflow: "hidden",
                         border: `2px dashed ${pyramidPreview ? "transparent" : OUTLINE}`,
                         background: pyramidPreview ? "transparent" : CARD,
-                        aspectRatio: "16/7", cursor: "pointer",
+                        aspectRatio: "16/7",
+                        cursor: pyramidPreview ? "default" : "pointer",
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
                         transition: "border-color .2s",
                       }}
@@ -419,8 +421,22 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                     >
                       {pyramidPreview ? (
                         <>
-                          <img src={pyramidPreview} alt="Pirâmide" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.0)" }} />
+                          <img
+                            src={pyramidPreview} alt="Pirâmide"
+                            onClick={(e) => { e.stopPropagation(); setLightbox(pyramidPreview); }}
+                            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", cursor: "zoom-in" }}
+                          />
+                          {/* Trocar botão sobreposto */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); pyramidRef.current?.click(); }}
+                            style={{
+                              position: "absolute", top: 8, right: 8, zIndex: 2,
+                              background: "rgba(255,255,255,.85)", backdropFilter: "blur(4px)",
+                              border: "none", borderRadius: 6, padding: "4px 10px",
+                              fontFamily: LABEL, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase",
+                              color: INK, cursor: "pointer",
+                            }}
+                          >Trocar</button>
                         </>
                       ) : (
                         <>
@@ -493,6 +509,34 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
               }}>{saving ? "Salvando..." : "Finalizar registro"}</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(0,0,0,.88)", backdropFilter: "blur(8px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: 24, cursor: "zoom-out",
+          }}
+        >
+          <img
+            src={lightbox} alt="Pirâmide olfativa"
+            style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8, objectFit: "contain", boxShadow: "0 24px 64px rgba(0,0,0,.5)" }}
+          />
+          <button
+            onClick={() => setLightbox(null)}
+            style={{
+              position: "absolute", top: 20, right: 20,
+              background: "rgba(255,255,255,.15)", backdropFilter: "blur(4px)",
+              border: "1px solid rgba(255,255,255,.2)", borderRadius: "50%",
+              width: 40, height: 40, color: "#fff", fontSize: 18, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >✕</button>
         </div>
       )}
     </div>
