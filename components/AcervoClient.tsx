@@ -174,7 +174,10 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
         <div>
           <div style={{ fontFamily: LABEL, fontSize: 11, fontWeight: 500, letterSpacing: ".32em", textTransform: "uppercase", color: SECONDARY, marginBottom: 8 }}>Coleção</div>
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 42, color: PRIMARY, margin: 0, lineHeight: 1, borderLeft: `4px solid ${SECONDARY}`, paddingLeft: 20 }}>Acervo de Perfumes</h1>
-          <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 15, color: INK2, margin: "10px 0 0 24px" }}>
+          <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 15, color: INK2, margin: "8px 0 0 24px" }}>
+            Uma curadoria pessoal de fragrâncias, notas olfativas e memórias aromáticas.
+          </p>
+          <p style={{ fontFamily: LABEL, fontSize: 12, color: `${INK2}99`, margin: "6px 0 0 24px" }}>
             {perfumes.length} fragrância{perfumes.length !== 1 ? "s" : ""} · {perfumes.filter(p => p.status === "wishlist").length} desejada{perfumes.filter(p => p.status === "wishlist").length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -212,7 +215,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhuma fragrância nessa coleção ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24 }}>
           {filtered.map((p) => (
             <article key={p.id} onClick={() => openEdit(p)} style={{
               borderRadius: 12, overflow: "hidden",

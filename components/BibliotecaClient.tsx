@@ -175,7 +175,10 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
         <div>
           <div style={{ fontFamily: LABEL, fontSize: 11, fontWeight: 500, letterSpacing: ".32em", textTransform: "uppercase", color: SECONDARY, marginBottom: 8 }}>Estante</div>
           <h1 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 42, color: PRIMARY, margin: 0, lineHeight: 1, borderLeft: `4px solid ${PRIMARY}`, paddingLeft: 20 }}>Biblioteca</h1>
-          <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 15, color: INK2, margin: "10px 0 0 24px" }}>
+          <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 15, color: INK2, margin: "8px 0 0 24px" }}>
+            Registro físico e digital de literatura, ensaios e artes visuais.
+          </p>
+          <p style={{ fontFamily: LABEL, fontSize: 12, color: `${INK2}99`, margin: "6px 0 0 24px" }}>
             {books.length} obra{books.length !== 1 ? "s" : ""} · {books.filter(b => b.status === "reading").length} em leitura
           </p>
         </div>
@@ -216,7 +219,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhum livro nessa prateleira ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(168px, 1fr))", gap: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 28 }}>
           {filtered.map((b) => {
             const pct = b.total_pages ? Math.min(100, Math.round((b.current_page / b.total_pages) * 100)) : 0;
             return (
@@ -234,7 +237,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(45,62,51,.12)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
                 >
                   {b.cover_thumbnail ? (
-                    <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "sepia(15%)" }} />
+                    <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "none" }} />
                   ) : (
                     <div style={{
                       width: "100%", height: "100%",
