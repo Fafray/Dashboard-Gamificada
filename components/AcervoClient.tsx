@@ -544,7 +544,14 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
         >
           <img
             src={lightbox} alt="Pirâmide olfativa"
-            style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: 8, objectFit: "contain", boxShadow: "0 24px 64px rgba(0,0,0,.5)" }}
+            style={{
+              display: "block",
+              maxWidth: "calc(100vw - 48px)",
+              maxHeight: "calc(100vh - 48px)",
+              width: "auto", height: "auto",
+              borderRadius: 8,
+              boxShadow: "0 24px 64px rgba(0,0,0,.5)",
+            }}
           />
           <button
             onClick={() => setLightbox(null)}
