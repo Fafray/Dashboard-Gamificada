@@ -236,7 +236,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(45,62,51,.12)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
                 >
                   {b.cover_thumbnail ? (
-                    <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(1.08)" }} />
+                    <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
                     <div style={{
                       width: "100%", height: "100%",
