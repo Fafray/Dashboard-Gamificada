@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Space_Grotesk, Cormorant_Garamond, Spectral } from "next/font/google";
+import { Manrope, Space_Grotesk, Cormorant_Garamond, Spectral, Playfair_Display, Source_Serif_4 } from "next/font/google";
 import { Nav } from "@/components/Nav";
 import { ServiceWorkerSetup } from "@/components/ServiceWorkerSetup";
 import "./globals.css";
@@ -32,6 +32,20 @@ const spectral = Spectral({
   display: "swap",
 });
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-source-serif",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Sistema — Daily Quest",
   description: "RPG de hábitos — vire o protagonista da sua vida",
@@ -48,7 +62,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} ${cormorant.variable} ${spectral.variable} h-full`}>
+    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} ${cormorant.variable} ${spectral.variable} ${playfair.variable} ${sourceSerif.variable} h-full`}>
       <body className="h-full flex flex-col">
         <div className="aurora-bg" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
