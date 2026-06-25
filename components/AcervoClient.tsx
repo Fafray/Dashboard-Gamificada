@@ -86,7 +86,20 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   const fileRef = useRef<HTMLInputElement>(null);
   const pyramidRef = useRef<HTMLInputElement>(null);
 
-  const filtered = perfumes.filter((p) => p.status === tab);
+  const filtered = perfumes
+    .filter((p) => p.status === tab)
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+
+  async function openPyramidLightbox() {
+    if (form.pyramid_image) { setLightbox(form.pyramid_image); return; }
+    if (editing) {
+      const res = await fetch(`/api/perfumes/${editing.id}`);
+      const data = await res.json();
+      setLightbox(data.pyramid_image ?? pyramidPreview);
+    } else {
+      setLightbox(pyramidPreview);
+    }
+  }
 
   async function refresh() {
     const res = await fetch("/api/perfumes");
@@ -425,7 +438,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                         <>
                           <img
                             src={pyramidPreview} alt="Pirâmide"
-                            onClick={(e) => { e.stopPropagation(); setLightbox(pyramidPreview); }}
+                            onClick={(e) => { e.stopPropagation(); openPyramidLightbox(); }}
                             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", cursor: "zoom-in" }}
                           />
                           {/* Trocar botão sobreposto */}
