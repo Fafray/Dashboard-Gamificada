@@ -6,16 +6,28 @@ import { compressImage } from "@/lib/image";
 
 type BookRow = Omit<Book, "cover_image">;
 
-const STATUS_LABEL: Record<string, string> = {
-  want: "Quero Ler",
-  reading: "Lendo",
-  read: "Lido",
-};
+/* ===========================================================
+   BIBLIOTECA — identidade "Papel"
+   Creme literário · âmbar/madeira · títulos em Spectral.
+   Superfície CLARA própria (contrasta com o resto do app,
+   intencional — sensação de papel/estante).
+   =========================================================== */
 
-const STATUS_COLOR: Record<string, string> = {
-  want: "#8b5cf6",
-  reading: "#45cdf0",
-  read: "#25d99a",
+const PAPER = "#f1e7d3";
+const PAPER_CARD = "#fbf5e8";
+const PAPER_BORDER = "#e2d3b6";
+const INK = "#2c2114";
+const INK_SOFT = "#3a2c18";
+const AMBER = "#b5731f";
+const MUTED = "#9a875e";
+const SERIF = "'Spectral', Georgia, serif";
+
+const STATUS_LABEL: Record<string, string> = { want: "Quero Ler", reading: "Lendo", read: "Lido" };
+const STATUS_COLOR: Record<string, string> = { want: "#7a5fa8", reading: AMBER, read: "#2e7d4a" };
+const STATUS_SPINE: Record<string, string> = {
+  want: "linear-gradient(180deg,#3a3460,#5a4f8a)",
+  reading: "linear-gradient(180deg,#7a3b16,#a85a22)",
+  read: "linear-gradient(180deg,#2e5a34,#4a8a52)",
 };
 
 const TABS = [
@@ -27,15 +39,16 @@ const TABS = [
 
 function Stars({ rating, onRate }: { rating: number | null; onRate?: (n: number) => void }) {
   return (
-    <div style={{ display: "flex", gap: 2 }}>
+    <div style={{ display: "flex", gap: 3 }}>
       {[1, 2, 3, 4, 5].map((n) => (
         <span
           key={n}
           onClick={() => onRate?.(n)}
           style={{
-            fontSize: 14,
+            fontSize: onRate ? 20 : 13,
+            letterSpacing: 1,
             cursor: onRate ? "pointer" : "default",
-            color: (rating ?? 0) >= n ? "#ffce47" : "var(--border)",
+            color: (rating ?? 0) >= n ? "#d39a2e" : "#d8c6a0",
           }}
         >★</span>
       ))}
@@ -75,6 +88,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
   const fileRef = useRef<HTMLInputElement>(null);
 
   const filtered = tab === "all" ? books : books.filter((b) => b.status === tab);
+  const readingCount = books.filter((b) => b.status === "reading").length;
 
   async function refresh() {
     const res = await fetch("/api/books");
@@ -152,117 +166,103 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
   }
 
   const inp: React.CSSProperties = {
-    width: "100%", padding: "8px 10px", borderRadius: 8,
-    background: "var(--bg-card)", border: "1px solid var(--border)",
-    color: "var(--text-primary)", fontSize: 13, outline: "none",
+    width: "100%", padding: "10px 12px", borderRadius: 9,
+    background: PAPER_CARD, border: `1px solid #ddcba6`,
+    color: INK, fontSize: 14, outline: "none",
   };
 
   const label: React.CSSProperties = {
-    fontSize: 11, fontWeight: 600, color: "var(--text-muted)",
-    letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 4, display: "block",
+    fontSize: 10, fontWeight: 700, color: MUTED,
+    letterSpacing: ".16em", textTransform: "uppercase", marginBottom: 7, display: "block",
   };
 
   return (
-    <div style={{ padding: "24px 16px 100px", maxWidth: 900, margin: "0 auto" }}>
+    <div style={{
+      maxWidth: 900, margin: "24px auto", padding: "30px 28px 32px",
+      background: PAPER, border: `1px solid ${PAPER_BORDER}`, borderRadius: 18,
+      fontFamily: "var(--font-manrope), system-ui, sans-serif",
+    }}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>📚 Biblioteca</h1>
-          <p style={{ fontSize: 12, color: "var(--text-muted)", margin: "4px 0 0" }}>{books.length} livro{books.length !== 1 ? "s" : ""}</p>
+          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: ".32em", textTransform: "uppercase", color: AMBER, marginBottom: 8 }}>Estante</div>
+          <h1 style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 36, lineHeight: 0.9, color: INK_SOFT, margin: 0 }}>Biblioteca</h1>
+          <p style={{ fontSize: 12, color: "#8a7752", margin: "8px 0 0", letterSpacing: ".04em" }}>
+            {books.length} livro{books.length !== 1 ? "s" : ""}{readingCount > 0 ? ` · ${readingCount} em leitura` : ""}
+          </p>
         </div>
         <button onClick={openAdd} style={{
-          background: "var(--accent-violet)", color: "#fff",
-          border: "none", borderRadius: 10, padding: "8px 16px",
-          fontSize: 13, fontWeight: 700, cursor: "pointer",
-        }}>+ Adicionar</button>
+          display: "flex", alignItems: "center", gap: 7,
+          background: INK_SOFT, color: PAPER, border: "none", borderRadius: 10,
+          padding: "11px 18px", fontSize: 12, fontWeight: 700, letterSpacing: ".04em", cursor: "pointer",
+        }}>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>+</span> Adicionar
+        </button>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap" }}>
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            style={{
-              padding: "6px 14px", borderRadius: 20, fontSize: 12, fontWeight: 600,
-              border: "1px solid var(--border)", cursor: "pointer",
-              background: tab === t.key ? "var(--accent-violet)" : "var(--bg-card)",
-              color: tab === t.key ? "#fff" : "var(--text-muted)",
-              transition: "all .15s",
-            }}
-          >{t.label} {t.key !== "all" && <span style={{ opacity: .7 }}>({books.filter(b => b.status === t.key).length})</span>}</button>
-        ))}
+      <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+        {TABS.map((t) => {
+          const active = tab === t.key;
+          const count = t.key !== "all" ? books.filter((b) => b.status === t.key).length : 0;
+          return (
+            <button key={t.key} onClick={() => setTab(t.key)} style={{
+              padding: "7px 16px", borderRadius: 8, fontSize: 12, fontWeight: active ? 700 : 600,
+              border: "none", cursor: "pointer",
+              background: active ? AMBER : "#e7d9bc",
+              color: active ? PAPER : "#7a6740",
+            }}>{t.label}{t.key !== "all" && ` ${count}`}</button>
+          );
+        })}
       </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--text-muted)" }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📖</div>
-          <p style={{ fontSize: 14 }}>Nenhum livro aqui ainda.</p>
+        <div style={{ textAlign: "center", padding: "70px 20px" }}>
+          <div style={{ fontSize: 40, marginBottom: 6, opacity: 0.5 }}>📖</div>
+          <p style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 19, color: "#a8946a" }}>Nenhum livro na estante ainda.</p>
         </div>
       ) : (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-          gap: 14,
-        }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 16 }}>
           {filtered.map((b) => (
-            <div
-              key={b.id}
-              onClick={() => openEdit(b)}
-              style={{
-                borderRadius: 12, overflow: "hidden",
-                background: "var(--bg-card)", border: "1px solid var(--border)",
-                cursor: "pointer", transition: "transform .15s, box-shadow .15s",
-              }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 20px rgba(0,0,0,.3)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = ""; (e.currentTarget as HTMLDivElement).style.boxShadow = ""; }}
+            <div key={b.id} onClick={() => openEdit(b)} style={{
+              display: "flex", borderRadius: 10, overflow: "hidden",
+              background: PAPER_CARD, border: `1px solid ${PAPER_BORDER}`,
+              cursor: "pointer", boxShadow: "0 4px 12px -6px rgba(60,40,16,.2)",
+              transition: "transform .15s, box-shadow .15s",
+            }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 10px 22px -8px rgba(60,40,16,.3)"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = ""; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 12px -6px rgba(60,40,16,.2)"; }}
             >
-              {/* Cover */}
-              <div style={{ height: 180, position: "relative", overflow: "hidden" }}>
-                {b.cover_thumbnail ? (
-                  <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div style={{
-                    width: "100%", height: "100%",
-                    background: "linear-gradient(135deg, #1a2540, #2a1a50)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 48, color: "rgba(255,255,255,.15)",
-                  }}>📖</div>
-                )}
-                <span style={{
-                  position: "absolute", top: 6, right: 6,
-                  background: STATUS_COLOR[b.status], color: "#000",
-                  fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 6,
-                  letterSpacing: ".04em",
-                }}>{STATUS_LABEL[b.status]}</span>
+              {/* Spine — colored gradient or cover slice */}
+              <div style={{ width: 10, flexShrink: 0, background: b.cover_thumbnail ? "transparent" : STATUS_SPINE[b.status] }}>
+                {b.cover_thumbnail && <img src={b.cover_thumbnail} alt="" style={{ width: 10, height: "100%", objectFit: "cover" }} />}
               </div>
 
               {/* Info */}
-              <div style={{ padding: "10px 10px 12px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.3, marginBottom: 3 }}>
-                  {b.title}
-                </div>
-                {b.author && (
-                  <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>{b.author}</div>
-                )}
+              <div style={{ padding: "14px 14px 15px", flex: 1, minWidth: 0 }}>
+                <span style={{
+                  fontSize: 8, fontWeight: 800, letterSpacing: ".06em",
+                  color: STATUS_COLOR[b.status], background: `${STATUS_COLOR[b.status]}22`,
+                  padding: "3px 8px", borderRadius: 999, textTransform: "uppercase",
+                }}>{STATUS_LABEL[b.status]}</span>
+                <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 19, color: INK, marginTop: 11, lineHeight: 1.1 }}>{b.title}</div>
+                {b.author && <div style={{ fontSize: 11, color: MUTED, marginTop: 3 }}>{b.author}</div>}
+
                 {b.status === "reading" && b.total_pages && (
-                  <div>
-                    <div style={{ height: 3, background: "var(--border)", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ height: 5, background: PAPER_BORDER, borderRadius: 999, overflow: "hidden" }}>
                       <div style={{
                         height: "100%",
                         width: `${Math.min(100, Math.round((b.current_page / b.total_pages) * 100))}%`,
-                        background: STATUS_COLOR.reading, borderRadius: 999,
+                        background: AMBER, borderRadius: 999,
                       }} />
                     </div>
-                    <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3 }}>
-                      {b.current_page}/{b.total_pages} pág.
-                    </div>
+                    <div style={{ fontSize: 10, fontWeight: 600, color: MUTED, marginTop: 5 }}>{b.current_page} / {b.total_pages} pág.</div>
                   </div>
                 )}
-                {b.status === "read" && b.rating && (
-                  <Stars rating={b.rating} />
-                )}
+                {b.status === "read" && b.rating != null && <div style={{ marginTop: 11 }}><Stars rating={b.rating} /></div>}
+                {b.status === "want" && <div style={{ fontSize: 11, color: "#b3a079", marginTop: 11, fontStyle: "italic" }}>na lista de desejos</div>}
               </div>
             </div>
           ))}
@@ -271,62 +271,48 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
 
       {/* Modal */}
       {modal && (
-        <div
-          onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }}
-          style={{
-            position: "fixed", inset: 0, zIndex: 100,
-            background: "rgba(0,0,0,.7)", display: "flex",
-            alignItems: "flex-end", justifyContent: "center",
-          }}
-        >
+        <div onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }} style={{
+          position: "fixed", inset: 0, zIndex: 100,
+          background: "rgba(40,28,12,.55)", display: "flex",
+          alignItems: "flex-end", justifyContent: "center",
+        }}>
           <div style={{
-            background: "var(--bg-surface)", borderRadius: "20px 20px 0 0",
-            width: "100%", maxWidth: 560,
-            maxHeight: "90vh", overflow: "hidden",
+            background: PAPER, borderRadius: "20px 20px 0 0",
+            width: "100%", maxWidth: 560, maxHeight: "90vh", overflow: "hidden",
+            border: `1px solid ${PAPER_BORDER}`, borderBottom: "none",
             display: "flex", flexDirection: "column",
           }}>
-            {/* Modal header */}
             <div style={{
-              padding: "16px 20px", borderBottom: "1px solid var(--border)",
+              padding: "20px 24px", borderBottom: `1px solid ${PAPER_BORDER}`,
               display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
             }}>
-              <span style={{ fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>
+              <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 23, color: INK_SOFT }}>
                 {modal === "add" ? "Novo Livro" : "Editar Livro"}
               </span>
-              <button onClick={() => setModal(null)} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 18 }}>✕</button>
+              <button onClick={() => setModal(null)} style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 18 }}>✕</button>
             </div>
 
-            {/* Modal body */}
-            <div style={{ padding: "16px 20px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 14 }}>
-              {/* Cover upload */}
+            <div style={{ padding: "22px 24px", overflowY: "auto", flex: 1, display: "flex", flexDirection: "column", gap: 18 }}>
+              {/* Cover */}
               <div>
                 <span style={label}>Capa</span>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <div
-                    onClick={() => fileRef.current?.click()}
-                    style={{
-                      width: 72, height: 100, borderRadius: 8, overflow: "hidden",
-                      border: "2px dashed var(--border)", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      background: "var(--bg-card)", flexShrink: 0,
-                    }}
-                  >
-                    {imagePreview ? (
-                      <img src={imagePreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <span style={{ fontSize: 24 }}>📷</span>
-                    )}
+                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                  <div onClick={() => fileRef.current?.click()} style={{
+                    width: 72, height: 100, borderRadius: 8, overflow: "hidden",
+                    border: "1.5px dashed #cbb78c", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: PAPER_CARD, flexShrink: 0, fontSize: 24, color: "#c2ad7e",
+                  }}>
+                    {imagePreview ? <img src={imagePreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "+"}
                   </div>
                   <div>
-                    <button
-                      onClick={() => fileRef.current?.click()}
-                      style={{ background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text-muted)", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer" }}
-                    >Escolher imagem</button>
+                    <button onClick={() => fileRef.current?.click()} style={{
+                      background: "none", border: "1px solid rgba(181,115,31,.35)",
+                      color: AMBER, borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                    }}>Escolher imagem</button>
                     {imagePreview && (
-                      <button
-                        onClick={() => { setImagePreview(null); setForm((f) => ({ ...f, cover_image: null, cover_thumbnail: null })); }}
-                        style={{ background: "none", border: "none", color: "var(--text-muted)", fontSize: 11, cursor: "pointer", marginLeft: 8 }}
-                      >Remover</button>
+                      <button onClick={() => { setImagePreview(null); setForm((f) => ({ ...f, cover_image: null, cover_thumbnail: null })); }}
+                        style={{ background: "none", border: "none", color: MUTED, fontSize: 11, cursor: "pointer", marginLeft: 8 }}>Remover</button>
                     )}
                   </div>
                 </div>
@@ -334,24 +320,21 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   onChange={(e) => { if (e.target.files?.[0]) handleImage(e.target.files[0]); }} />
               </div>
 
-              {/* Title */}
               <div>
                 <span style={label}>Título *</span>
-                <input style={inp} value={form.title} placeholder="Nome do livro"
+                <input style={{ ...inp, fontFamily: SERIF, fontSize: 16, fontWeight: 600 }} value={form.title} placeholder="Nome do livro"
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
               </div>
 
-              {/* Author */}
               <div>
                 <span style={label}>Autor</span>
                 <input style={inp} value={form.author} placeholder="Nome do autor"
                   onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))} />
               </div>
 
-              {/* Status */}
               <div>
                 <span style={label}>Status</span>
-                <select style={inp} value={form.status}
+                <select style={{ ...inp, borderColor: "rgba(181,115,31,.45)", color: AMBER, fontWeight: 600 }} value={form.status}
                   onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as FormState["status"] }))}>
                   <option value="want">Quero Ler</option>
                   <option value="reading">Lendo</option>
@@ -359,8 +342,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                 </select>
               </div>
 
-              {/* Pages */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <span style={label}>Total de páginas</span>
                   <input style={inp} type="number" min="0" value={form.total_pages} placeholder="—"
@@ -375,7 +357,6 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                 )}
               </div>
 
-              {/* Rating (only for read) */}
               {form.status === "read" && (
                 <div>
                   <span style={label}>Avaliação</span>
@@ -383,7 +364,6 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                 </div>
               )}
 
-              {/* Description */}
               <div>
                 <span style={label}>Descrição</span>
                 <textarea style={{ ...inp, resize: "vertical", minHeight: 64 }} value={form.description}
@@ -391,7 +371,6 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
               </div>
 
-              {/* Summary (only for read) */}
               {form.status === "read" && (
                 <div>
                   <span style={label}>Resumo pessoal</span>
@@ -402,30 +381,18 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
               )}
             </div>
 
-            {/* Modal footer */}
-            <div style={{
-              padding: "12px 20px", borderTop: "1px solid var(--border)",
-              display: "flex", gap: 10, flexShrink: 0,
-            }}>
+            <div style={{ padding: "14px 24px", borderTop: `1px solid ${PAPER_BORDER}`, display: "flex", gap: 10, flexShrink: 0 }}>
               {modal === "edit" && editing && (
-                <button
-                  onClick={() => handleDelete(editing.id)}
-                  disabled={deleting === editing.id}
-                  style={{
-                    background: "rgba(239,68,68,.15)", border: "1px solid rgba(239,68,68,.3)",
-                    color: "#ef4444", borderRadius: 8, padding: "8px 14px", fontSize: 12, cursor: "pointer",
-                  }}
-                >Excluir</button>
+                <button onClick={() => handleDelete(editing.id)} disabled={deleting === editing.id} style={{
+                  background: "rgba(190,50,40,.1)", border: "1px solid rgba(190,50,40,.3)",
+                  color: "#be3228", borderRadius: 9, padding: "11px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                }}>Excluir</button>
               )}
-              <button
-                onClick={handleSave}
-                disabled={saving || !form.title.trim()}
-                style={{
-                  flex: 1, background: "var(--accent-violet)", color: "#fff",
-                  border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 700,
-                  cursor: saving ? "not-allowed" : "pointer", opacity: saving ? .7 : 1,
-                }}
-              >{saving ? "Salvando..." : "Salvar"}</button>
+              <button onClick={handleSave} disabled={saving || !form.title.trim()} style={{
+                flex: 1, background: INK_SOFT, color: PAPER,
+                border: "none", borderRadius: 9, padding: "11px", fontSize: 13, fontWeight: 700,
+                cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1,
+              }}>{saving ? "Salvando..." : "Salvar"}</button>
             </div>
           </div>
         </div>
