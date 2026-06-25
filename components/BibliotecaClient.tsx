@@ -168,7 +168,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
   };
 
   return (
-    <div style={{ background: S, minHeight: "100vh", padding: "32px 40px 100px", fontFamily: BODY }}>
+    <div style={{ background: S, minHeight: "100vh", padding: "48px 52px 100px", fontFamily: BODY }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32 }}>
         <div>
@@ -327,6 +327,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   <label style={{ cursor: "pointer", display: "block" }}>
                     <div onClick={() => fileRef.current?.click()} style={{
                       aspectRatio: "3/4", borderRadius: 6, overflow: "hidden",
+                      maxHeight: 280,
                       border: `2px dashed ${OUTLINE}`,
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
                       background: CARD, position: "relative", transition: "border-color .2s",
@@ -358,7 +359,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                     {/* Status */}
                     <div style={{ borderTop: `1px solid ${OUTLINE}`, paddingTop: 20 }}>
                       <span style={lbl}>Status</span>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                         {STATUS_OPTS.map((opt) => (
                           <button key={opt.value} type="button" onClick={() => setForm((f) => ({ ...f, status: opt.value }))} style={{
                             padding: "10px 8px", borderRadius: 6, cursor: "pointer",

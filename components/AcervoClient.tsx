@@ -167,7 +167,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   };
 
   return (
-    <div style={{ background: S, minHeight: "100vh", padding: "32px 40px 100px", fontFamily: BODY }}>
+    <div style={{ background: S, minHeight: "100vh", padding: "48px 52px 100px", fontFamily: BODY }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32 }}>
         <div>
@@ -228,7 +228,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(45,62,51,.10)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
             >
               {/* Photo */}
-              <div style={{ aspectRatio: "1", position: "relative", overflow: "hidden", background: SC }}>
+              <div style={{ aspectRatio: "4/5", position: "relative", overflow: "hidden", background: SC }}>
                 {p.photo_thumbnail ? (
                   <img src={p.photo_thumbnail} alt={p.name} style={{
                     width: "100%", height: "100%", objectFit: "cover",
@@ -442,7 +442,11 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                         </>
                       ) : (
                         <>
-                          <span style={{ fontSize: 28, color: OUTLINE }}>🔺</span>
+                          <svg width="26" height="24" viewBox="0 0 26 24" fill="none">
+                            <path d="M13 1L25 23H1L13 1Z" stroke="#7a6348" strokeWidth="1.5" strokeLinejoin="round"/>
+                            <line x1="13" y1="8" x2="13" y2="15" stroke="#7a6348" strokeWidth="1.5" strokeLinecap="round"/>
+                            <circle cx="13" cy="19" r="1.2" fill="#7a6348"/>
+                          </svg>
                           <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, letterSpacing: ".18em", textTransform: "uppercase", color: INK2 }}>Registrar pirâmide</span>
                         </>
                       )}
