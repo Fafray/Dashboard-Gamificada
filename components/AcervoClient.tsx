@@ -537,22 +537,26 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
           onClick={() => setLightbox(null)}
           style={{
             position: "fixed", inset: 0, zIndex: 200,
-            background: "rgba(0,0,0,.88)", backdropFilter: "blur(8px)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 24, cursor: "zoom-out",
+            background: "rgba(0,0,0,.92)", backdropFilter: "blur(8px)",
+            overflowY: "auto", cursor: "zoom-out",
+            padding: "32px 24px",
           }}
         >
-          <img
-            src={lightbox} alt="Pirâmide olfativa"
-            style={{
-              display: "block",
-              maxWidth: "calc(100vw - 48px)",
-              maxHeight: "calc(100vh - 48px)",
-              width: "auto", height: "auto",
-              borderRadius: 8,
-              boxShadow: "0 24px 64px rgba(0,0,0,.5)",
-            }}
-          />
+          <div style={{ display: "flex", justifyContent: "center", minHeight: "100%" }}>
+            <img
+              src={lightbox} alt="Pirâmide olfativa"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: "block",
+                width: "min(900px, calc(100vw - 48px))",
+                height: "auto",
+                borderRadius: 8,
+                boxShadow: "0 24px 64px rgba(0,0,0,.6)",
+                alignSelf: "flex-start",
+                cursor: "default",
+              }}
+            />
+          </div>
           <button
             onClick={() => setLightbox(null)}
             style={{
