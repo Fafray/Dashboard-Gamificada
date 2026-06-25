@@ -117,8 +117,8 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
   }
 
   async function handleImage(file: File) {
-    const full = await compressImage(file, 600, 0.88);
-    const thumb = await compressImage(file, 400, 0.85);
+    const full = await compressImage(file, 1200, 0.9);
+    const thumb = await compressImage(file, 600, 0.88);
     setForm((f) => ({ ...f, cover_image: full, cover_thumbnail: thumb }));
     setPreview(thumb);
   }
