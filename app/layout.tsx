@@ -62,13 +62,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} ${cormorant.variable} ${spectral.variable} ${playfair.variable} ${sourceSerif.variable} h-full`}>
-      <body className="h-full flex flex-col">
+    <html lang="pt-BR" className={`${manrope.variable} ${spaceGrotesk.variable} ${cormorant.variable} ${spectral.variable} ${playfair.variable} ${sourceSerif.variable}`}>
+      <body className="flex flex-col">
         <div className="aurora-bg" aria-hidden="true" />
         <div className="grain" aria-hidden="true" />
         <ServiceWorkerSetup />
         <Nav />
-        <main className="flex-1 overflow-y-auto main-content">
+        <main className="flex-1 main-content">
           {children}
         </main>
       </body>
