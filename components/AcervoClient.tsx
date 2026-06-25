@@ -28,7 +28,6 @@ const BODY = "'Source Serif 4', Georgia, serif";
 const LABEL = "var(--font-manrope), Manrope, system-ui, sans-serif";
 
 const TABS = [
-  { key: "all", label: "Todos" },
   { key: "owned", label: "Tenho" },
   { key: "wishlist", label: "Desejos" },
 ] as const;
@@ -75,7 +74,7 @@ const EMPTY: FormState = {
 
 export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[] }) {
   const [perfumes, setPerfumes] = useState(initialPerfumes);
-  const [tab, setTab] = useState<"all" | "owned" | "wishlist">("all");
+  const [tab, setTab] = useState<"owned" | "wishlist">("owned");
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [editing, setEditing] = useState<PerfumeRow | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -87,7 +86,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   const fileRef = useRef<HTMLInputElement>(null);
   const pyramidRef = useRef<HTMLInputElement>(null);
 
-  const filtered = tab === "all" ? perfumes : perfumes.filter((p) => p.status === tab);
+  const filtered = perfumes.filter((p) => p.status === tab);
 
   async function refresh() {
     const res = await fetch("/api/perfumes");
@@ -215,7 +214,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhuma fragrância nessa coleção ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 24 }}>
           {filtered.map((p) => (
             <article key={p.id} onClick={() => openEdit(p)} style={{
               borderRadius: 12, overflow: "hidden",
@@ -234,7 +233,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                   <img src={p.photo_thumbnail} alt={p.name} style={{
                     width: "100%", height: "100%", objectFit: "cover",
                     transition: "transform .5s",
-                    filter: p.status === "wishlist" ? "grayscale(50%)" : "none",
+                    filter: p.status === "wishlist" ? "grayscale(50%)" : "brightness(1.08)",
                   }} />
                 ) : (
                   <div style={{
@@ -242,7 +241,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                     background: `linear-gradient(145deg, ${SC}, #e2d8c8)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontFamily: DISPLAY, fontSize: 40, fontWeight: 600, color: `${SECONDARY}55`,
-                    filter: p.status === "wishlist" ? "grayscale(50%)" : "none",
+                    filter: p.status === "wishlist" ? "grayscale(50%)" : "brightness(1.08)",
                   }}>{p.name[0]}</div>
                 )}
                 {/* Wishlist overlay */}

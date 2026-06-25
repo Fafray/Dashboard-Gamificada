@@ -29,7 +29,6 @@ const BODY = "'Source Serif 4', Georgia, serif";
 const LABEL = "var(--font-manrope), Manrope, system-ui, sans-serif";
 
 const TABS = [
-  { key: "all", label: "Todos" },
   { key: "reading", label: "Lendo" },
   { key: "want", label: "Quero ler" },
   { key: "read", label: "Concluídos" },
@@ -79,7 +78,7 @@ const STATUS_OPTS = [
 
 export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) {
   const [books, setBooks] = useState(initialBooks);
-  const [tab, setTab] = useState<"all" | "reading" | "want" | "read">("all");
+  const [tab, setTab] = useState<"reading" | "want" | "read">("reading");
   const [modal, setModal] = useState<"add" | "edit" | null>(null);
   const [editing, setEditing] = useState<BookRow | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
@@ -88,7 +87,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const filtered = tab === "all" ? books : books.filter((b) => b.status === tab);
+  const filtered = books.filter((b) => b.status === tab);
 
   const progressPct = form.total_pages && Number(form.total_pages) > 0
     ? Math.min(100, Math.round(Number(form.current_page || 0) / Number(form.total_pages) * 100))
@@ -195,7 +194,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
       <div style={{ display: "flex", gap: 32, borderBottom: `1px solid ${OUTLINE}`, marginBottom: 32 }}>
         {TABS.map((t) => {
           const active = tab === t.key;
-          const count = t.key !== "all" ? books.filter(b => b.status === t.key).length : 0;
+          const count = books.filter(b => b.status === t.key).length;
           return (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
               padding: "0 0 14px", background: "none", border: "none",
@@ -206,7 +205,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
               borderBottom: `2px solid ${active ? PRIMARY : "transparent"}`,
               transition: "color .15s, border-color .15s",
             }}>
-              {t.label}{t.key !== "all" && <span style={{ color: OUTLINE, marginLeft: 6, fontWeight: 400 }}>{count}</span>}
+              {t.label}<span style={{ color: OUTLINE, marginLeft: 6, fontWeight: 400 }}>{count}</span>
             </button>
           );
         })}
@@ -219,7 +218,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhum livro nessa prateleira ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 28 }}>
           {filtered.map((b) => {
             const pct = b.total_pages ? Math.min(100, Math.round((b.current_page / b.total_pages) * 100)) : 0;
             return (
@@ -237,7 +236,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(45,62,51,.12)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
                 >
                   {b.cover_thumbnail ? (
-                    <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "none" }} />
+                    <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(1.08)" }} />
                   ) : (
                     <div style={{
                       width: "100%", height: "100%",
