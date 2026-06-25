@@ -18,6 +18,8 @@ export async function POST(req: Request) {
     brand: data.brand ?? null,
     photo: data.photo ?? null,
     photo_thumbnail: data.photo_thumbnail ?? null,
+    pyramid_image: data.pyramid_image ?? null,
+    pyramid_thumbnail: data.pyramid_thumbnail ?? null,
     description: data.description ?? null,
     status: data.status ?? "owned",
     notes_top: data.notes_top ?? null,

@@ -172,23 +172,25 @@ export function init(): Promise<void> {
     // Acervo de perfumes
     await pool.query(`
       CREATE TABLE IF NOT EXISTS perfumes (
-        id              SERIAL PRIMARY KEY,
-        name            TEXT NOT NULL,
-        brand           TEXT,
-        photo           TEXT,
-        photo_thumbnail TEXT,
-        description     TEXT,
-        status          TEXT NOT NULL DEFAULT 'owned',
-        notes_top       TEXT,
-        notes_heart     TEXT,
-        notes_base      TEXT,
-        rating          INTEGER,
-        tags            TEXT,
-        price           NUMERIC,
-        created_at      TEXT NOT NULL,
+        id                SERIAL PRIMARY KEY,
+        name              TEXT NOT NULL,
+        brand             TEXT,
+        photo             TEXT,
+        photo_thumbnail   TEXT,
+        description       TEXT,
+        status            TEXT NOT NULL DEFAULT 'owned',
+        notes_top         TEXT,
+        notes_heart       TEXT,
+        notes_base        TEXT,
+        rating            INTEGER,
+        tags              TEXT,
+        price             NUMERIC,
+        created_at        TEXT NOT NULL,
         CONSTRAINT perfumes_status_check CHECK (status IN ('owned','wishlist'))
       )
     `);
+    await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS pyramid_image     TEXT`);
+    await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS pyramid_thumbnail TEXT`);
   })();
   return schemaReady;
 }

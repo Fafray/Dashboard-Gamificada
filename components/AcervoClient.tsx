@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import type { Perfume } from "@/lib/db";
 import { compressImage } from "@/lib/image";
 
-type PerfumeRow = Omit<Perfume, "photo">;
+type PerfumeRow = Omit<Perfume, "photo" | "pyramid_image">;
 
 /* ===========================================================
    ACERVO — Design System "Curated Archive"
@@ -61,6 +61,8 @@ interface FormState {
   price: string;
   photo: string | null;
   photo_thumbnail: string | null;
+  pyramid_image: string | null;
+  pyramid_thumbnail: string | null;
 }
 
 const EMPTY: FormState = {
@@ -68,6 +70,7 @@ const EMPTY: FormState = {
   description: "", notes_top: "", notes_heart: "", notes_base: "",
   rating: null, tags: "", price: "",
   photo: null, photo_thumbnail: null,
+  pyramid_image: null, pyramid_thumbnail: null,
 };
 
 export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[] }) {
@@ -79,7 +82,9 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [pyramidPreview, setPyramidPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const pyramidRef = useRef<HTMLInputElement>(null);
 
   const filtered = tab === "all" ? perfumes : perfumes.filter((p) => p.status === tab);
 
@@ -89,7 +94,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   }
 
   function openAdd() {
-    setForm(EMPTY); setPreview(null); setEditing(null); setModal("add");
+    setForm(EMPTY); setPreview(null); setPyramidPreview(null); setEditing(null); setModal("add");
   }
 
   function openEdit(p: PerfumeRow) {
@@ -99,8 +104,10 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
       notes_top: p.notes_top ?? "", notes_heart: p.notes_heart ?? "", notes_base: p.notes_base ?? "",
       rating: p.rating, tags: p.tags ?? "", price: p.price?.toString() ?? "",
       photo: null, photo_thumbnail: p.photo_thumbnail ?? null,
+      pyramid_image: null, pyramid_thumbnail: p.pyramid_thumbnail ?? null,
     });
     setPreview(p.photo_thumbnail ?? null);
+    setPyramidPreview(p.pyramid_thumbnail ?? null);
     setEditing(p); setModal("edit");
   }
 
@@ -109,6 +116,13 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
     const thumb = await compressImage(file, 600, 0.88);
     setForm((f) => ({ ...f, photo: full, photo_thumbnail: thumb }));
     setPreview(thumb);
+  }
+
+  async function handlePyramidImage(file: File) {
+    const full = await compressImage(file, 1200, 0.9);
+    const thumb = await compressImage(file, 600, 0.88);
+    setForm((f) => ({ ...f, pyramid_image: full, pyramid_thumbnail: thumb }));
+    setPyramidPreview(thumb);
   }
 
   async function handleSave() {
@@ -388,22 +402,41 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                   </div>
 
                   {/* Pirâmide olfativa */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                    <div>
-                      <span style={lbl}>Topo</span>
-                      <input type="text" value={form.notes_top} placeholder="bergamota..." style={inp}
-                        onChange={(e) => setForm((f) => ({ ...f, notes_top: e.target.value }))} />
+                  <div>
+                    <span style={lbl}>Pirâmide olfativa</span>
+                    <div
+                      onClick={() => pyramidRef.current?.click()}
+                      style={{
+                        position: "relative", borderRadius: 8, overflow: "hidden",
+                        border: `2px dashed ${pyramidPreview ? "transparent" : OUTLINE}`,
+                        background: pyramidPreview ? "transparent" : CARD,
+                        aspectRatio: "16/7", cursor: "pointer",
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                        transition: "border-color .2s",
+                      }}
+                      onMouseEnter={(e) => { if (!pyramidPreview) (e.currentTarget as HTMLElement).style.borderColor = PRIMARY; }}
+                      onMouseLeave={(e) => { if (!pyramidPreview) (e.currentTarget as HTMLElement).style.borderColor = OUTLINE; }}
+                    >
+                      {pyramidPreview ? (
+                        <>
+                          <img src={pyramidPreview} alt="Pirâmide" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,.0)" }} />
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: 28, color: OUTLINE }}>🔺</span>
+                          <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, letterSpacing: ".18em", textTransform: "uppercase", color: INK2 }}>Registrar pirâmide</span>
+                        </>
+                      )}
                     </div>
-                    <div>
-                      <span style={lbl}>Coração</span>
-                      <input type="text" value={form.notes_heart} placeholder="jasmim..." style={inp}
-                        onChange={(e) => setForm((f) => ({ ...f, notes_heart: e.target.value }))} />
-                    </div>
-                    <div>
-                      <span style={lbl}>Fundo</span>
-                      <input type="text" value={form.notes_base} placeholder="âmbar..." style={inp}
-                        onChange={(e) => setForm((f) => ({ ...f, notes_base: e.target.value }))} />
-                    </div>
+                    <input ref={pyramidRef} type="file" accept="image/*" style={{ display: "none" }}
+                      onChange={(e) => { if (e.target.files?.[0]) handlePyramidImage(e.target.files[0]); }} />
+                    {pyramidPreview && (
+                      <button onClick={() => { setPyramidPreview(null); setForm((f) => ({ ...f, pyramid_image: null, pyramid_thumbnail: null })); }}
+                        style={{ background: "none", border: "none", color: INK2, fontSize: 12, cursor: "pointer", marginTop: 6, fontFamily: LABEL, textDecoration: "underline", padding: 0 }}>
+                        Remover imagem
+                      </button>
+                    )}
                   </div>
 
                   {/* Estilo / Preço */}

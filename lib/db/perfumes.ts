@@ -6,6 +6,8 @@ export interface Perfume {
   brand: string | null;
   photo: string | null;
   photo_thumbnail: string | null;
+  pyramid_image: string | null;
+  pyramid_thumbnail: string | null;
   description: string | null;
   status: "owned" | "wishlist";
   notes_top: string | null;
@@ -18,16 +20,16 @@ export interface Perfume {
 }
 
 const PERFUME_ALLOWED_KEYS = new Set([
-  "name", "brand", "photo", "photo_thumbnail", "description",
-  "status", "notes_top", "notes_heart", "notes_base",
+  "name", "brand", "photo", "photo_thumbnail", "pyramid_image", "pyramid_thumbnail",
+  "description", "status", "notes_top", "notes_heart", "notes_base",
   "rating", "tags", "price",
 ]);
 
-export async function getPerfumes(status?: Perfume["status"]): Promise<Omit<Perfume, "photo">[]> {
+export async function getPerfumes(status?: Perfume["status"]): Promise<Omit<Perfume, "photo" | "pyramid_image">[]> {
   await init();
   const sql = status
-    ? `SELECT id, name, brand, photo_thumbnail, description, status, notes_top, notes_heart, notes_base, rating, tags, price, created_at FROM perfumes WHERE status = $1 ORDER BY created_at DESC`
-    : `SELECT id, name, brand, photo_thumbnail, description, status, notes_top, notes_heart, notes_base, rating, tags, price, created_at FROM perfumes ORDER BY created_at DESC`;
+    ? `SELECT id, name, brand, photo_thumbnail, pyramid_thumbnail, description, status, notes_top, notes_heart, notes_base, rating, tags, price, created_at FROM perfumes WHERE status = $1 ORDER BY created_at DESC`
+    : `SELECT id, name, brand, photo_thumbnail, pyramid_thumbnail, description, status, notes_top, notes_heart, notes_base, rating, tags, price, created_at FROM perfumes ORDER BY created_at DESC`;
   const res = status ? await pool.query(sql, [status]) : await pool.query(sql);
   return res.rows;
 }
@@ -43,10 +45,11 @@ export async function createPerfume(
 ): Promise<Perfume> {
   await init();
   const res = await pool.query(
-    `INSERT INTO perfumes (name, brand, photo, photo_thumbnail, description, status, notes_top, notes_heart, notes_base, rating, tags, price, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
+    `INSERT INTO perfumes (name, brand, photo, photo_thumbnail, pyramid_image, pyramid_thumbnail, description, status, notes_top, notes_heart, notes_base, rating, tags, price, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`,
     [
       data.name, data.brand ?? null, data.photo ?? null, data.photo_thumbnail ?? null,
+      data.pyramid_image ?? null, data.pyramid_thumbnail ?? null,
       data.description ?? null, data.status ?? "owned",
       data.notes_top ?? null, data.notes_heart ?? null, data.notes_base ?? null,
       data.rating ?? null, data.tags ?? null, data.price ?? null, localISOString(),
