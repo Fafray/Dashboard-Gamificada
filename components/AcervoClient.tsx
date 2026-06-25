@@ -227,7 +227,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhuma fragrância nessa coleção ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 20 }}>
           {filtered.map((p) => (
             <article key={p.id} onClick={() => openEdit(p)} style={{
               borderRadius: 12, overflow: "hidden",
@@ -241,7 +241,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
               onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(45,62,51,.10)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
             >
               {/* Photo */}
-              <div style={{ aspectRatio: "4/5", position: "relative", overflow: "hidden", background: SC }}>
+              <div style={{ aspectRatio: "3/4", position: "relative", overflow: "hidden", background: SC }}>
                 {p.photo_thumbnail ? (
                   <img src={p.photo_thumbnail} alt={p.name} style={{
                     width: "100%", height: "100%", objectFit: "cover",
@@ -290,7 +290,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
 
           {/* "+ Adicionar" card */}
           <button onClick={openAdd} style={{
-            aspectRatio: "1", borderRadius: 12, border: `2px dashed ${OUTLINE}`,
+            aspectRatio: "3/4", borderRadius: 12, border: `2px dashed ${OUTLINE}`,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
             background: "none", cursor: "pointer",
             transition: "border-color .2s, background .2s",
@@ -426,7 +426,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                         position: "relative", borderRadius: 8, overflow: "hidden",
                         border: `2px dashed ${pyramidPreview ? "transparent" : OUTLINE}`,
                         background: pyramidPreview ? "transparent" : CARD,
-                        aspectRatio: "16/7",
+                        height: 160,
                         cursor: pyramidPreview ? "default" : "pointer",
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
                         transition: "border-color .2s",

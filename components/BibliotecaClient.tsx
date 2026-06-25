@@ -190,22 +190,22 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
         }}>+ Catalogar</button>
       </div>
 
-      {/* Filter tabs — underlined */}
-      <div style={{ display: "flex", gap: 32, borderBottom: `1px solid ${OUTLINE}`, marginBottom: 32 }}>
+      {/* Filter pills */}
+      <div style={{ display: "flex", gap: 12, marginBottom: 32, paddingBottom: 24, borderBottom: `1px solid ${OUTLINE}` }}>
         {TABS.map((t) => {
           const active = tab === t.key;
           const count = books.filter(b => b.status === t.key).length;
           return (
             <button key={t.key} onClick={() => setTab(t.key)} style={{
-              padding: "0 0 14px", background: "none", border: "none",
-              marginBottom: -1, cursor: "pointer",
-              fontFamily: LABEL, fontSize: 11, fontWeight: active ? 700 : 500,
-              letterSpacing: ".08em", textTransform: "uppercase",
-              color: active ? PRIMARY : INK2,
-              borderBottom: `2px solid ${active ? PRIMARY : "transparent"}`,
-              transition: "color .15s, border-color .15s",
+              padding: "8px 24px", borderRadius: 999, cursor: "pointer",
+              fontFamily: LABEL, fontSize: 11, fontWeight: 700,
+              letterSpacing: ".1em", textTransform: "uppercase",
+              background: active ? PRIMARY : "transparent",
+              color: active ? "#fff" : PRIMARY,
+              border: active ? `1px solid ${PRIMARY}` : `1px solid ${PRIMARY}`,
+              transition: "all .15s",
             }}>
-              {t.label}<span style={{ color: OUTLINE, marginLeft: 6, fontWeight: 400 }}>{count}</span>
+              {t.label}<span style={{ marginLeft: 6, fontWeight: 400, opacity: .6 }}>{count}</span>
             </button>
           );
         })}
@@ -218,22 +218,21 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhum livro nessa prateleira ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 24 }}>
           {filtered.map((b) => {
             const pct = b.total_pages ? Math.min(100, Math.round((b.current_page / b.total_pages) * 100)) : 0;
             return (
               <article key={b.id} onClick={() => openEdit(b)} style={{ cursor: "pointer", display: "flex", flexDirection: "column" }}>
                 {/* Cover */}
                 <div style={{
-                  aspectRatio: "3/4", borderRadius: 6, overflow: "hidden",
-                  marginBottom: 14, background: SC,
-                  boxShadow: "0 4px 14px rgba(45,62,51,.12)",
-                  border: `1px solid rgba(45,62,51,.08)`,
+                  aspectRatio: "2/3", borderRadius: 4, overflow: "hidden",
+                  marginBottom: 12, background: SC,
+                  boxShadow: "0 8px 20px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06)",
                   transition: "box-shadow .3s, transform .3s",
                   position: "relative",
                 }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 14px 28px rgba(45,62,51,.18)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(45,62,51,.12)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 18px 36px rgba(0,0,0,.16)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 8px 20px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
                 >
                   {b.cover_thumbnail ? (
                     <img src={b.cover_thumbnail} alt={b.title} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
@@ -252,11 +251,14 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                 {b.author && <p style={{ fontFamily: BODY, fontSize: 13, fontStyle: "italic", color: INK2, margin: "4px 0 0" }}>{b.author}</p>}
 
                 {b.status === "reading" && (
-                  <div style={{ marginTop: 10 }}>
-                    <div style={{ height: 2, background: `${PRIMARY}1a`, borderRadius: 999 }}>
+                  <div style={{ marginTop: 12, paddingTop: 4 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 700, color: PRIMARY }}>{pct}%</span>
+                      <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 500, color: INK2, textTransform: "uppercase", letterSpacing: ".08em", opacity: .7 }}>Lendo</span>
+                    </div>
+                    <div style={{ height: 4, background: `${PRIMARY}18`, borderRadius: 999, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: PRIMARY, borderRadius: 999 }} />
                     </div>
-                    <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, color: PRIMARY, letterSpacing: ".08em", textTransform: "uppercase", marginTop: 4, display: "block" }}>{pct}%</span>
                   </div>
                 )}
                 {b.status === "read" && (
@@ -276,7 +278,7 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
           {/* "+ Catalogar" card */}
           <button onClick={openAdd} style={{ display: "flex", flexDirection: "column", background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}>
             <div style={{
-              aspectRatio: "3/4", borderRadius: 6, width: "100%",
+              aspectRatio: "2/3", borderRadius: 4, width: "100%",
               border: `2px dashed ${OUTLINE}`,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
               background: `${SC}55`, transition: "background .2s, border-color .2s",
@@ -326,8 +328,8 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   {/* Cover upload */}
                   <label style={{ cursor: "pointer", display: "block" }}>
                     <div onClick={() => fileRef.current?.click()} style={{
-                      aspectRatio: "3/4", borderRadius: 6, overflow: "hidden",
-                      maxHeight: 280,
+                      aspectRatio: "2/3", borderRadius: 6, overflow: "hidden",
+                      maxHeight: 300,
                       border: `2px dashed ${OUTLINE}`,
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
                       background: CARD, position: "relative", transition: "border-color .2s",
