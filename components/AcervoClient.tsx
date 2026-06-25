@@ -112,15 +112,15 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   }
 
   async function handleImage(file: File) {
-    const full = await compressImage(file, 1200, 0.9);
-    const thumb = await compressImage(file, 600, 0.88);
+    const full = await compressImage(file, 1600, 0.92);
+    const thumb = await compressImage(file, 900, 0.90);
     setForm((f) => ({ ...f, photo: full, photo_thumbnail: thumb }));
     setPreview(thumb);
   }
 
   async function handlePyramidImage(file: File) {
-    const full = await compressImage(file, 1200, 0.9);
-    const thumb = await compressImage(file, 600, 0.88);
+    const full = await compressImage(file, 1600, 0.92);
+    const thumb = await compressImage(file, 900, 0.90);
     setForm((f) => ({ ...f, pyramid_image: full, pyramid_thumbnail: thumb }));
     setPyramidPreview(thumb);
   }

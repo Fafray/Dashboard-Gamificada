@@ -15,7 +15,7 @@ export async function compressImage(
         canvas.width = w;
         canvas.height = h;
         canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", quality));
+        resolve(canvas.toDataURL("image/webp", quality));
       };
       img.onerror = reject;
       img.src = e.target!.result as string;
