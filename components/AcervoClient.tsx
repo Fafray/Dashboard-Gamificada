@@ -227,7 +227,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhuma fragrância nessa coleção ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 24 }}>
           {filtered.map((p) => (
             <article key={p.id} onClick={() => openEdit(p)} style={{
               borderRadius: 12, overflow: "hidden",
