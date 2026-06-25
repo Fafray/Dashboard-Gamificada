@@ -446,15 +446,10 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
                 {activity.target_unit}
               </span>
               <button
+                className="btn-checkin"
                 onClick={handleAccumulate}
                 disabled={loading}
-                style={{
-                  flex: 1, padding: "7px 12px", borderRadius: "8px",
-                  background: "var(--accent-teal)", color: "#04121c",
-                  fontSize: "12px", fontWeight: 700, cursor: "pointer",
-                  border: "none", letterSpacing: ".05em",
-                  opacity: loading ? 0.6 : 1,
-                }}
+                style={{ flex: 1, cursor: "pointer", opacity: loading ? 0.6 : 1 }}
               >
                 {loading ? "..." : "+ Adicionar"}
               </button>
