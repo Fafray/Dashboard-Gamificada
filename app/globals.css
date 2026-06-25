@@ -966,46 +966,49 @@ a { color: var(--accent-blue); text-decoration: none; }
 
 /* Botão principal check-in */
 .neo-page .btn-checkin {
-  height: 28px;
-  background: rgba(99,102,241,0.12);
-  border: 1px solid rgba(99,102,241,0.25);
-  color: #6366f1;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .03em;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.06), -1px -1px 3px rgba(255,255,255,0.7);
-  font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif;
+  height: 28px !important;
+  min-height: unset !important;
+  padding: 0 12px !important;
+  background: rgba(99,102,241,0.12) !important;
+  border: 1px solid rgba(99,102,241,0.25) !important;
+  color: #6366f1 !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .03em !important;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.06), -1px -1px 3px rgba(255,255,255,0.7) !important;
+  font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif !important;
 }
 .neo-page .btn-checkin:hover:not(:disabled) {
-  background: rgba(99,102,241,0.2);
-  border-color: rgba(99,102,241,0.4);
-  color: #5558e8;
-  box-shadow: 1px 1px 3px rgba(0,0,0,0.05), -1px -1px 3px rgba(255,255,255,0.6);
+  background: rgba(99,102,241,0.2) !important;
+  border-color: rgba(99,102,241,0.4) !important;
+  color: #5558e8 !important;
 }
 .neo-page .act.done .btn-checkin {
-  background: #e8eaf0;
-  border: none;
-  color: #888a99;
-  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.06), inset -2px -2px 4px rgba(255,255,255,0.6);
+  background: #e8eaf0 !important;
+  border: none !important;
+  color: #888a99 !important;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.06), inset -2px -2px 4px rgba(255,255,255,0.6) !important;
 }
-.neo-page .btn-checkin:disabled { opacity: .6; }
+.neo-page .btn-checkin:disabled { opacity: .6 !important; }
 
 /* Undo */
 .neo-page .btn-undo {
-  width: 28px;
-  height: 28px;
-  background: #e8eaf0;
-  border: none;
-  color: #888a99;
-  border-radius: 999px;
-  font-size: 13px;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.08), -1px -1px 3px rgba(255,255,255,0.7);
+  width: 28px !important;
+  height: 28px !important;
+  min-height: unset !important;
+  min-width: unset !important;
+  padding: 0 !important;
+  background: #e8eaf0 !important;
+  border: none !important;
+  color: #888a99 !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.08), -1px -1px 3px rgba(255,255,255,0.7) !important;
 }
 .neo-page .btn-undo:hover {
-  color: #ef4444;
-  border-color: transparent;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.08), -2px -2px 5px rgba(255,255,255,0.6);
+  color: #ef4444 !important;
+  border-color: transparent !important;
 }
 
 /* Progress bar */
