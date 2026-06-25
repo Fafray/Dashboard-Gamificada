@@ -245,8 +245,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                 {p.photo_thumbnail ? (
                   <img src={p.photo_thumbnail} alt={p.name} style={{
                     width: "100%", height: "100%", objectFit: "cover",
-                    transition: "transform .5s",
-                    filter: p.status === "wishlist" ? "grayscale(50%)" : "brightness(1.08)",
+                    filter: p.status === "wishlist" ? "grayscale(50%)" : undefined,
                   }} />
                 ) : (
                   <div style={{
@@ -254,7 +253,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                     background: `linear-gradient(145deg, ${SC}, #e2d8c8)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontFamily: DISPLAY, fontSize: 40, fontWeight: 600, color: `${SECONDARY}55`,
-                    filter: p.status === "wishlist" ? "grayscale(50%)" : "brightness(1.08)",
+                    filter: p.status === "wishlist" ? "grayscale(50%)" : undefined,
                   }}>{p.name[0]}</div>
                 )}
                 {/* Wishlist overlay */}
