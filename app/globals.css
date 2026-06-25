@@ -1,15 +1,5 @@
 @import "tailwindcss";
 
-/* === DIAGNÓSTICO TEMPORÁRIO — REMOVER APÓS TESTE === */
-*, *::before, *::after {
-  transform: none !important;
-  filter: none !important;
-  backdrop-filter: none !important;
-  will-change: auto !important;
-  perspective: none !important;
-}
-html, body, #root { zoom: normal !important; overflow: visible !important; }
-/* === FIM DIAGNÓSTICO === */
 
 /* =========================================================
    Design Tokens — Sistema / Solo Leveling  (revisado)
