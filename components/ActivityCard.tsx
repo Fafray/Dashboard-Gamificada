@@ -347,18 +347,26 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
           </div>
         </div>
 
-        {/* Progresso compacto — incremental e nx_week não concluídos */}
-        {showCompactProgress && (
-          <div style={{ marginTop: 5 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#5a7da3", marginBottom: 3, lineHeight: 1 }}>
-              <span>{compactLabel}</span>
-              <span>{compactPct}%</span>
-            </div>
-            <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${compactPct}%`, borderRadius: 2, background: "var(--cat-color)", transition: "width 0.3s ease" }} />
-            </div>
+        {/* Área de progresso — sempre presente, mesma altura em todos os cards */}
+        <div style={{ marginTop: 5 }}>
+          <div style={{
+            height: 10, display: "flex", alignItems: "center",
+            justifyContent: "space-between", fontSize: 10, marginBottom: 3,
+            color: showCompactProgress ? "#5a7da3" : "transparent",
+          }}>
+            {showCompactProgress && (
+              <>
+                <span>{compactLabel}</span>
+                <span>{compactPct}%</span>
+              </>
+            )}
           </div>
-        )}
+          <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+            {showCompactProgress && (
+              <div style={{ height: "100%", width: `${compactPct}%`, borderRadius: 2, background: "var(--cat-color)", transition: "width 0.3s ease" }} />
+            )}
+          </div>
+        </div>
 
         <div className="act-compact-foot" onClick={(e) => e.stopPropagation()}>
           {isDone ? (
