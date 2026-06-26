@@ -28,6 +28,7 @@ export async function POST(req: Request) {
     rating: data.rating ? Number(data.rating) : null,
     tags: data.tags ?? null,
     price: data.price ? Number(data.price) : null,
+    inspiration: data.inspiration ?? null,
   });
   return NextResponse.json(perfume);
 }

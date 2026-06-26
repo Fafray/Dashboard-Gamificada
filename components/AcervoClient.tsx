@@ -58,6 +58,7 @@ interface FormState {
   rating: number | null;
   tags: string;
   price: string;
+  inspiration: string;
   photo: string | null;
   photo_thumbnail: string | null;
   pyramid_image: string | null;
@@ -67,7 +68,7 @@ interface FormState {
 const EMPTY: FormState = {
   name: "", brand: "", status: "owned",
   description: "", notes_top: "", notes_heart: "", notes_base: "",
-  rating: null, tags: "", price: "",
+  rating: null, tags: "", price: "", inspiration: "",
   photo: null, photo_thumbnail: null,
   pyramid_image: null, pyramid_thumbnail: null,
 };
@@ -116,6 +117,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
       description: p.description ?? "",
       notes_top: p.notes_top ?? "", notes_heart: p.notes_heart ?? "", notes_base: p.notes_base ?? "",
       rating: p.rating, tags: p.tags ?? "", price: p.price?.toString() ?? "",
+      inspiration: p.inspiration ?? "",
       photo: null, photo_thumbnail: p.photo_thumbnail ?? null,
       pyramid_image: null, pyramid_thumbnail: p.pyramid_thumbnail ?? null,
     });
@@ -293,9 +295,14 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
               {/* Info */}
               <div style={{ padding: "14px 14px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
                 <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 700, color: SECONDARY, letterSpacing: ".25em", textTransform: "uppercase", marginBottom: 4 }}>{p.brand}</span>
-                <h3 style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 600, color: INK, margin: 0, lineHeight: 1.15, flex: 1 }}>{p.name}</h3>
+                <h3 style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 600, color: INK, margin: 0, lineHeight: 1.15 }}>{p.name}</h3>
+                {p.inspiration && (
+                  <span style={{ fontFamily: LABEL, fontSize: 10, color: INK2, marginTop: 5, display: "block", fontStyle: "italic", opacity: .75 }}>
+                    ≈ {p.inspiration}
+                  </span>
+                )}
                 {p.rating != null && (
-                  <div style={{ marginTop: 10 }}><Stars rating={p.rating} /></div>
+                  <div style={{ marginTop: 8, flex: 1, display: "flex", alignItems: "flex-end" }}><Stars rating={p.rating} /></div>
                 )}
               </div>
             </article>
@@ -511,6 +518,14 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                       <input type="number" min="0" step="0.01" value={form.price} placeholder="0,00" style={inp}
                         onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />
                     </div>
+                  </div>
+
+                  {/* Inspiração / Dupe */}
+                  <div>
+                    <span style={lbl}>Inspiração / dupe de</span>
+                    <input type="text" value={form.inspiration} placeholder="Ex: Ambassador de Mont Blanc"
+                      style={inp}
+                      onChange={(e) => setForm((f) => ({ ...f, inspiration: e.target.value }))} />
                   </div>
 
                   {/* Impressões */}

@@ -191,6 +191,7 @@ export function init(): Promise<void> {
     `);
     await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS pyramid_image     TEXT`);
     await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS pyramid_thumbnail TEXT`);
+    await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS inspiration       TEXT`);
   })();
   return schemaReady;
 }
