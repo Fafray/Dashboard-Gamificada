@@ -284,8 +284,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
       ref={cardRef}
       className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}`}
       style={{
-        ...(isBonusMission && !isDone ? { border: "1px solid rgba(239,165,39,.5)", boxShadow: "0 0 16px rgba(239,165,39,.08)" } : {}),
-        ...(categoriaCor ? { borderTop: `3px solid ${categoriaCor}` } : {}),
+        ...(isBonusMission && !isDone ? { boxShadow: "6px 6px 14px rgba(239,165,39,0.14), -6px -6px 14px rgba(255,255,255,0.65)" } : {}),
       }}
     >
       <div className="pulse-ring" />
@@ -296,7 +295,16 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
 
       {/* Header */}
       <div className="act-head">
-        <div className="act-emoji" style={{ borderColor: isDone ? "rgba(47,224,166,.4)" : undefined }}>
+        <div
+          className="act-emoji"
+          style={{
+            background: isDone
+              ? "rgba(16,185,129,0.15)"
+              : categoriaCor
+              ? `${categoriaCor}1a`
+              : undefined,
+          }}
+        >
           {activity.emoji || "⚡"}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>

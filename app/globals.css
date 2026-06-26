@@ -925,23 +925,23 @@ a { color: var(--accent-blue); text-decoration: none; }
 
 /* Cards */
 .neo-page .act {
-  background: #e8eaf0;
-  border: none;
-  border-radius: 1.5rem;
-  box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6);
+  background: #e8eaf0 !important;
+  border: none !important;
+  border-top: none !important;
+  outline: none !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 6px 6px 12px rgba(0,0,0,0.08), -6px -6px 12px rgba(255,255,255,0.6) !important;
 }
 .neo-page .act:hover {
-  transform: translateY(-2px);
-  background: #e8eaf0;
-  border-color: transparent;
-  box-shadow: 8px 8px 16px rgba(0,0,0,0.1), -8px -8px 16px rgba(255,255,255,0.75);
+  transform: translateY(-2px) !important;
+  box-shadow: 8px 8px 16px rgba(0,0,0,0.1), -8px -8px 16px rgba(255,255,255,0.75) !important;
 }
 .neo-page .act.done {
-  background: #e8eaf0;
-  border: none;
-  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5);
+  background: #e8eaf0 !important;
+  border: none !important;
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.06), inset -4px -4px 8px rgba(255,255,255,0.5) !important;
 }
-.neo-page .act.done::after { display: none; }
+.neo-page .act.done::after { display: none !important; }
 
 /* Emoji */
 .neo-page .act-emoji {
@@ -968,29 +968,29 @@ a { color: var(--accent-blue); text-decoration: none; }
 .neo-page .btn-checkin {
   height: 28px !important;
   min-height: unset !important;
-  padding: 0 12px !important;
-  background: rgba(99,102,241,0.12) !important;
-  border: 1px solid rgba(99,102,241,0.25) !important;
-  color: #6366f1 !important;
+  padding: 0 14px !important;
+  background: #6366f1 !important;
+  border: none !important;
+  color: #fff !important;
   border-radius: 999px !important;
   font-size: 11px !important;
-  font-weight: 600 !important;
-  letter-spacing: .03em !important;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.06), -1px -1px 3px rgba(255,255,255,0.7) !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  box-shadow: 3px 3px 8px rgba(99,102,241,0.3), -1px -1px 4px rgba(255,255,255,0.5) !important;
   font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif !important;
 }
 .neo-page .btn-checkin:hover:not(:disabled) {
-  background: rgba(99,102,241,0.2) !important;
-  border-color: rgba(99,102,241,0.4) !important;
-  color: #5558e8 !important;
+  background: #5558e8 !important;
+  box-shadow: 2px 2px 6px rgba(99,102,241,0.25), -1px -1px 3px rgba(255,255,255,0.4) !important;
 }
 .neo-page .act.done .btn-checkin {
   background: #e8eaf0 !important;
   border: none !important;
-  color: #888a99 !important;
-  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.06), inset -2px -2px 4px rgba(255,255,255,0.6) !important;
+  color: #10b981 !important;
+  font-weight: 600 !important;
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.07), inset -2px -2px 5px rgba(255,255,255,0.6) !important;
 }
-.neo-page .btn-checkin:disabled { opacity: .6 !important; }
+.neo-page .btn-checkin:disabled { opacity: .65 !important; }
 
 /* Undo */
 .neo-page .btn-undo {
@@ -1004,22 +1004,24 @@ a { color: var(--accent-blue); text-decoration: none; }
   color: #888a99 !important;
   border-radius: 999px !important;
   font-size: 13px !important;
-  box-shadow: 2px 2px 5px rgba(0,0,0,0.08), -1px -1px 3px rgba(255,255,255,0.7) !important;
+  box-shadow: 2px 2px 6px rgba(0,0,0,0.09), -2px -2px 6px rgba(255,255,255,0.75) !important;
 }
 .neo-page .btn-undo:hover {
   color: #ef4444 !important;
-  border-color: transparent !important;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.07), -1px -1px 4px rgba(255,255,255,0.6) !important;
 }
 
-/* Progress bar */
+/* Progress bar — trilha afundada + fill sólido */
 .neo-page .hud-bar-track {
-  height: 5px;
-  background: #dce0ea;
-  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.7);
+  height: 8px !important;
+  background: #d8dce6 !important;
+  border-radius: 999px !important;
+  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.13), inset -1px -1px 4px rgba(255,255,255,0.65) !important;
+  margin-top: 6px !important;
 }
-.neo-page .hud-bar-fill.below { background: #6366f1; box-shadow: none; }
-.neo-page .hud-bar-fill.at    { background: #10b981; box-shadow: none; }
-.neo-page .hud-bar-fill.over  { background: #f59e0b; box-shadow: none; }
+.neo-page .hud-bar-fill.below { background: #6366f1 !important; box-shadow: none !important; }
+.neo-page .hud-bar-fill.at    { background: #10b981 !important; box-shadow: none !important; }
+.neo-page .hud-bar-fill.over  { background: #f59e0b !important; box-shadow: none !important; }
 
 /* HUD inputs no contexto neo */
 .neo-page .hud-input-row {
