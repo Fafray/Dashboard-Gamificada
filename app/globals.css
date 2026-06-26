@@ -4,85 +4,92 @@
 /* =========================================================
    Design Tokens — Sistema / Solo Leveling  (revisado)
    ========================================================= */
+/* ── Tema System / Solo Leveling — Dark (padrão) ── */
 :root {
-  --bg-base:        #050a14;
-  --bg-surface:     #0a111f;
-  --bg-card:        #0e1626;
-  --bg-card-hover:  #131d30;
-  --border:         #1b2c44;
-  --border-light:   #294060;
+  --bg-base:        #0a0612;
+  --bg-surface:     #1a0f2e;
+  --bg-card:        #120a1f;
+  --bg-card-hover:  #180f2a;
+  --border:         #3d2a5f;
+  --border-light:   #2d1f4a;
 
-  --accent-violet:        #1aa9d6;
-  --accent-violet-bright: #45cdf0;
-  --accent-blue:          #3aa9d4;
-  --accent-gold:          #ffce47;
-  --accent-green:         #25d99a;
-  --accent-red:           #f0556a;
-  --accent-pink:          #8b5cf6;
-  --accent-teal:          #2fd9c0;
+  --accent-violet:        #b388ff;
+  --accent-violet-bright: #c9a8ff;
+  --accent-blue:          #9c4dcc;
+  --accent-gold:          #ffb84d;
+  --accent-green:         #5dcaa5;
+  --accent-red:           #f87171;
+  --accent-pink:          #b388ff;
+  --accent-teal:          #b388ff;
 
-  --text-primary:   #d6e7fb;
-  --text-secondary: #86a6c8;
-  --text-muted:     #5f7a9c;
+  --text-primary:   #e0d0ff;
+  --text-secondary: #8a6db3;
+  --text-muted:     #5a4580;
 
-  --xp-bar-from: #1888c8;
-  --xp-bar-to:   #2fd9c0;
+  --xp-bar-from: #6d28d9;
+  --xp-bar-to:   #b388ff;
 
-  --heat-0: #0e1b2e;
-  --heat-1: #143a58;
-  --heat-2: #1a6a96;
-  --heat-3: #1aa9d6;
-  --heat-4: #45cdf0;
+  --heat-0: #1a0f2e;
+  --heat-1: #3d1f6e;
+  --heat-2: #6d28d9;
+  --heat-3: #9c5cf6;
+  --heat-4: #b388ff;
 
-  --glow-violet: 0 0 16px rgba(26,169,214,.35);
-  --glow-gold:   0 0 12px rgba(255,206,71,.45);
-  --glow-green:  0 0 14px rgba(37,217,154,.40);
-  --glow-teal:   0 0 16px rgba(47,217,192,.35);
+  --glow-violet: 0 0 12px rgba(179,136,255,0.45);
+  --glow-gold:   0 0 12px rgba(255,184,77,0.45);
+  --glow-green:  0 0 12px rgba(93,202,165,0.40);
+  --glow-teal:   0 0 12px rgba(179,136,255,0.35);
 
-  --shadow-card: 0 1px 0 rgba(0,180,255,.05) inset, 0 12px 32px -16px rgba(0,0,0,.95);
+  --shadow-card: 0 0 12px rgba(139,92,246,0.2);
 
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 18px;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 12px;
 }
 
+/* ── Tema claro (toggle Alternar Tema) ── */
 [data-theme="light"] {
-  --bg-base:        #eef2f9;
-  --bg-surface:     #e4eaf5;
-  --bg-card:        #f4f7fd;
-  --bg-card-hover:  #edf1fa;
-  --border:         #c4d4e8;
-  --border-light:   #d8e4f0;
+  --bg-base:        #f5f0ff;
+  --bg-surface:     #ede6ff;
+  --bg-card:        #faf7ff;
+  --bg-card-hover:  #f2ebff;
+  --border:         #c4a8f0;
+  --border-light:   #d8c8f8;
 
-  --accent-violet:        #0078a8;
-  --accent-violet-bright: #0096c7;
-  --accent-blue:          #2196c4;
-  --accent-gold:          #b8870a;
-  --accent-green:         #00a06a;
-  --accent-red:           #d4182e;
+  --accent-violet:        #7c3aed;
+  --accent-violet-bright: #9f67f5;
+  --accent-blue:          #6d28d9;
+  --accent-gold:          #d97706;
+  --accent-green:         #059669;
+  --accent-red:           #dc2626;
   --accent-pink:          #7c3aed;
-  --accent-teal:          #009379;
+  --accent-teal:          #7c3aed;
 
-  --text-primary:   #0a1a2e;
-  --text-secondary: #2a4a6e;
-  --text-muted:     #4f6e8c;
+  --text-primary:   #1e0a3c;
+  --text-secondary: #5b3a8a;
+  --text-muted:     #8b6daa;
 
-  --xp-bar-from: #0078a8;
-  --xp-bar-to:   #009379;
+  --xp-bar-from: #6d28d9;
+  --xp-bar-to:   #9f67f5;
 
-  --heat-0: #dde8f4;
-  --heat-1: #a8c8e4;
-  --heat-2: #4a98c8;
-  --heat-3: #0078a8;
-  --heat-4: #005880;
+  --heat-0: #ede6ff;
+  --heat-1: #c4a8f0;
+  --heat-2: #9f67f5;
+  --heat-3: #7c3aed;
+  --heat-4: #5b21b6;
 
-  --glow-violet: 0 0 14px rgba(0,120,168,.22);
-  --glow-gold:   0 0 10px rgba(184,135,10,.3);
-  --glow-green:  0 0 12px rgba(0,160,106,.22);
-  --glow-teal:   0 0 12px rgba(0,147,121,.22);
+  --glow-violet: 0 0 12px rgba(124,58,237,.25);
+  --glow-gold:   0 0 10px rgba(217,119,6,.25);
+  --glow-green:  0 0 10px rgba(5,150,105,.22);
+  --glow-teal:   0 0 10px rgba(124,58,237,.2);
 
-  --shadow-card: 0 1px 0 rgba(255,255,255,.8) inset, 0 2px 12px rgba(0,80,160,.08);
+  --shadow-card: 0 2px 12px rgba(109,40,217,0.12);
+
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-xl: 12px;
 }
 
 @theme inline {
@@ -139,26 +146,26 @@ button { font-family: inherit; cursor: pointer; }
 .aurora-bg {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(55% 40% at 15% -5%, rgba(0,110,220,.12), transparent 65%),
-    radial-gradient(50% 45% at 85% -8%, rgba(60,0,180,.08), transparent 65%),
-    radial-gradient(70% 55% at 50% 100%, rgba(0,100,180,.07), transparent 70%);
+    radial-gradient(55% 40% at 15% -5%, rgba(109,40,217,.18), transparent 65%),
+    radial-gradient(50% 45% at 85% -8%, rgba(179,136,255,.08), transparent 65%),
+    radial-gradient(70% 55% at 50% 100%, rgba(60,0,120,.12), transparent 70%);
 }
 
 .grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  background-image: radial-gradient(circle, rgba(0,168,232,.035) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(179,136,255,.025) 1px, transparent 1px);
   background-size: 40px 40px;
   opacity: 1; mix-blend-mode: normal;
 }
 
 [data-theme="light"] .aurora-bg {
   background:
-    radial-gradient(55% 40% at 15% -5%, rgba(0,120,200,.08), transparent 65%),
-    radial-gradient(50% 45% at 85% -8%, rgba(60,0,180,.05), transparent 65%);
+    radial-gradient(55% 40% at 15% -5%, rgba(124,58,237,.1), transparent 65%),
+    radial-gradient(50% 45% at 85% -8%, rgba(109,40,217,.06), transparent 65%);
 }
 
 [data-theme="light"] .grain {
-  background-image: radial-gradient(circle, rgba(0,100,180,.03) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(124,58,237,.025) 1px, transparent 1px);
 }
 
 .grain::after { content: none; }
@@ -907,34 +914,16 @@ a { color: var(--accent-blue); text-decoration: none; }
    (scoped to .neo-page — apenas DashboardClient)
    ========================================================= */
 .neo-page {
-  background: #0a0612;
+  background: var(--bg-base);
   min-height: 100%;
-  /* Tokens System / Solo Leveling */
-  --text-primary:         #e0d0ff;
-  --text-secondary:       #8a6db3;
-  --text-muted:           #5a4580;
-  --border:               #3d2a5f;
-  --border-light:         #2d1f4a;
-  --bg-surface:           #1a0f2e;
-  --bg-base:              #0a0612;
-  --bg-card:              #120a1f;
-  --bg-card-hover:        #180f2a;
-  --shadow-card:          0 0 12px rgba(139,92,246,0.2);
-  --accent-teal:          #b388ff;
-  --accent-violet:        #b388ff;
-  --accent-violet-bright: #b388ff;
-  --accent-gold:          #ffb84d;
-  --accent-green:         #5dcaa5;
-  --accent-red:           #f87171;
-  --glow-violet:          0 0 10px rgba(179,136,255,0.4);
 }
 
 /* ── Cards ── */
 .neo-page .act {
-  background: #120a1f !important;
-  border: 1px solid #3d2a5f !important;
-  border-radius: 8px !important;
-  box-shadow: 0 0 12px rgba(139,92,246,0.15) !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-card) !important;
   position: relative !important;
   overflow: hidden !important;
 }
@@ -945,52 +934,52 @@ a { color: var(--accent-blue); text-decoration: none; }
   position: absolute !important;
   top: 0 !important; left: 0 !important; right: 0 !important;
   height: 2px !important;
-  background: linear-gradient(90deg, transparent, #b388ff, transparent) !important;
+  background: linear-gradient(90deg, transparent, var(--accent-violet), transparent) !important;
   pointer-events: none !important;
   z-index: 1 !important;
 }
 .neo-page .act:hover {
   transform: translateY(-1px) !important;
-  border-color: #6d28d9 !important;
+  border-color: var(--accent-blue) !important;
   box-shadow: 0 0 22px rgba(139,92,246,0.3), 0 4px 24px rgba(0,0,0,0.5) !important;
 }
 .neo-page .act.done {
-  border-color: #1e3d30 !important;
+  border-color: var(--border-light) !important;
   box-shadow: 0 0 10px rgba(93,202,165,0.1) !important;
 }
 .neo-page .act.done::before {
-  background: linear-gradient(90deg, transparent, #5dcaa5, transparent) !important;
+  background: linear-gradient(90deg, transparent, var(--accent-green), transparent) !important;
 }
 .neo-page .act.done::after { display: none !important; }
 
 /* ── Ícone ── */
 .neo-page .act-emoji {
-  background: #1a0f2e !important;
-  border: 1px solid #b388ff !important;
-  border-radius: 6px !important;
-  box-shadow: 0 0 8px rgba(179,136,255,0.4) !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--accent-violet) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: var(--glow-violet) !important;
 }
 .neo-page .act.done .act-emoji {
-  border-color: #5dcaa5 !important;
-  box-shadow: 0 0 8px rgba(93,202,165,0.3) !important;
+  border-color: var(--accent-green) !important;
+  box-shadow: var(--glow-green) !important;
 }
 
 /* ── Texto ── */
 .neo-page .act-name {
-  color: #e0d0ff !important;
+  color: var(--text-primary) !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
   font-size: 12px !important;
   font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif !important;
 }
 .neo-page .act-freq {
-  color: #8a6db3 !important;
+  color: var(--text-secondary) !important;
   text-transform: uppercase !important;
   letter-spacing: 1px !important;
   font-size: 9px !important;
 }
-.neo-page .freq-dot { background: #b388ff !important; }
-.neo-page .act-streak { color: #ffb84d !important; }
+.neo-page .freq-dot { background: var(--accent-violet) !important; }
+.neo-page .act-streak { color: var(--accent-gold) !important; }
 
 /* ── Botão check-in ── */
 .neo-page .btn-checkin {
@@ -999,8 +988,8 @@ a { color: var(--accent-blue); text-decoration: none; }
   padding: 0 14px !important;
   background: linear-gradient(90deg, #6d28d9, #8b5cf6) !important;
   border: none !important;
-  color: #e0d0ff !important;
-  border-radius: 4px !important;
+  color: var(--text-primary) !important;
+  border-radius: var(--r-sm) !important;
   font-size: 10px !important;
   font-weight: 700 !important;
   letter-spacing: .08em !important;
@@ -1009,13 +998,13 @@ a { color: var(--accent-blue); text-decoration: none; }
   font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif !important;
 }
 .neo-page .btn-checkin:hover:not(:disabled) {
-  background: linear-gradient(90deg, #7c3aed, #b388ff) !important;
-  box-shadow: 0 0 18px rgba(139,92,246,0.7) !important;
+  background: linear-gradient(90deg, #7c3aed, var(--accent-violet)) !important;
+  box-shadow: var(--glow-violet) !important;
 }
 .neo-page .act.done .btn-checkin {
   background: transparent !important;
-  border: 1px solid #1e3d30 !important;
-  color: #5dcaa5 !important;
+  border: 1px solid var(--border-light) !important;
+  color: var(--accent-green) !important;
   box-shadow: none !important;
   text-transform: uppercase !important;
 }
@@ -1027,14 +1016,14 @@ a { color: var(--accent-blue); text-decoration: none; }
   min-height: unset !important; min-width: unset !important;
   padding: 0 !important;
   background: transparent !important;
-  border: 1px solid #3d2a5f !important;
-  color: #5a4580 !important;
-  border-radius: 4px !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+  border-radius: var(--r-sm) !important;
   font-size: 13px !important;
   box-shadow: none !important;
 }
 .neo-page .btn-undo:hover {
-  color: #f87171 !important;
+  color: var(--accent-red) !important;
   border-color: rgba(248,113,113,0.4) !important;
   box-shadow: 0 0 8px rgba(248,113,113,0.2) !important;
 }
@@ -1042,37 +1031,37 @@ a { color: var(--accent-blue); text-decoration: none; }
 /* ── Barra de progresso ── */
 .neo-page .hud-bar-track {
   height: 6px !important;
-  background: #1a0f2e !important;
-  border: 1px solid #3d2a5f !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 999px !important;
   box-shadow: none !important;
   margin-top: 6px !important;
   overflow: hidden !important;
 }
 .neo-page .hud-bar-fill.below {
-  background: linear-gradient(90deg, #6d28d9, #b388ff) !important;
-  box-shadow: 0 0 8px rgba(179,136,255,0.6) !important;
+  background: linear-gradient(90deg, var(--xp-bar-from), var(--xp-bar-to)) !important;
+  box-shadow: var(--glow-violet) !important;
 }
 .neo-page .hud-bar-fill.at {
-  background: linear-gradient(90deg, #059669, #5dcaa5) !important;
-  box-shadow: 0 0 8px rgba(93,202,165,0.5) !important;
+  background: linear-gradient(90deg, #059669, var(--accent-green)) !important;
+  box-shadow: var(--glow-green) !important;
 }
 .neo-page .hud-bar-fill.over {
-  background: linear-gradient(90deg, #d97706, #ffb84d) !important;
-  box-shadow: 0 0 8px rgba(255,184,77,0.5) !important;
+  background: linear-gradient(90deg, #d97706, var(--accent-gold)) !important;
+  box-shadow: var(--glow-gold) !important;
 }
 
 /* ── HUD inputs ── */
 .neo-page .hud-input-row {
-  background: #1a0f2e !important;
-  border: 1px solid #3d2a5f !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
   box-shadow: none !important;
 }
 .neo-page .hud-input-row:focus-within {
-  border-color: #b388ff !important;
+  border-color: var(--accent-violet) !important;
   box-shadow: 0 0 0 2px rgba(179,136,255,0.2) !important;
 }
-.neo-page .hud-input-row input { color: #b388ff !important; }
+.neo-page .hud-input-row input { color: var(--accent-violet) !important; }
 
 @media (max-width: 767px) {
   .neo-page .btn-checkin { min-height: unset !important; height: 30px !important; font-size: 11px !important; }
