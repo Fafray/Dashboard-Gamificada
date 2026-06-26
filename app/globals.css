@@ -46,6 +46,70 @@
   --r-md: 6px;
   --r-lg: 8px;
   --r-xl: 12px;
+
+  /* ── Coleções — tema por padrão: dark System ── */
+  --col-bg:           #0a0612;
+  --col-surface:      #120a1f;
+  --col-surface-body: #0a0612;
+  --col-surface-ph:   #1a0f2e;
+  --col-card:         #140d22;
+  --col-ink:          #e0d0ff;
+  --col-ink2:         #8a6db3;
+  --col-secondary:    #8a6db3;
+  --col-border:       #2a1f3d;
+  --col-border2:      #3d2a5f;
+  --col-primary:      #b388ff;
+  --col-primary-a:    rgba(179,136,255,0.15);
+  --col-primary-a2:   rgba(179,136,255,0.14);
+  --col-primary-ring: rgba(179,136,255,0.35);
+  --col-faint1:       rgba(179,136,255,0.20);
+  --col-faint2:       rgba(179,136,255,0.27);
+  --col-faint3:       rgba(179,136,255,0.47);
+  --col-faint4:       rgba(179,136,255,0.04);
+  --col-glow-rest:    rgba(179,136,255,0.10);
+  --col-glow-hover:   rgba(179,136,255,0.20);
+  --col-star:         #ffb84d;
+  --col-star-empty:   #3d3450;
+  --col-progress:     #378add;
+  --col-progress-dim: rgba(55,138,221,0.13);
+  --col-btn-bg:       linear-gradient(90deg, #6d28d9, #8b5cf6);
+  --col-btn-text:     #e0d0ff;
+  --col-btn-glow:     rgba(109,40,217,0.40);
+  --col-btn-dis:      rgba(109,40,217,0.40);
+  --col-overlay:      rgba(18,10,31,.85);
+}
+
+/* ── Coleções — tema dourado/champanhe ── */
+.colecoes-page {
+  --col-bg:           #0d0b07;
+  --col-surface:      #1e180e;
+  --col-surface-body: #0d0b07;
+  --col-surface-ph:   #1e180e;
+  --col-card:         #17130c;
+  --col-ink:          #f0e6d2;
+  --col-ink2:         #a08a5a;
+  --col-secondary:    #a08a5a;
+  --col-border:       #3a2f1a;
+  --col-border2:      #4a3e28;
+  --col-primary:      #c6a050;
+  --col-primary-a:    rgba(198,160,80,0.15);
+  --col-primary-a2:   rgba(198,160,80,0.14);
+  --col-primary-ring: rgba(198,160,80,0.35);
+  --col-faint1:       rgba(198,160,80,0.20);
+  --col-faint2:       rgba(198,160,80,0.27);
+  --col-faint3:       rgba(198,160,80,0.47);
+  --col-faint4:       rgba(198,160,80,0.04);
+  --col-glow-rest:    rgba(198,160,80,0.10);
+  --col-glow-hover:   rgba(198,160,80,0.20);
+  --col-star:         #c6a050;
+  --col-star-empty:   #3a2f1a;
+  --col-progress:     #c6a050;
+  --col-progress-dim: rgba(198,160,80,0.13);
+  --col-btn-bg:       #c6a050;
+  --col-btn-text:     #1a140a;
+  --col-btn-glow:     rgba(198,160,80,0.40);
+  --col-btn-dis:      rgba(198,160,80,0.35);
+  --col-overlay:      rgba(23,19,12,.85);
 }
 
 /* ── Tema claro (toggle Alternar Tema) ── */

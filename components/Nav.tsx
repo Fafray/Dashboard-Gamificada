@@ -153,6 +153,18 @@ export function Nav() {
     );
   }
 
+  // Paleta dourada (Coleções) vs System (resto)
+  const isColecoes    = path.startsWith("/colecoes");
+  const navBg         = isColecoes ? "#0d0b07"               : "var(--bg-surface)";
+  const navBorder     = isColecoes ? "#3a2f1a"               : "var(--border)";
+  const navActive     = isColecoes ? "rgba(198,160,80,0.15)" : "var(--accent-violet)";
+  const navActiveTxt  = isColecoes ? "#c6a050"               : "#04121c";
+  const navMuted      = isColecoes ? "#a08a5a"               : "var(--text-muted)";
+  const navLogoTxt    = isColecoes ? "#c6a050"               : "var(--accent-violet-bright)";
+  const navActiveMob  = isColecoes ? "rgba(198,160,80,0.15)" : "rgba(0,240,192,.08)";
+  const navActiveTxtM = isColecoes ? "#c6a050"               : "var(--accent-teal)";
+  const navMutedMob   = isColecoes ? "#a08a5a"               : "var(--text-muted)";
+
   if (isMobile) {
     return (
       <>
@@ -161,9 +173,10 @@ export function Nav() {
         display: "flex", flexDirection: "row", alignItems: "center",
         justifyContent: "space-around",
         padding: "8px 4px env(safe-area-inset-bottom, 12px)",
-        background: "var(--bg-surface)",
-        borderTop: "1px solid var(--border)",
+        background: isColecoes ? "#0d0b07" : "var(--bg-surface)",
+        borderTop: `1px solid ${navBorder}`,
         boxShadow: "0 -4px 20px rgba(0,0,0,.3)",
+        transition: "background .3s, border-color .3s",
       }}>
         {links.map((l) => {
           const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
@@ -177,9 +190,9 @@ export function Nav() {
                 display: "flex", flexDirection: "column",
                 alignItems: "center", justifyContent: "center",
                 gap: "3px", padding: "6px 8px", borderRadius: "12px",
-                color: active ? "var(--accent-teal)" : "var(--text-muted)",
+                color: active ? navActiveTxtM : navMutedMob,
                 textDecoration: "none", minWidth: "52px",
-                background: active ? "rgba(0,240,192,.08)" : "transparent",
+                background: active ? navActiveMob : "transparent",
                 transition: "color .15s, background .15s",
               }}
             >
@@ -208,7 +221,7 @@ export function Nav() {
             alignItems: "center", justifyContent: "center",
             gap: "3px", padding: "6px 8px", borderRadius: "12px",
             background: "transparent", border: "none", cursor: "pointer",
-            color: "var(--text-muted)", minWidth: "52px",
+            color: navMutedMob, minWidth: "52px",
           }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -231,21 +244,22 @@ export function Nav() {
             onClick={(e) => e.stopPropagation()}
             style={{
               position: "absolute", bottom: 0, left: 0, right: 0,
-              background: "var(--bg-surface)",
+              background: isColecoes ? "#17130c" : "var(--bg-surface)",
               borderRadius: "20px 20px 0 0",
               padding: "16px 16px env(safe-area-inset-bottom, 20px)",
               boxShadow: "0 -8px 32px rgba(0,0,0,.4)",
+              borderTop: `1px solid ${navBorder}`,
             }}
           >
-            <div style={{ width: 36, height: 4, background: "var(--border)", borderRadius: 99, margin: "0 auto 16px" }} />
+            <div style={{ width: 36, height: 4, background: navBorder, borderRadius: 99, margin: "0 auto 16px" }} />
             {extraLinks.map((l) => {
               const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
               return (
                 <Link key={l.href} href={l.href} onClick={() => setDrawerOpen(false)} style={{
                   display: "flex", alignItems: "center", gap: 14,
                   padding: "12px 14px", borderRadius: 12,
-                  background: active ? "rgba(0,240,192,.08)" : "transparent",
-                  color: active ? "var(--accent-teal)" : "var(--text-primary)",
+                  background: active ? navActiveMob : "transparent",
+                  color: active ? navActiveTxtM : (isColecoes ? "#f0e6d2" : "var(--text-primary)"),
                   textDecoration: "none", marginBottom: 4,
                 }}>
                   {l.icon}
@@ -253,12 +267,12 @@ export function Nav() {
                 </Link>
               );
             })}
-            <div style={{ height: 1, background: "var(--border)", margin: "8px 0" }} />
+            <div style={{ height: 1, background: navBorder, margin: "8px 0" }} />
             <button onClick={() => { toggleTheme(); setDrawerOpen(false); }} style={{
               display: "flex", alignItems: "center", gap: 14,
               width: "100%", padding: "12px 14px", borderRadius: 12,
               background: "transparent", border: "none", cursor: "pointer",
-              color: "var(--text-primary)", marginBottom: 4,
+              color: isColecoes ? "#f0e6d2" : "var(--text-primary)", marginBottom: 4,
             }}>
               {theme === "dark" ? <SunIcon /> : <MoonIcon />}
               <span style={{ fontSize: 15, fontWeight: 600 }}>Alternar tema</span>
@@ -285,12 +299,14 @@ export function Nav() {
   }
 
   // Desktop — full-height left sidebar
+
   return (
     <nav style={{
       position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 50,
       width: 148,
-      background: "var(--bg-surface)", borderRight: "1px solid var(--border)",
+      background: navBg, borderRight: `1px solid ${navBorder}`,
       display: "flex", flexDirection: "column", padding: "18px 10px 18px", gap: 3,
+      transition: "background .3s, border-color .3s",
     }}>
       {/* Logo */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 8px", marginBottom: 20 }}>
@@ -306,9 +322,9 @@ export function Nav() {
           <div style={{
             fontFamily: "var(--font-space-grotesk), sans-serif",
             fontSize: 11.5, fontWeight: 700, letterSpacing: ".18em",
-            color: "var(--accent-violet-bright)", lineHeight: 1,
+            color: navLogoTxt, lineHeight: 1,
           }}>SISTEMA</div>
-          <div style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: ".1em", marginTop: 2, textTransform: "uppercase" }}>
+          <div style={{ fontSize: 9, color: navMuted, letterSpacing: ".1em", marginTop: 2, textTransform: "uppercase" }}>
             v2.0
           </div>
         </div>
@@ -323,8 +339,8 @@ export function Nav() {
             position: "relative",
             display: "flex", alignItems: "center", gap: 9,
             height: 40, padding: "0 10px", borderRadius: 10,
-            background: active ? "var(--accent-violet)" : "transparent",
-            color: active ? "#04121c" : "var(--text-muted)",
+            background: active ? navActive : "transparent",
+            color: active ? navActiveTxt : navMuted,
             textDecoration: "none", transition: "background .15s, color .15s",
           }}>
             <span style={{ flexShrink: 0, width: 18, textAlign: "center", lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -352,15 +368,15 @@ export function Nav() {
       })}
 
       {/* Divider + extra links */}
-      <div style={{ height: 1, background: "var(--border)", margin: "6px 0" }} />
+      <div style={{ height: 1, background: navBorder, margin: "6px 0" }} />
       {extraLinks.map((l) => {
         const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
         return (
           <Link key={l.href} href={l.href} style={{
             display: "flex", alignItems: "center", gap: 9,
             height: 40, padding: "0 10px", borderRadius: 10,
-            background: active ? "var(--accent-violet)" : "transparent",
-            color: active ? "#04121c" : "var(--text-muted)",
+            background: active ? navActive : "transparent",
+            color: active ? navActiveTxt : navMuted,
             textDecoration: "none", transition: "background .15s, color .15s",
           }}>
             <span style={{ flexShrink: 0, width: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -378,7 +394,7 @@ export function Nav() {
         display: "flex", alignItems: "center", gap: 9,
         height: 40, padding: "0 10px", borderRadius: 10,
         background: "transparent", border: "none", cursor: "pointer",
-        color: "var(--text-muted)", transition: "color .15s",
+        color: navMuted, transition: "color .15s",
       }}>
         <span style={{ flexShrink: 0, width: 18, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {theme === "dark" ? <SunIcon /> : <MoonIcon />}
@@ -394,7 +410,7 @@ export function Nav() {
           display: "flex", alignItems: "center", gap: 9,
           height: 36, padding: "0 10px", borderRadius: 10,
           background: "transparent", border: "none", cursor: "pointer",
-          color: "var(--text-muted)", transition: "color .15s",
+          color: navMuted, transition: "color .15s",
         }}>
           <span style={{ flexShrink: 0, width: 18, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -414,27 +430,28 @@ export function Nav() {
         <div style={{
           marginTop: "auto",
           padding: "12px", borderRadius: 10,
-          background: "var(--bg-card)", border: "1px solid var(--border)",
+          background: isColecoes ? "#17130c" : "var(--bg-card)",
+          border: `1px solid ${navBorder}`,
         }}>
           <div style={{
             fontFamily: "var(--font-space-grotesk), sans-serif",
-            fontSize: 11, fontWeight: 700, color: "var(--text-primary)", letterSpacing: ".08em",
+            fontSize: 11, fontWeight: 700, color: isColecoes ? "#f0e6d2" : "var(--text-primary)", letterSpacing: ".08em",
           }}>
             FABRICIO
           </div>
-          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 1 }}>
+          <div style={{ fontSize: 10, color: navMuted, marginTop: 1 }}>
             {playerStatus.rank} · LV.{playerStatus.level}
           </div>
-          <div style={{ height: 4, background: "var(--border)", borderRadius: 999, marginTop: 8, overflow: "hidden", position: "relative" }}>
+          <div style={{ height: 4, background: navBorder, borderRadius: 999, marginTop: 8, overflow: "hidden", position: "relative" }}>
             <div style={{
               position: "absolute", inset: 0,
               width: `${playerStatus.progress}%`,
-              background: "linear-gradient(90deg, #1888c8, var(--accent-teal))",
+              background: isColecoes ? "linear-gradient(90deg, #b08840, #c6a050)" : "linear-gradient(90deg, #1888c8, var(--accent-teal))",
               borderRadius: 999,
               transition: "width .6s ease",
             }} />
           </div>
-          <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4, textAlign: "right" }}>
+          <div style={{ fontSize: 10, color: navMuted, marginTop: 4, textAlign: "right" }}>
             {playerStatus.progress}%
           </div>
         </div>

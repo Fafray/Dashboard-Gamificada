@@ -8,16 +8,11 @@ import { AcervoClient } from "./AcervoClient";
 type BookRow    = Omit<Book,    "cover_image">;
 type PerfumeRow = Omit<Perfume, "photo" | "pyramid_image">;
 
-const S       = "#0a0612";
-const SC      = "#120a1f";
-const PRIMARY = "#b388ff";
-const INK2    = "#8a6db3";
-const OUTLINE = "#2a1f3d";
-const LABEL   = "var(--font-space-grotesk), var(--font-manrope), sans-serif";
+const LABEL = "var(--font-space-grotesk), var(--font-manrope), sans-serif";
 
 const TABS = [
-  { key: "livros",    label: "Livros"    },
-  { key: "perfumes",  label: "Perfumes"  },
+  { key: "livros",   label: "Livros"   },
+  { key: "perfumes", label: "Perfumes" },
 ] as const;
 
 type Tab = typeof TABS[number]["key"];
@@ -32,21 +27,20 @@ export function ColecoesClient({
   const [tab, setTab] = useState<Tab>("livros");
 
   return (
-    <div style={{ background: S, minHeight: "100vh" }}>
+    <div className="colecoes-page" style={{ background: "var(--col-bg)", minHeight: "100vh" }}>
       {/* Seletor principal — sticky no topo */}
       <div style={{
         position: "sticky", top: 0, zIndex: 20,
-        background: S,
-        borderBottom: `1px solid ${OUTLINE}`,
+        background: "var(--col-bg)",
+        borderBottom: "1px solid var(--col-border)",
         padding: "14px 52px",
-        display: "flex",
-        alignItems: "center",
+        display: "flex", alignItems: "center",
       }}>
         <div style={{
           display: "flex", alignItems: "center",
           padding: 4, borderRadius: 999,
-          border: `1px solid ${OUTLINE}`,
-          background: SC,
+          border: "1px solid var(--col-border)",
+          background: "var(--col-surface)",
           gap: 2,
         }}>
           {TABS.map((t) => {
@@ -56,18 +50,12 @@ export function ColecoesClient({
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 style={{
-                  padding: "9px 28px",
-                  borderRadius: 999,
-                  cursor: "pointer",
-                  border: "none",
-                  fontFamily: LABEL,
-                  fontSize: 11,
-                  fontWeight: active ? 700 : 500,
-                  letterSpacing: ".1em",
-                  textTransform: "uppercase",
-                  background: active ? "rgba(179,136,255,0.18)" : "transparent",
-                  color: active ? PRIMARY : INK2,
-                  boxShadow: active ? "inset 0 0 0 1px rgba(179,136,255,0.35)" : "none",
+                  padding: "9px 28px", borderRadius: 999, cursor: "pointer", border: "none",
+                  fontFamily: LABEL, fontSize: 11, fontWeight: active ? 700 : 500,
+                  letterSpacing: ".1em", textTransform: "uppercase",
+                  background: active ? "var(--col-primary-a)" : "transparent",
+                  color: active ? "var(--col-primary)" : "var(--col-ink2)",
+                  boxShadow: active ? "inset 0 0 0 1px var(--col-primary-ring)" : "none",
                   transition: "all .15s",
                 }}
               >
@@ -78,7 +66,7 @@ export function ColecoesClient({
         </div>
       </div>
 
-      {/* Conteúdo — troca sem re-montar (display:none preserva estado) */}
+      {/* Conteúdo — display:none preserva estado interno */}
       <div style={{ display: tab === "livros" ? "block" : "none" }}>
         <BibliotecaClient initialBooks={initialBooks} />
       </div>
