@@ -407,9 +407,9 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
       {/* Milestone strip */}
       {milestone && streak > 0 && !isNxWeek && (
         <div style={{
-          margin: "10px 0 0", padding: "6px 10px", borderRadius: "6px",
+          margin: "6px 0 0", padding: "4px 8px", borderRadius: "6px",
           background: "rgba(255,215,0,.08)", border: "1px solid rgba(255,215,0,.25)",
-          fontSize: "11px", color: "var(--accent-gold)", fontWeight: 700,
+          fontSize: "10px", color: "var(--accent-gold)", fontWeight: 700,
           letterSpacing: ".04em", fontFamily: "var(--font-space-grotesk), sans-serif",
         }}>
           {milestone.emoji} {milestone.name} · {streak} dias consecutivos

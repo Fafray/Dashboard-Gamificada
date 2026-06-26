@@ -1036,6 +1036,26 @@ a { color: var(--accent-blue); text-decoration: none; }
 .neo-page .hud-input-row input { color: #6366f1; }
 
 @media (max-width: 767px) {
-  .neo-page .btn-checkin { min-height: unset; height: 32px; font-size: 11px; }
-  .neo-page .btn-undo    { min-height: unset; min-width: unset; width: 32px; height: 32px; }
+  .neo-page .btn-checkin { min-height: unset !important; height: 30px !important; font-size: 11px !important; }
+  .neo-page .btn-undo    { min-height: unset !important; min-width: unset !important; width: 30px !important; height: 30px !important; }
 }
+
+/* Espaçamento compacto */
+.neo-page .act-grid { gap: 10px !important; }
+.neo-page .act {
+  padding: 10px 12px !important;
+  min-height: unset !important;
+}
+.neo-page .act-head { gap: 8px !important; }
+.neo-page .act-emoji {
+  width: 30px !important;
+  height: 30px !important;
+  font-size: 16px !important;
+}
+.neo-page .act-name { font-size: 13px !important; }
+.neo-page .act-freq { margin-top: 2px !important; font-size: 10px !important; }
+.neo-page .act-foot { margin-top: 8px !important; gap: 6px !important; }
+.neo-page .hud-input-wrap { margin-top: 6px !important; }
+.neo-page .hud-bar-track  { margin-top: 4px !important; }
+.neo-page .section { margin-top: 24px !important; }
+.neo-page .section-head { margin-bottom: 10px !important; }
