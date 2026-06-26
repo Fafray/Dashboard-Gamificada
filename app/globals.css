@@ -918,50 +918,46 @@ a { color: var(--accent-blue); text-decoration: none; }
   min-height: 100%;
 }
 
-/* ── Cards ── */
+/* ── Cards — cor de categoria via --cat-color / --cat-glow ── */
 .neo-page .act {
   background: var(--bg-card) !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--r-lg) !important;
-  box-shadow: var(--shadow-card) !important;
+  box-shadow: 0 0 14px var(--cat-glow, rgba(139,92,246,0.2)) !important;
   position: relative !important;
   overflow: hidden !important;
 }
-/* Linha luminosa no topo */
+/* Linha luminosa no topo — cor da categoria */
 .neo-page .act::before {
   content: '' !important;
   display: block !important;
   position: absolute !important;
   top: 0 !important; left: 0 !important; right: 0 !important;
   height: 2px !important;
-  background: linear-gradient(90deg, transparent, var(--accent-violet), transparent) !important;
+  background: linear-gradient(90deg, transparent, var(--cat-color, var(--accent-violet)), transparent) !important;
   pointer-events: none !important;
   z-index: 1 !important;
 }
 .neo-page .act:hover {
   transform: translateY(-1px) !important;
-  border-color: var(--accent-blue) !important;
-  box-shadow: 0 0 22px rgba(139,92,246,0.3), 0 4px 24px rgba(0,0,0,0.5) !important;
+  border-color: var(--cat-color, var(--accent-violet)) !important;
+  box-shadow: 0 0 22px var(--cat-glow, rgba(139,92,246,0.3)), 0 4px 24px rgba(0,0,0,0.5) !important;
 }
+/* Done: sobrescreve --cat-color para verde muted — distingue SAÚDE (verde vivo) de "feito" */
 .neo-page .act.done {
+  --cat-color: rgba(93,202,165,0.55) !important;
+  --cat-glow:  rgba(93,202,165,0.08) !important;
   border-color: var(--border-light) !important;
-  box-shadow: 0 0 10px rgba(93,202,165,0.1) !important;
-}
-.neo-page .act.done::before {
-  background: linear-gradient(90deg, transparent, var(--accent-green), transparent) !important;
+  box-shadow: 0 0 10px rgba(93,202,165,0.08) !important;
 }
 .neo-page .act.done::after { display: none !important; }
 
-/* ── Ícone ── */
+/* ── Ícone — cor da categoria ── */
 .neo-page .act-emoji {
   background: var(--bg-surface) !important;
-  border: 1px solid var(--accent-violet) !important;
+  border: 1px solid var(--cat-color, var(--accent-violet)) !important;
   border-radius: var(--r-md) !important;
-  box-shadow: var(--glow-violet) !important;
-}
-.neo-page .act.done .act-emoji {
-  border-color: var(--accent-green) !important;
-  box-shadow: var(--glow-green) !important;
+  box-shadow: 0 0 10px var(--cat-glow, rgba(179,136,255,0.45)) !important;
 }
 
 /* ── Texto ── */
@@ -1039,8 +1035,8 @@ a { color: var(--accent-blue); text-decoration: none; }
   overflow: hidden !important;
 }
 .neo-page .hud-bar-fill.below {
-  background: linear-gradient(90deg, var(--xp-bar-from), var(--xp-bar-to)) !important;
-  box-shadow: var(--glow-violet) !important;
+  background: var(--cat-color, var(--xp-bar-to)) !important;
+  box-shadow: 0 0 8px var(--cat-glow, rgba(179,136,255,0.45)) !important;
 }
 .neo-page .hud-bar-fill.at {
   background: linear-gradient(90deg, #059669, var(--accent-green)) !important;
@@ -1127,6 +1123,12 @@ a { color: var(--accent-blue); text-decoration: none; }
   background: rgba(93,202,165,0.06) !important;
 }
 
+/* Card expandido ocupa linha inteira com largura razoável */
+.neo-page .act.act-open {
+  grid-column: 1 / -1 !important;
+  max-width: 520px !important;
+}
+
 /* Seção expansível */
 .neo-page .act-details {
   max-height: 0 !important;
@@ -1143,28 +1145,31 @@ a { color: var(--accent-blue); text-decoration: none; }
   border-top: 1px solid var(--border-light) !important;
   margin-top: 10px !important;
   padding-top: 10px !important;
+  padding-right: 32px !important; /* espaço pro botão fechar não sobrepor texto */
   position: relative !important;
 }
 
-/* Botão fechar */
+/* Botão fechar — canto sup. direito isolado */
 .neo-page .act-close-btn {
   position: absolute !important;
-  top: 6px !important;
+  top: 8px !important;
   right: 0 !important;
   background: none !important;
-  border: none !important;
+  border: 1px solid var(--border-light) !important;
   color: var(--text-muted) !important;
   cursor: pointer !important;
   font-size: 8px !important;
   font-weight: 700 !important;
   letter-spacing: .08em !important;
-  padding: 3px 5px !important;
+  padding: 3px 6px !important;
   line-height: 1 !important;
   border-radius: var(--r-sm) !important;
-  transition: color 0.15s, background 0.15s !important;
+  white-space: nowrap !important;
+  transition: color 0.15s, background 0.15s, border-color 0.15s !important;
 }
 .neo-page .act-close-btn:hover {
-  color: var(--text-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--text-muted) !important;
   background: var(--bg-surface) !important;
 }
 

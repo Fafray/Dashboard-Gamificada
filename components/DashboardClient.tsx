@@ -122,6 +122,7 @@ export function DashboardClient({
   );
 
   const [filtro, setFiltro] = useState<"todas" | "daily" | "semanal">("daily");
+  const [expandedCardId, setExpandedCardId] = useState<number | null>(null);
   const toggleCollapse = (key: string) => setCollapsed((p) => ({ ...p, [key]: !p[key] }));
 
   const isDailyLike = (a: Activity) => a.frequency === "daily" || a.frequency === "once" || (a.frequency === "nx_week" && !!a.scheduled_days);
@@ -352,6 +353,8 @@ export function DashboardClient({
                               activity={{ ...activity, doneToday: doneSet.has(activity.id) }}
                               atributos={atributos}
                               isBonusMission={bonusMissionId !== null && activity.id === bonusMissionId}
+                              isExpanded={expandedCardId === activity.id}
+                              onToggleExpand={() => setExpandedCardId((prev) => prev === activity.id ? null : activity.id)}
                               onCheckin={(result) => handleCheckin(activity.id, result)}
                               onUndo={(result) => handleUndo(activity.id, result)}
                               initialAccumulated={activity.todayCheckinValue}

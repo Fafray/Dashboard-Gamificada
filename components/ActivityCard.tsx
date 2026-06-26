@@ -21,6 +21,21 @@ const CATEGORIA_COR: Record<string, string> = {
   foco:       "#8b5cf6",
 };
 
+const CAT_COLORS: Record<string, string> = {
+  saude:      "#5dcaa5",
+  treino:     "#e24b4a",
+  estudo:     "#378add",
+  disciplina: "#ef9f27",
+  foco:       "#8b5cf6",
+};
+const CAT_GLOWS: Record<string, string> = {
+  saude:      "rgba(93,202,165,0.22)",
+  treino:     "rgba(226,75,74,0.22)",
+  estudo:     "rgba(55,138,221,0.22)",
+  disciplina: "rgba(239,159,39,0.22)",
+  foco:       "rgba(139,92,246,0.22)",
+};
+
 interface LevelInfo {
   level: number;
   totalXP: number;
@@ -73,6 +88,8 @@ interface ActivityCardProps {
   atributos?: Atributos;
   isBonusMission?: boolean;
   initialAccumulated?: number | null;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
   onCheckin: (result: CheckinResult) => void;
   onUndo: (result: UndoResult) => void;
 }
@@ -93,7 +110,7 @@ function defaultIncrement(unit: string | null): number {
   return 1;
 }
 
-export function ActivityCard({ activity, atributos, isBonusMission, initialAccumulated, onCheckin, onUndo }: ActivityCardProps) {
+export function ActivityCard({ activity, atributos, isBonusMission, initialAccumulated, isExpanded, onToggleExpand, onCheckin, onUndo }: ActivityCardProps) {
   const [done, setDone] = useState(activity.doneToday);
   const [checkinId, setCheckinId] = useState<number | null>(activity.todayCheckinId);
   const [streak, setStreak] = useState(activity.streak.current);
@@ -116,7 +133,6 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   const [incrementInput, setIncrementInput] = useState<string>(
     String(defaultIncrement(activity.target_unit))
   );
-  const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const isNxWeek    = activity.frequency === "nx_week";
@@ -280,21 +296,26 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   function handleCompactAction(e: React.MouseEvent) {
     e.stopPropagation();
     if (isDone || loading) return;
-    if (activity.micro_version) { setExpanded(true); return; }
+    if (activity.micro_version) { onToggleExpand(); return; }
     if (isIncremental) { handleAccumulate(); return; }
     handleCheckin();
   }
 
   const milestone = getStreakMilestone(streak);
   const isDone = isNxWeek ? weeklyDone : done;
+  const catColor = activity.categoria ? (CAT_COLORS[activity.categoria] ?? "#b388ff") : "#b388ff";
+  const catGlow  = activity.categoria ? (CAT_GLOWS[activity.categoria]  ?? "rgba(179,136,255,0.22)") : "rgba(179,136,255,0.22)";
 
   return (
     <div
       ref={cardRef}
-      className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}${expanded ? " act-open" : ""}`}
+      className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}${isExpanded ? " act-open" : ""}`}
       style={{
+        "--cat-color": catColor,
+        "--cat-glow": catGlow,
+        gridColumn: isExpanded ? "1 / -1" : undefined,
         ...(isBonusMission && !isDone ? { boxShadow: "6px 6px 14px rgba(239,165,39,0.14), -6px -6px 14px rgba(255,255,255,0.65)" } : {}),
-      }}
+      } as React.CSSProperties}
     >
       <div className="pulse-ring" />
       {xpPops.map((pop) => (
@@ -302,7 +323,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
       ))}
 
       {/* ─── COMPACT (sempre visível) ─── */}
-      <div className="act-compact" onClick={() => setExpanded((v) => !v)}>
+      <div className="act-compact" onClick={onToggleExpand}>
         <div className="act-compact-row">
           <div className="act-emoji">{activity.emoji || "⚡"}</div>
           <div className="act-compact-name">
@@ -336,7 +357,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
         <div className="act-details-inner">
           <button
             className="act-close-btn"
-            onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+            onClick={(e) => { e.stopPropagation(); onToggleExpand(); }}
           >
             ✕ FECHAR
           </button>
