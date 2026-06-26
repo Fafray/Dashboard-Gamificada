@@ -116,6 +116,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
   const [incrementInput, setIncrementInput] = useState<string>(
     String(defaultIncrement(activity.target_unit))
   );
+  const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const isNxWeek    = activity.frequency === "nx_week";
@@ -276,53 +277,76 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
     }
   }
 
+  function handleCompactAction(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (isDone || loading) return;
+    if (activity.micro_version) { setExpanded(true); return; }
+    if (isIncremental) { handleAccumulate(); return; }
+    handleCheckin();
+  }
+
   const milestone = getStreakMilestone(streak);
   const isDone = isNxWeek ? weeklyDone : done;
 
   return (
     <div
       ref={cardRef}
-      className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}`}
+      className={`act${isDone ? " done" : ""}${justDone ? " justdone" : ""}${expanded ? " act-open" : ""}`}
       style={{
         ...(isBonusMission && !isDone ? { boxShadow: "6px 6px 14px rgba(239,165,39,0.14), -6px -6px 14px rgba(255,255,255,0.65)" } : {}),
       }}
     >
       <div className="pulse-ring" />
-
       {xpPops.map((pop) => (
         <div key={pop.id} className="xp-pop go">{pop.text}</div>
       ))}
 
-      {/* Header */}
-      <div className="act-head">
-        <div className="act-emoji">
-          {activity.emoji || "⚡"}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="act-name" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+      {/* ─── COMPACT (sempre visível) ─── */}
+      <div className="act-compact" onClick={() => setExpanded((v) => !v)}>
+        <div className="act-compact-row">
+          <div className="act-emoji">{activity.emoji || "⚡"}</div>
+          <div className="act-compact-name">
             {activity.name}
             {activity.is_keystone && (
-              <span style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
-                background: "rgba(239,165,39,.15)", border: "1px solid rgba(239,165,39,.4)",
-                color: "#efa527", borderRadius: "4px", padding: "1px 5px",
-              }}>⚓ ÂNCORA</span>
+              <span style={{ fontSize: "9px", marginLeft: "5px", color: "#efa527" }}>⚓</span>
             )}
             {isBonusMission && !isDone && (
-              <span style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: ".08em",
-                background: "rgba(239,165,39,.12)", border: "1px solid rgba(239,165,39,.35)",
-                color: "#efa527", borderRadius: "4px", padding: "1px 5px",
-              }}>🎯 MISSÃO</span>
+              <span style={{ fontSize: "9px", marginLeft: "4px", color: "#efa527" }}>🎯</span>
             )}
           </div>
+        </div>
+        <div className="act-compact-foot" onClick={(e) => e.stopPropagation()}>
+          {isDone ? (
+            <div className="act-done-seal">✓ Concluída</div>
+          ) : (
+            <button
+              className="btn-checkin"
+              onClick={handleCompactAction}
+              disabled={loading}
+              style={{ width: "100%", cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+            >
+              {loading ? "..." : isIncremental ? "+ Adicionar" : "+ Registrar"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ─── DETAILS (expansível) ─── */}
+      <div className="act-details">
+        <div className="act-details-inner">
+          <button
+            className="act-close-btn"
+            onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+          >
+            ✕ FECHAR
+          </button>
+
+          {/* Tags / freq */}
           <div className="act-freq">
             <span className="freq-dot" />
             {isNxWeek
               ? `${weekTarget}x ${FREQ_LABEL.nx_week}`
-              : isOnce
-              ? "Missão única"
-              : FREQ_LABEL[activity.frequency]}
+              : isOnce ? "Missão única" : FREQ_LABEL[activity.frequency]}
             {hasTarget && (
               <span style={{ marginLeft: "6px", color: "var(--accent-teal)" }}>
                 · META: {activity.target_value}{activity.target_unit}
@@ -330,256 +354,233 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
             )}
             {activity.categoria && attrKey && (
               <span style={{
-                marginLeft: "6px",
-                fontSize: "9px", letterSpacing: ".1em", fontWeight: 600,
-                color: attrCor,
-                background: `${attrCor}18`,
-                borderRadius: "4px", padding: "1px 5px",
-                textTransform: "uppercase",
+                marginLeft: "6px", fontSize: "9px", letterSpacing: ".1em", fontWeight: 600,
+                color: attrCor, background: `${attrCor}18`,
+                borderRadius: "4px", padding: "1px 5px", textTransform: "uppercase",
                 fontFamily: "var(--font-space-grotesk), sans-serif",
               }}>
                 {CATEGORIA_LABELS[activity.categoria]} · {attrKey}
               </span>
             )}
           </div>
+
+          {/* Âncora */}
           {activity.anchor_context && (
-            <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "2px", fontStyle: "italic" }}>
+            <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "4px", fontStyle: "italic" }}>
               {activity.anchor_context}
             </div>
           )}
-        </div>
 
-        {/* Streak, pips semanais ou prazo de missão única */}
-        {isOnce ? (
-          daysLeft !== null && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px" }}>
-              <span style={{
-                fontSize: "9px", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase",
-                color: daysLeft <= 0 ? "#ef4444" : daysLeft <= 2 ? "#f97316" : "#efa527",
-                background: daysLeft <= 0 ? "rgba(239,68,68,.12)" : daysLeft <= 2 ? "rgba(249,115,22,.12)" : "rgba(239,165,39,.12)",
-                border: `1px solid ${daysLeft <= 0 ? "rgba(239,68,68,.4)" : daysLeft <= 2 ? "rgba(249,115,22,.4)" : "rgba(239,165,39,.4)"}`,
-                borderRadius: "5px", padding: "2px 6px",
-              }}>
-                {daysLeft <= 0 ? "HOJE" : daysLeft === 1 ? "AMANHÃ" : `${daysLeft}d`}
-              </span>
-              <span style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
-                PRAZO
-              </span>
-            </div>
-          )
-        ) : isNxWeek ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px" }}>
-            <div className="week-pips">
-              {Array.from({ length: weekTarget }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`week-pip${i < weeklyCount ? (weeklyDone ? " all-done" : " filled") : ""}`}
-                  style={{ animationDelay: `${i * 60}ms` }}
-                />
-              ))}
-            </div>
-            <span className={`week-count-text ${weeklyDone ? "done" : weeklyCount > 0 ? "progress" : "empty"}`}>
-              {weeklyDone ? "✓ SEMANA OK" : `${weeklyCount}/${weekTarget} ESTA SEM.`}
-            </span>
+          {/* Streak / pips / prazo */}
+          <div style={{ marginTop: "6px" }}>
+            {isOnce ? (
+              daysLeft !== null && (
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{
+                    fontSize: "9px", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase",
+                    color: daysLeft <= 0 ? "#ef4444" : daysLeft <= 2 ? "#f97316" : "#efa527",
+                    background: daysLeft <= 0 ? "rgba(239,68,68,.12)" : daysLeft <= 2 ? "rgba(249,115,22,.12)" : "rgba(239,165,39,.12)",
+                    border: `1px solid ${daysLeft <= 0 ? "rgba(239,68,68,.4)" : daysLeft <= 2 ? "rgba(249,115,22,.4)" : "rgba(239,165,39,.4)"}`,
+                    borderRadius: "5px", padding: "2px 6px",
+                  }}>
+                    {daysLeft <= 0 ? "HOJE" : daysLeft === 1 ? "AMANHÃ" : `${daysLeft}d`}
+                  </span>
+                  <span style={{ fontSize: "9px", color: "var(--text-muted)", letterSpacing: ".06em" }}>PRAZO</span>
+                </div>
+              )
+            ) : isNxWeek ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                <div className="week-pips">
+                  {Array.from({ length: weekTarget }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`week-pip${i < weeklyCount ? (weeklyDone ? " all-done" : " filled") : ""}`}
+                      style={{ animationDelay: `${i * 60}ms` }}
+                    />
+                  ))}
+                </div>
+                <span className={`week-count-text ${weeklyDone ? "done" : weeklyCount > 0 ? "progress" : "empty"}`}>
+                  {weeklyDone ? "✓ SEMANA OK" : `${weeklyCount}/${weekTarget} ESTA SEM.`}
+                </span>
+              </div>
+            ) : (
+              streak > 0 && (
+                <div className={`act-streak${milestoneFiring ? " streak-milestone" : ""}`}>
+                  <span style={{ animation: "flicker 2.4s ease-in-out infinite" }}>🔥</span>
+                  <span className="num">{streak}</span>
+                  {milestone && <span style={{ fontSize: "11px", marginLeft: "3px" }}>{milestone.emoji}</span>}
+                </div>
+              )
+            )}
           </div>
-        ) : (
-          streak > 0 && (
-            <div className={`act-streak${milestoneFiring ? " streak-milestone" : ""}`}>
-              <span style={{ animation: "flicker 2.4s ease-in-out infinite" }}>🔥</span>
-              <span className="num">{streak}</span>
-              {milestone && (
-                <span style={{ fontSize: "11px", marginLeft: "3px" }}>{milestone.emoji}</span>
+
+          {/* Milestone strip */}
+          {milestone && streak > 0 && !isNxWeek && (
+            <div style={{
+              margin: "6px 0 0", padding: "4px 8px", borderRadius: "6px",
+              background: "rgba(255,215,0,.08)", border: "1px solid rgba(255,215,0,.25)",
+              fontSize: "10px", color: "var(--accent-gold)", fontWeight: 700,
+              letterSpacing: ".04em", fontFamily: "var(--font-space-grotesk), sans-serif",
+            }}>
+              {milestone.emoji} {milestone.name} · {streak} dias consecutivos
+            </div>
+          )}
+
+          {/* HUD — Incremental */}
+          {isIncremental && (
+            <div className="hud-input-wrap">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
+                <span style={{ fontSize: "18px", fontWeight: 700, color: isDone ? "#2fd09a" : "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                  {accumulated % 1 === 0 ? accumulated : accumulated.toFixed(1)}
+                </span>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  / {activity.target_value} {activity.target_unit}
+                </span>
+              </div>
+              <div className="hud-bar-track" style={{ marginBottom: "10px" }}>
+                <div
+                  className={`hud-bar-fill ${accumulated >= (activity.target_value ?? 0) ? "at" : "below"}`}
+                  style={{ width: `${Math.min(100, (accumulated / (activity.target_value ?? 1)) * 100)}%`, transition: "width 0.3s ease" }}
+                />
+              </div>
+              {!isDone && (
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <input
+                    type="number"
+                    value={incrementInput}
+                    onChange={(e) => setIncrementInput(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    min={0.1}
+                    step={defaultIncrement(activity.target_unit)}
+                    style={{
+                      width: "70px", padding: "6px 8px", borderRadius: "8px",
+                      background: "var(--bg-surface)", border: "1px solid var(--border)",
+                      color: "var(--text-primary)", fontSize: "14px", fontWeight: 600,
+                      textAlign: "center", outline: "none",
+                    }}
+                  />
+                  <span style={{ fontSize: "12px", color: "var(--text-muted)", minWidth: "30px" }}>
+                    {activity.target_unit}
+                  </span>
+                  <button
+                    className="btn-checkin"
+                    onClick={(e) => { e.stopPropagation(); handleAccumulate(); }}
+                    disabled={loading}
+                    style={{ flex: 1, cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+                  >
+                    {loading ? "..." : "+ Adicionar"}
+                  </button>
+                </div>
+              )}
+              {isDone && (
+                <div className="hud-done-badge">
+                  <span>✓</span>
+                  <span className="hud-done-value">{accumulated % 1 === 0 ? accumulated : accumulated.toFixed(1)} {activity.target_unit}</span>
+                  <span style={{ color: "var(--text-muted)", letterSpacing: ".06em", fontSize: "11px" }}>META ATINGIDA</span>
+                </div>
               )}
             </div>
-          )
-        )}
-      </div>
+          )}
 
-      {/* Milestone strip */}
-      {milestone && streak > 0 && !isNxWeek && (
-        <div style={{
-          margin: "6px 0 0", padding: "4px 8px", borderRadius: "6px",
-          background: "rgba(255,215,0,.08)", border: "1px solid rgba(255,215,0,.25)",
-          fontSize: "10px", color: "var(--accent-gold)", fontWeight: 700,
-          letterSpacing: ".04em", fontFamily: "var(--font-space-grotesk), sans-serif",
-        }}>
-          {milestone.emoji} {milestone.name} · {streak} dias consecutivos
-        </div>
-      )}
-
-      {/* HUD — Incremental tracking (daily with target) */}
-      {isIncremental && (
-        <div className="hud-input-wrap">
-          {/* Progress bar */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "4px" }}>
-            <span style={{ fontSize: "18px", fontWeight: 700, color: isDone ? "#2fd09a" : "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
-              {accumulated % 1 === 0 ? accumulated : accumulated.toFixed(1)}
-            </span>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              / {activity.target_value} {activity.target_unit}
-            </span>
-          </div>
-          <div className="hud-bar-track" style={{ marginBottom: "10px" }}>
-            <div
-              className={`hud-bar-fill ${accumulated >= (activity.target_value ?? 0) ? "at" : accumulated > 0 ? "below" : "below"}`}
-              style={{ width: `${Math.min(100, (accumulated / (activity.target_value ?? 1)) * 100)}%`, transition: "width 0.3s ease" }}
-            />
-          </div>
-          {/* Add increment controls */}
-          {!isDone && (
-            <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-              <input
-                type="number"
-                value={incrementInput}
-                onChange={(e) => setIncrementInput(e.target.value)}
-                min={0.1}
-                step={defaultIncrement(activity.target_unit)}
-                style={{
-                  width: "70px", padding: "6px 8px", borderRadius: "8px",
-                  background: "var(--bg-surface)", border: "1px solid var(--border)",
-                  color: "var(--text-primary)", fontSize: "14px", fontWeight: 600,
-                  textAlign: "center", outline: "none",
-                }}
-              />
-              <span style={{ fontSize: "12px", color: "var(--text-muted)", minWidth: "30px" }}>
-                {activity.target_unit}
-              </span>
-              <button
-                className="btn-checkin"
-                onClick={handleAccumulate}
-                disabled={loading}
-                style={{ flex: 1, cursor: "pointer", opacity: loading ? 0.6 : 1 }}
-              >
-                {loading ? "..." : "+ Adicionar"}
-              </button>
+          {/* HUD — Numérico legacy */}
+          {hasTarget && !isIncremental && !isDone && (
+            <div className="hud-input-wrap">
+              <div className="hud-input-row">
+                <input
+                  type="number"
+                  value={numValue}
+                  onChange={(e) => setNumValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  min={0}
+                  step={0.1}
+                  placeholder={String(activity.target_value)}
+                />
+                <span className="hud-unit">{activity.target_unit}</span>
+                <span className="hud-target-label">/ {activity.target_value}</span>
+              </div>
+              <div className="hud-bar-track">
+                <div className={`hud-bar-fill ${barStatus}`} style={{ width: `${Math.min(100, barPct)}%` }} />
+              </div>
             </div>
           )}
-          {isDone && (
+          {hasTarget && !isIncremental && isDone && (
             <div className="hud-done-badge">
               <span>✓</span>
-              <span className="hud-done-value">{accumulated % 1 === 0 ? accumulated : accumulated.toFixed(1)} {activity.target_unit}</span>
-              <span style={{ color: "var(--text-muted)", letterSpacing: ".06em", fontSize: "11px" }}>META ATINGIDA</span>
+              <span className="hud-done-value">{numValue || "—"} {activity.target_unit}</span>
+              <span style={{ color: "var(--text-muted)", letterSpacing: ".06em", fontSize: "11px" }}>REGISTRADO</span>
             </div>
           )}
-        </div>
-      )}
 
-      {/* HUD — Legacy single-register numeric (weekly/nx_week with target) */}
-      {hasTarget && !isIncremental && !isDone && (
-        <div className="hud-input-wrap">
-          <div className="hud-input-row">
-            <input
-              type="number"
-              value={numValue}
-              onChange={(e) => setNumValue(e.target.value)}
-              min={0}
-              step={0.1}
-              placeholder={String(activity.target_value)}
-            />
-            <span className="hud-unit">{activity.target_unit}</span>
-            <span className="hud-target-label">/ {activity.target_value}</span>
+          {/* Footer */}
+          <div className="act-foot">
+            {isIncremental ? (
+              isDone ? (
+                <button className="btn-checkin" disabled style={{ opacity: 0.7 }}>
+                  ✓ META ATINGIDA · +{xpEfetivo} XP
+                </button>
+              ) : (
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
+                  {accumulated > 0 ? `Em progresso — falta ${((activity.target_value ?? 0) - accumulated).toFixed(1).replace('.0', '')} ${activity.target_unit}` : "Adicione acima para registrar"}
+                </div>
+              )
+            ) : activity.micro_version && !isDone ? (
+              <>
+                <button
+                  className="btn-checkin"
+                  onClick={(e) => { e.stopPropagation(); handleCheckin("minimum"); }}
+                  disabled={loading}
+                  title={activity.micro_version}
+                  style={{ flex: 1, background: "transparent", border: `1px solid ${activity.color}55`, color: "var(--text-secondary)" }}
+                >
+                  {loading ? "..." : `Mínimo · +${xpEfetivo} XP`}
+                </button>
+                <button
+                  className="btn-checkin"
+                  onClick={(e) => { e.stopPropagation(); handleCheckin("beyond"); }}
+                  disabled={loading}
+                  style={{ flex: 1, background: activity.color, color: "#04121c" }}
+                >
+                  {loading ? "..." : `Além · +${Math.round(xpEfetivo * 1.25)} XP`}
+                </button>
+              </>
+            ) : (
+              <button
+                className="btn-checkin"
+                onClick={(e) => { e.stopPropagation(); handleCheckin(); }}
+                disabled={isDone || loading}
+                style={{ flex: 1 }}
+              >
+                {loading ? "..." : isDone
+                  ? (isNxWeek ? "✓ Semana completa" : "✓ Missão concluída")
+                  : hasTarget && numValue ? `Registrar ${numValue} ${activity.target_unit ?? ""}`
+                  : isNxWeek ? `Executar ${weeklyCount + 1}/${weekTarget}`
+                  : isOnce ? `Concluir missão · +${xpEfetivo} XP`
+                  : `Completar · +${xpEfetivo} XP`}
+              </button>
+            )}
+            {checkinId && (
+              <button
+                className="btn-undo"
+                onClick={(e) => { e.stopPropagation(); handleUndo(); }}
+                title="Desfazer último check-in"
+              >
+                ↩
+              </button>
+            )}
           </div>
-          <div className="hud-bar-track">
-            <div
-              className={`hud-bar-fill ${barStatus}`}
-              style={{ width: `${Math.min(100, barPct)}%` }}
-            />
-          </div>
         </div>
-      )}
-      {hasTarget && !isIncremental && isDone && (
-        <div className="hud-done-badge">
-          <span>✓</span>
-          <span className="hud-done-value">{numValue || "—"} {activity.target_unit}</span>
-          <span style={{ color: "var(--text-muted)", letterSpacing: ".06em", fontSize: "11px" }}>REGISTRADO</span>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="act-foot">
-        {/* Incremental: footer só mostra estado de conclusão */}
-        {isIncremental ? (
-          isDone ? (
-            <button className="btn-checkin" disabled style={{ opacity: 0.7 }}>
-              ✓ META ATINGIDA · +{xpEfetivo} XP
-            </button>
-          ) : (
-            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", color: "var(--text-muted)", letterSpacing: ".06em" }}>
-              {accumulated > 0 ? `Em progresso — falta ${((activity.target_value ?? 0) - accumulated).toFixed(1).replace('.0','')} ${activity.target_unit}` : `Adicione acima para registrar`}
-            </div>
-          )
-        ) : activity.micro_version && !isDone ? (
-          <>
-            <button
-              className="btn-checkin"
-              onClick={() => handleCheckin("minimum")}
-              disabled={loading}
-              title={activity.micro_version}
-              style={{
-                flex: 1,
-                background: "transparent",
-                border: `1px solid ${activity.color}55`,
-                color: "var(--text-secondary)",
-              }}
-            >
-              {loading ? "..." : `Mínimo · +${xpEfetivo} XP`}
-            </button>
-            <button
-              className="btn-checkin"
-              onClick={() => handleCheckin("beyond")}
-              disabled={loading}
-              title={activity.target_value
-                ? `${activity.name} — ${activity.target_value}${activity.target_unit ?? ""}`
-                : activity.name}
-              style={{ flex: 1, background: activity.color, color: "#04121c" }}
-            >
-              {loading ? "..." : `Além · +${Math.round(xpEfetivo * 1.25)} XP`}
-            </button>
-          </>
-        ) : (
-          <button
-            className="btn-checkin"
-            onClick={() => handleCheckin()}
-            disabled={isDone || loading || (isNxWeek && weeklyDone)}
-          >
-            {loading
-              ? "..."
-              : isDone
-              ? (isNxWeek ? `✓ Semana completa` : "✓ Missão concluída")
-              : hasTarget && numValue
-              ? `Registrar ${numValue} ${activity.target_unit ?? ""}`
-              : isNxWeek
-              ? `Executar ${weeklyCount + 1}/${weekTarget}`
-              : isOnce
-              ? `Concluir missão · +${xpEfetivo} XP`
-              : `Completar · +${xpEfetivo} XP`}
-          </button>
-        )}
-
-        {checkinId && (
-          <button className="btn-undo" onClick={handleUndo} title="Desfazer último check-in">
-            ↩
-          </button>
-        )}
       </div>
 
       {/* Modal de graduação */}
       {graduationOpen && (
-        <div
-          style={{
-            position: "fixed", inset: 0, zIndex: 200,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)",
-            padding: "16px",
-          }}
-        >
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 200,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.8)", backdropFilter: "blur(6px)", padding: "16px",
+        }}>
           <div style={{
-            background: "var(--bg-card)",
-            border: "1px solid rgba(255,215,0,.3)",
-            borderRadius: "16px",
-            padding: "24px",
-            maxWidth: "360px",
-            width: "100%",
+            background: "var(--bg-card)", border: "1px solid rgba(255,215,0,.3)",
+            borderRadius: "16px", padding: "24px", maxWidth: "360px", width: "100%",
             boxShadow: "0 0 60px rgba(255,215,0,.1), 0 24px 48px rgba(0,0,0,.8)",
           }}>
             <div style={{ fontSize: "28px", textAlign: "center", marginBottom: "8px" }}>🎯</div>
@@ -597,8 +598,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
               style={{
                 width: "100%", padding: "10px 12px", borderRadius: "8px",
                 background: "var(--bg-surface)", border: "1px solid var(--border)",
-                color: "var(--text-primary)", fontSize: "14px", outline: "none",
-                marginBottom: "12px",
+                color: "var(--text-primary)", fontSize: "14px", outline: "none", marginBottom: "12px",
               }}
               autoFocus
             />
