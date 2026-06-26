@@ -303,6 +303,16 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
 
   const milestone = getStreakMilestone(streak);
   const isDone = isNxWeek ? weeklyDone : done;
+
+  // Barra de progresso compacta (só para incremental e nx_week, não done)
+  const showCompactProgress = !isDone && (isIncremental || isNxWeek);
+  const compactCur = isNxWeek ? weeklyCount : accumulated;
+  const compactTot = isNxWeek ? weekTarget : (activity.target_value ?? 1);
+  const compactPct = Math.round(Math.min(100, compactTot > 0 ? (compactCur / compactTot) * 100 : 0));
+  const compactLabel = isNxWeek
+    ? `${compactCur} / ${compactTot} vezes`
+    : `${compactCur % 1 === 0 ? compactCur : compactCur.toFixed(1)} / ${compactTot}${activity.target_unit ? ` ${activity.target_unit}` : ""}`;
+
   const catColor = activity.categoria ? (CAT_COLORS[activity.categoria] ?? "#b388ff") : "#b388ff";
   const catGlow  = activity.categoria ? (CAT_GLOWS[activity.categoria]  ?? "rgba(179,136,255,0.22)") : "rgba(179,136,255,0.22)";
 
@@ -336,6 +346,20 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
             )}
           </div>
         </div>
+
+        {/* Progresso compacto — incremental e nx_week não concluídos */}
+        {showCompactProgress && (
+          <div style={{ marginTop: 5 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#5a7da3", marginBottom: 3, lineHeight: 1 }}>
+              <span>{compactLabel}</span>
+              <span>{compactPct}%</span>
+            </div>
+            <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${compactPct}%`, borderRadius: 2, background: "var(--cat-color)", transition: "width 0.3s ease" }} />
+            </div>
+          </div>
+        )}
+
         <div className="act-compact-foot" onClick={(e) => e.stopPropagation()}>
           {isDone ? (
             <div className="act-done-seal">✓ Concluída</div>
