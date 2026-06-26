@@ -1041,7 +1041,10 @@ a { color: var(--accent-blue); text-decoration: none; }
 }
 
 /* Espaçamento compacto */
-.neo-page .act-grid { gap: 10px !important; }
+.neo-page .act-grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 360px)) !important;
+  gap: 10px !important;
+}
 .neo-page .act {
   padding: 10px 12px !important;
   min-height: unset !important;
