@@ -7,28 +7,28 @@ import { compressImage } from "@/lib/image";
 type PerfumeRow = Omit<Perfume, "photo" | "pyramid_image">;
 
 /* ===========================================================
-   ACERVO — Design System "Curated Archive"
-   Papel/pergaminho · Playfair Display (headlines) · Source Serif 4 (body)
-   Verde-floresta primary (#2d3e33) · Bronze secondary (#7a6348)
+   ACERVO — Dark System theme
    =========================================================== */
 
-const S = "#f4f1ea";
-const SC = "#ede8dc";
-const SCL = "#f9f6ee";
-const CARD = "#ffffff";
-const INK = "#1a1c1a";
-const INK2 = "#434943";
-const OUTLINE = "#c2c9c2";
-const PRIMARY = "#2d3e33";
-const SECONDARY = "#7a6348";
-const GOLD = "#c2a25a";
+const S    = "#0a0612";
+const SC   = "#120a1f";
+const SCL  = "#0a0612";
+const CARD = "#140d22";
+const INK  = "#e0d0ff";
+const INK2 = "#8a6db3";
+const OUTLINE  = "#2a1f3d";
+const OUTLINE2 = "#3d2a5f";
+const PRIMARY  = "#b388ff";
+const SECONDARY = "#8a6db3";
+const GOLD      = "#ffb84d";
+const STAR_EMPTY = "#3d3450";
 
 const DISPLAY = "'Playfair Display', Georgia, serif";
-const BODY = "'Source Serif 4', Georgia, serif";
-const LABEL = "var(--font-manrope), Manrope, system-ui, sans-serif";
+const BODY    = "'Source Serif 4', Georgia, serif";
+const LABEL   = "var(--font-space-grotesk), var(--font-manrope), sans-serif";
 
 const TABS = [
-  { key: "owned", label: "Tenho" },
+  { key: "owned",    label: "Tenho" },
   { key: "wishlist", label: "Desejos" },
 ] as const;
 
@@ -39,7 +39,7 @@ function Stars({ rating, onRate }: { rating: number | null; onRate?: (n: number)
         <span key={n} onClick={() => onRate?.(n)} style={{
           fontSize: onRate ? 22 : 13,
           cursor: onRate ? "pointer" : "default",
-          color: (rating ?? 0) >= n ? GOLD : OUTLINE,
+          color: (rating ?? 0) >= n ? GOLD : STAR_EMPTY,
           letterSpacing: 1, transition: "color .1s",
         }}>★</span>
       ))}
@@ -125,15 +125,15 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
   }
 
   async function handleImage(file: File) {
-    const full = await compressImage(file, 1600, 0.92);
-    const thumb = await compressImage(file, 900, 0.90);
+    const full  = await compressImage(file, 1600, 0.92);
+    const thumb = await compressImage(file, 900,  0.90);
     setForm((f) => ({ ...f, photo: full, photo_thumbnail: thumb }));
     setPreview(thumb);
   }
 
   async function handlePyramidImage(file: File) {
-    const full = await compressImage(file, 1600, 0.92);
-    const thumb = await compressImage(file, 900, 0.90);
+    const full  = await compressImage(file, 1600, 0.92);
+    const thumb = await compressImage(file, 900,  0.90);
     setForm((f) => ({ ...f, pyramid_image: full, pyramid_thumbnail: thumb }));
     setPyramidPreview(thumb);
   }
@@ -161,7 +161,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
 
   const inp: React.CSSProperties = {
     width: "100%", padding: "8px 12px", borderRadius: 4,
-    background: CARD, border: `1px solid ${OUTLINE}`,
+    background: SC, border: `1px solid ${OUTLINE}`,
     color: INK, fontSize: 14, fontFamily: BODY, outline: "none",
     transition: "border-color .15s",
   };
@@ -184,26 +184,33 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 32 }}>
         <div>
-          <div style={{ fontFamily: LABEL, fontSize: 11, fontWeight: 500, letterSpacing: ".32em", textTransform: "uppercase", color: SECONDARY, marginBottom: 8 }}>Coleção</div>
-          <h1 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 42, color: PRIMARY, margin: 0, lineHeight: 1, borderLeft: `4px solid ${SECONDARY}`, paddingLeft: 20 }}>Acervo de Perfumes</h1>
+          <div style={{ fontFamily: LABEL, fontSize: 11, fontWeight: 500, letterSpacing: ".32em", textTransform: "uppercase", color: SECONDARY, marginBottom: 8 }}>
+            Coleção
+          </div>
+          <h1 style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 42, color: INK, margin: 0, lineHeight: 1, borderLeft: `4px solid ${PRIMARY}`, paddingLeft: 20 }}>
+            Acervo de Perfumes
+          </h1>
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 15, color: INK2, margin: "8px 0 0 24px" }}>
             Uma curadoria pessoal de fragrâncias, notas olfativas e memórias aromáticas.
           </p>
-          <p style={{ fontFamily: LABEL, fontSize: 12, color: `${INK2}99`, margin: "6px 0 0 24px" }}>
+          <p style={{ fontFamily: LABEL, fontSize: 12, color: INK2, opacity: .55, margin: "6px 0 0 24px" }}>
             {perfumes.length} fragrância{perfumes.length !== 1 ? "s" : ""} · {perfumes.filter(p => p.status === "wishlist").length} desejada{perfumes.filter(p => p.status === "wishlist").length !== 1 ? "s" : ""}
           </p>
         </div>
         <button onClick={openAdd} style={{
-          background: PRIMARY, color: "#fff", border: "none",
+          background: "linear-gradient(90deg, #6d28d9, #8b5cf6)",
+          color: "#e0d0ff", border: "none",
           borderRadius: 6, padding: "11px 22px",
           fontFamily: LABEL, fontSize: 11, fontWeight: 700,
           letterSpacing: ".12em", textTransform: "uppercase", cursor: "pointer",
+          boxShadow: "0 0 12px rgba(109,40,217,0.5)",
+          transition: "opacity .15s",
         }}>+ Adicionar</button>
       </div>
 
-      {/* Segment filter — pill */}
+      {/* Abas */}
       <div style={{ display: "flex", marginBottom: 32 }}>
-        <div style={{ display: "flex", alignItems: "center", padding: 4, borderRadius: 999, border: `1px solid ${OUTLINE}`, background: SCL, gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", padding: 4, borderRadius: 999, border: `1px solid ${OUTLINE}`, background: SC, gap: 2 }}>
           {TABS.map((t) => {
             const active = tab === t.key;
             return (
@@ -211,8 +218,9 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                 padding: "8px 20px", borderRadius: 999, cursor: "pointer", border: "none",
                 fontFamily: LABEL, fontSize: 10, fontWeight: active ? 700 : 500,
                 letterSpacing: ".1em", textTransform: "uppercase",
-                background: active ? PRIMARY : "transparent",
-                color: active ? "#fff" : INK2,
+                background: active ? "rgba(179,136,255,0.18)" : "transparent",
+                color: active ? PRIMARY : INK2,
+                boxShadow: active ? `inset 0 0 0 1px rgba(179,136,255,0.35)` : "none",
                 transition: "all .15s",
               }}>{t.label}</button>
             );
@@ -227,44 +235,53 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
           <p style={{ fontFamily: BODY, fontStyle: "italic", fontSize: 18, color: INK2 }}>Nenhuma fragrância nessa coleção ainda.</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 24 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 24 }}>
           {filtered.map((p) => (
             <article key={p.id} onClick={() => openEdit(p)} style={{
-              borderRadius: 12, overflow: "hidden",
+              borderRadius: 10, overflow: "hidden",
               background: CARD, cursor: "pointer",
-              boxShadow: "0 4px 14px rgba(45,62,51,.10)",
-              border: `1px solid rgba(45,62,51,.08)`,
-              transition: "box-shadow .3s, transform .3s",
+              boxShadow: "0 4px 16px rgba(0,0,0,.5), 0 0 14px rgba(179,136,255,0.1)",
+              border: `1px solid ${OUTLINE}`,
+              transition: "box-shadow .3s, transform .3s, border-color .3s",
               display: "flex", flexDirection: "column",
             }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 16px 30px rgba(45,62,51,.16)"; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 14px rgba(45,62,51,.10)"; (e.currentTarget as HTMLElement).style.transform = ""; }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.boxShadow = "0 12px 28px rgba(0,0,0,.65), 0 0 22px rgba(179,136,255,0.2)";
+                (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)";
+                (e.currentTarget as HTMLElement).style.borderColor = OUTLINE2;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 16px rgba(0,0,0,.5), 0 0 14px rgba(179,136,255,0.1)";
+                (e.currentTarget as HTMLElement).style.transform = "";
+                (e.currentTarget as HTMLElement).style.borderColor = OUTLINE;
+              }}
             >
-              {/* Photo */}
+              {/* Foto */}
               <div style={{ aspectRatio: "3/4", position: "relative", overflow: "hidden", background: SC }}>
                 {p.photo_thumbnail ? (
                   <img src={p.photo_thumbnail} alt={p.name} style={{
                     width: "100%", height: "100%", objectFit: "cover",
-                    filter: p.status === "wishlist" ? "grayscale(50%)" : undefined,
+                    filter: p.status === "wishlist" ? "grayscale(60%) brightness(0.7)" : undefined,
                   }} />
                 ) : (
                   <div style={{
                     width: "100%", height: "100%",
-                    background: `linear-gradient(145deg, ${SC}, #e2d8c8)`,
+                    background: `linear-gradient(145deg, ${SC}, #1a0f2e)`,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: DISPLAY, fontSize: 40, fontWeight: 600, color: `${SECONDARY}55`,
+                    fontFamily: DISPLAY, fontSize: 40, fontWeight: 600, color: `${PRIMARY}44`,
                     filter: p.status === "wishlist" ? "grayscale(50%)" : undefined,
                   }}>{p.name[0]}</div>
                 )}
-                {/* Wishlist overlay */}
+                {/* Overlay desejado */}
                 {p.status === "wishlist" && (
                   <div style={{
                     position: "absolute", inset: 0,
-                    background: `${PRIMARY}33`,
+                    background: "rgba(10,6,18,0.45)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     <span style={{
-                      background: "rgba(255,255,255,.85)", backdropFilter: "blur(4px)",
+                      background: "rgba(179,136,255,0.18)", backdropFilter: "blur(6px)",
+                      border: "1px solid rgba(179,136,255,0.35)",
                       fontFamily: LABEL, fontSize: 9, fontWeight: 700,
                       letterSpacing: ".2em", textTransform: "uppercase",
                       color: PRIMARY, padding: "5px 14px", borderRadius: 999,
@@ -276,35 +293,38 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
               {/* Info */}
               <div style={{ padding: "14px 14px 16px", flex: 1, display: "flex", flexDirection: "column" }}>
                 <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 700, color: SECONDARY, letterSpacing: ".25em", textTransform: "uppercase", marginBottom: 4 }}>{p.brand}</span>
-                <h3 style={{ fontFamily: DISPLAY, fontSize: 20, fontWeight: 600, color: PRIMARY, margin: 0, lineHeight: 1.1, flex: 1 }}>{p.name}</h3>
+                <h3 style={{ fontFamily: DISPLAY, fontSize: 18, fontWeight: 600, color: INK, margin: 0, lineHeight: 1.15, flex: 1 }}>{p.name}</h3>
                 {p.rating != null && (
                   <div style={{ marginTop: 10 }}><Stars rating={p.rating} /></div>
-                )}
-                {!p.brand && !p.rating && (
-                  <div style={{ marginTop: 8 }} />
                 )}
               </div>
             </article>
           ))}
 
-          {/* "+ Adicionar" card */}
+          {/* Card "+ Adicionar" */}
           <button onClick={openAdd} style={{
-            aspectRatio: "3/4", borderRadius: 12, border: `2px dashed ${OUTLINE}`,
+            aspectRatio: "3/4", borderRadius: 10, border: `2px dashed ${OUTLINE2}`,
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
             background: "none", cursor: "pointer",
             transition: "border-color .2s, background .2s",
           }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = SECONDARY; (e.currentTarget as HTMLElement).style.background = `${SC}88`; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = OUTLINE; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = PRIMARY;
+              (e.currentTarget as HTMLElement).style.background = `${PRIMARY}0a`;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = OUTLINE2;
+              (e.currentTarget as HTMLElement).style.background = "transparent";
+            }}
           >
             <div style={{
               width: 48, height: 48, borderRadius: 999,
-              border: `1px solid ${OUTLINE}`, display: "flex", alignItems: "center", justifyContent: "center",
+              border: `1px solid ${OUTLINE2}`, display: "flex", alignItems: "center", justifyContent: "center",
               transition: "border-color .2s",
             }}>
-              <span style={{ fontSize: 20, color: INK2 }}>+</span>
+              <span style={{ fontSize: 20, color: PRIMARY }}>+</span>
             </div>
-            <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: INK2 }}>Adicionar perfume</span>
+            <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: `${PRIMARY}77` }}>Adicionar perfume</span>
           </button>
         </div>
       )}
@@ -313,14 +333,14 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
       {modal && (
         <div onClick={(e) => { if (e.target === e.currentTarget) setModal(null); }} style={{
           position: "fixed", inset: 0, zIndex: 100,
-          background: "rgba(45,62,51,.45)", backdropFilter: "blur(6px)",
+          background: "rgba(0,0,0,0.82)", backdropFilter: "blur(8px)",
           display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 24px",
         }}>
           <div style={{
-            background: SCL, borderRadius: 12,
+            background: CARD, borderRadius: 12,
             width: "100%", maxWidth: 896, maxHeight: "92vh", overflow: "hidden",
-            border: `1px solid rgba(194,201,194,.3)`,
-            boxShadow: "0 32px 64px -12px rgba(45,62,51,.4)",
+            border: `1px solid ${OUTLINE2}`,
+            boxShadow: "0 32px 64px rgba(0,0,0,.8), 0 0 40px rgba(139,92,246,0.12)",
             display: "flex", flexDirection: "column",
           }}>
             {/* Modal header */}
@@ -329,34 +349,38 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
               background: SC, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0,
             }}>
               <div>
-                <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 500, letterSpacing: ".2em", textTransform: "uppercase", color: SECONDARY, display: "block", marginBottom: 6 }}>Novo registro</span>
-                <span style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 700, fontStyle: "italic", color: PRIMARY }}>{modal === "add" ? "Adicionar fragrância" : "Editar fragrância"}</span>
+                <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 500, letterSpacing: ".2em", textTransform: "uppercase", color: SECONDARY, display: "block", marginBottom: 6 }}>
+                  {modal === "add" ? "Novo registro" : "Editar registro"}
+                </span>
+                <span style={{ fontFamily: DISPLAY, fontSize: 26, fontWeight: 700, fontStyle: "italic", color: INK }}>
+                  {modal === "add" ? "Adicionar fragrância" : "Editar fragrância"}
+                </span>
               </div>
               <button onClick={() => setModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: INK2, fontSize: 20, padding: 6 }}>✕</button>
             </div>
 
-            {/* Modal body — 2 columns */}
-            <div style={{ flex: 1, overflowY: "auto", background: S }}>
+            {/* Modal body — 2 colunas */}
+            <div style={{ flex: 1, overflowY: "auto", background: SCL }}>
               <div style={{ display: "grid", gridTemplateColumns: "5fr 7fr", gap: 40, padding: "32px" }}>
 
-                {/* LEFT: foto + avaliação + disponibilidade */}
+                {/* ESQUERDA: foto + avaliação + disponibilidade */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                  {/* Photo upload */}
+                  {/* Upload foto */}
                   <label style={{ cursor: "pointer", display: "block" }}>
                     <div onClick={() => fileRef.current?.click()} style={{
                       aspectRatio: "4/5", borderRadius: 8, overflow: "hidden",
-                      border: `2px dashed ${OUTLINE}`,
+                      border: `2px dashed ${OUTLINE2}`,
                       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
-                      background: CARD, position: "relative", transition: "border-color .2s",
+                      background: SC, position: "relative", transition: "border-color .2s",
                     }}
                       onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = PRIMARY; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = OUTLINE; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = OUTLINE2; }}
                     >
                       {preview ? (
                         <img src={preview} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <>
-                          <span style={{ fontSize: 40, color: OUTLINE }}>📷</span>
+                          <span style={{ fontSize: 40, color: INK2 }}>📷</span>
                           <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: INK2 }}>Registrar imagem</span>
                         </>
                       )}
@@ -366,7 +390,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                   </label>
 
                   {/* Ficha lateral */}
-                  <div style={{ background: CARD, border: `1px solid ${OUTLINE}`, borderRadius: 8, padding: "20px", display: "flex", flexDirection: "column", gap: 20 }}>
+                  <div style={{ background: SC, border: `1px solid ${OUTLINE}`, borderRadius: 8, padding: "20px", display: "flex", flexDirection: "column", gap: 20 }}>
                     {/* Avaliação */}
                     <div>
                       <span style={lbl}>Avaliação pessoal</span>
@@ -377,22 +401,25 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                     <div style={{ borderTop: `1px solid ${OUTLINE}`, paddingTop: 20 }}>
                       <span style={lbl}>Disponibilidade</span>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        {[{ value: "owned", label: "Na coleção" }, { value: "wishlist", label: "Desejo" }].map((opt) => (
-                          <button key={opt.value} type="button" onClick={() => setForm((f) => ({ ...f, status: opt.value as "owned" | "wishlist" }))} style={{
-                            padding: "10px 8px", borderRadius: 6, cursor: "pointer",
-                            fontFamily: LABEL, fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase",
-                            background: form.status === opt.value ? PRIMARY : "transparent",
-                            color: form.status === opt.value ? "#fff" : INK2,
-                            border: form.status === opt.value ? "none" : `1px solid ${OUTLINE}`,
-                            transition: "all .15s",
-                          }}>{opt.label}</button>
-                        ))}
+                        {[{ value: "owned", label: "Na coleção" }, { value: "wishlist", label: "Desejo" }].map((opt) => {
+                          const active = form.status === opt.value;
+                          return (
+                            <button key={opt.value} type="button" onClick={() => setForm((f) => ({ ...f, status: opt.value as "owned" | "wishlist" }))} style={{
+                              padding: "10px 8px", borderRadius: 6, cursor: "pointer",
+                              fontFamily: LABEL, fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase",
+                              background: active ? "rgba(179,136,255,0.14)" : "transparent",
+                              color:  active ? PRIMARY : INK2,
+                              border: active ? `1px solid rgba(179,136,255,0.35)` : `1px solid ${OUTLINE}`,
+                              transition: "all .15s",
+                            }}>{opt.label}</button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* RIGHT: nome + maison + pirâmide + tags + preço + impressões */}
+                {/* DIREITA: nome + maison + pirâmide + tags + preço + impressões */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
                   {/* Nome */}
                   <div>
@@ -401,7 +428,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                       style={{ ...fieldInp, fontSize: 24, fontStyle: "italic" }}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                       onFocus={(e) => { (e.target as HTMLInputElement).style.borderBottomColor = PRIMARY; }}
-                      onBlur={(e) => { (e.target as HTMLInputElement).style.borderBottomColor = OUTLINE; }}
+                      onBlur={(e)  => { (e.target as HTMLInputElement).style.borderBottomColor = OUTLINE; }}
                     />
                   </div>
 
@@ -412,7 +439,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                       style={{ ...fieldInp, fontSize: 17, fontFamily: BODY }}
                       onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))}
                       onFocus={(e) => { (e.target as HTMLInputElement).style.borderBottomColor = PRIMARY; }}
-                      onBlur={(e) => { (e.target as HTMLInputElement).style.borderBottomColor = OUTLINE; }}
+                      onBlur={(e)  => { (e.target as HTMLInputElement).style.borderBottomColor = OUTLINE; }}
                     />
                   </div>
 
@@ -423,15 +450,15 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                       onClick={() => { if (!pyramidPreview) pyramidRef.current?.click(); }}
                       style={{
                         position: "relative", borderRadius: 8, overflow: "hidden",
-                        border: `2px dashed ${pyramidPreview ? "transparent" : OUTLINE}`,
-                        background: pyramidPreview ? "transparent" : CARD,
+                        border: `2px dashed ${pyramidPreview ? "transparent" : OUTLINE2}`,
+                        background: pyramidPreview ? "transparent" : SC,
                         height: 160,
                         cursor: pyramidPreview ? "default" : "pointer",
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
                         transition: "border-color .2s",
                       }}
                       onMouseEnter={(e) => { if (!pyramidPreview) (e.currentTarget as HTMLElement).style.borderColor = PRIMARY; }}
-                      onMouseLeave={(e) => { if (!pyramidPreview) (e.currentTarget as HTMLElement).style.borderColor = OUTLINE; }}
+                      onMouseLeave={(e) => { if (!pyramidPreview) (e.currentTarget as HTMLElement).style.borderColor = OUTLINE2; }}
                     >
                       {pyramidPreview ? (
                         <>
@@ -440,13 +467,12 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                             onClick={(e) => { e.stopPropagation(); openPyramidLightbox(); }}
                             style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", cursor: "zoom-in" }}
                           />
-                          {/* Trocar botão sobreposto */}
                           <button
                             onClick={(e) => { e.stopPropagation(); pyramidRef.current?.click(); }}
                             style={{
                               position: "absolute", top: 8, right: 8, zIndex: 2,
-                              background: "rgba(255,255,255,.85)", backdropFilter: "blur(4px)",
-                              border: "none", borderRadius: 6, padding: "4px 10px",
+                              background: "rgba(18,10,31,.85)", backdropFilter: "blur(4px)",
+                              border: `1px solid ${OUTLINE2}`, borderRadius: 6, padding: "4px 10px",
                               fontFamily: LABEL, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase",
                               color: INK, cursor: "pointer",
                             }}
@@ -455,9 +481,9 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                       ) : (
                         <>
                           <svg width="26" height="24" viewBox="0 0 26 24" fill="none">
-                            <path d="M13 1L25 23H1L13 1Z" stroke="#7a6348" strokeWidth="1.5" strokeLinejoin="round"/>
-                            <line x1="13" y1="8" x2="13" y2="15" stroke="#7a6348" strokeWidth="1.5" strokeLinecap="round"/>
-                            <circle cx="13" cy="19" r="1.2" fill="#7a6348"/>
+                            <path d="M13 1L25 23H1L13 1Z" stroke="#8a6db3" strokeWidth="1.5" strokeLinejoin="round"/>
+                            <line x1="13" y1="8" x2="13" y2="15" stroke="#8a6db3" strokeWidth="1.5" strokeLinecap="round"/>
+                            <circle cx="13" cy="19" r="1.2" fill="#8a6db3"/>
                           </svg>
                           <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, letterSpacing: ".18em", textTransform: "uppercase", color: INK2 }}>Registrar pirâmide</span>
                         </>
@@ -510,8 +536,8 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
             <div style={{ padding: "16px 32px", borderTop: `1px solid ${OUTLINE}`, background: SC, display: "flex", justifyContent: "flex-end", gap: 12, flexShrink: 0 }}>
               {modal === "edit" && editing && (
                 <button onClick={() => handleDelete(editing.id)} disabled={deleting === editing.id} style={{
-                  background: "rgba(190,50,40,.1)", border: "1px solid rgba(190,50,40,.3)",
-                  color: "#be3228", borderRadius: 6, padding: "11px 18px",
+                  background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.3)",
+                  color: "#f87171", borderRadius: 6, padding: "11px 18px",
                   fontFamily: LABEL, fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", cursor: "pointer",
                 }}>Excluir</button>
               )}
@@ -520,10 +546,13 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                 fontFamily: LABEL, fontSize: 11, color: INK2, letterSpacing: ".12em", textTransform: "uppercase", padding: "11px 18px",
               }}>Descartar</button>
               <button onClick={handleSave} disabled={saving || !form.name.trim()} style={{
-                background: PRIMARY, color: "#fff", border: "none", borderRadius: 6,
+                background: saving || !form.name.trim() ? "rgba(109,40,217,0.4)" : "linear-gradient(90deg, #6d28d9, #8b5cf6)",
+                color: "#e0d0ff", border: "none", borderRadius: 6,
                 padding: "11px 28px", fontFamily: LABEL, fontSize: 11, fontWeight: 700,
                 letterSpacing: ".12em", textTransform: "uppercase",
-                cursor: saving ? "not-allowed" : "pointer", opacity: saving ? .7 : 1,
+                cursor: saving ? "not-allowed" : "pointer",
+                boxShadow: saving ? "none" : "0 0 12px rgba(109,40,217,0.4)",
+                transition: "opacity .15s",
               }}>{saving ? "Salvando..." : "Finalizar registro"}</button>
             </div>
           </div>
@@ -560,9 +589,9 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
             onClick={() => setLightbox(null)}
             style={{
               position: "absolute", top: 20, right: 20,
-              background: "rgba(255,255,255,.15)", backdropFilter: "blur(4px)",
-              border: "1px solid rgba(255,255,255,.2)", borderRadius: "50%",
-              width: 40, height: 40, color: "#fff", fontSize: 18, cursor: "pointer",
+              background: "rgba(179,136,255,.15)", backdropFilter: "blur(4px)",
+              border: `1px solid ${OUTLINE2}`, borderRadius: "50%",
+              width: 40, height: 40, color: PRIMARY, fontSize: 18, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}
           >✕</button>
