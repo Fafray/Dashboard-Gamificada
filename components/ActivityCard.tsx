@@ -295,16 +295,7 @@ export function ActivityCard({ activity, atributos, isBonusMission, initialAccum
 
       {/* Header */}
       <div className="act-head">
-        <div
-          className="act-emoji"
-          style={{
-            background: isDone
-              ? "rgba(16,185,129,0.15)"
-              : categoriaCor
-              ? `${categoriaCor}1a`
-              : undefined,
-          }}
-        >
+        <div className="act-emoji">
           {activity.emoji || "⚡"}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>

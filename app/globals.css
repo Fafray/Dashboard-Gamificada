@@ -907,133 +907,172 @@ a { color: var(--accent-blue); text-decoration: none; }
    (scoped to .neo-page — apenas DashboardClient)
    ========================================================= */
 .neo-page {
-  background: #1e2030;
+  background: #0a0612;
   min-height: 100%;
-  --text-primary:   #e4e6f0;
-  --text-secondary: #9496b0;
-  --text-muted:     #666880;
-  --border:         rgba(255,255,255,0.06);
-  --border-light:   rgba(255,255,255,0.04);
-  --bg-surface:     #181a29;
-  --bg-base:        #1e2030;
-  --bg-card:        #1e2030;
-  --bg-card-hover:  #232538;
-  --shadow-card:    6px 6px 14px rgba(0,0,0,0.5), -6px -6px 14px rgba(255,255,255,0.035);
-  --accent-teal:    #6366f1;
-  --accent-green:   #10b981;
+  /* Tokens System / Solo Leveling */
+  --text-primary:         #e0d0ff;
+  --text-secondary:       #8a6db3;
+  --text-muted:           #5a4580;
+  --border:               #3d2a5f;
+  --border-light:         #2d1f4a;
+  --bg-surface:           #1a0f2e;
+  --bg-base:              #0a0612;
+  --bg-card:              #120a1f;
+  --bg-card-hover:        #180f2a;
+  --shadow-card:          0 0 12px rgba(139,92,246,0.2);
+  --accent-teal:          #b388ff;
+  --accent-violet:        #b388ff;
+  --accent-violet-bright: #b388ff;
+  --accent-gold:          #ffb84d;
+  --accent-green:         #5dcaa5;
+  --accent-red:           #f87171;
+  --glow-violet:          0 0 10px rgba(179,136,255,0.4);
 }
 
-/* Cards */
+/* ── Cards ── */
 .neo-page .act {
-  background: #1e2030 !important;
-  border: none !important;
-  border-top: none !important;
-  outline: none !important;
-  border-radius: 1.5rem !important;
-  box-shadow: 6px 6px 14px rgba(0,0,0,0.5), -6px -6px 14px rgba(255,255,255,0.035) !important;
+  background: #120a1f !important;
+  border: 1px solid #3d2a5f !important;
+  border-radius: 8px !important;
+  box-shadow: 0 0 12px rgba(139,92,246,0.15) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+/* Linha luminosa no topo */
+.neo-page .act::before {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  top: 0 !important; left: 0 !important; right: 0 !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, #b388ff, transparent) !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
 }
 .neo-page .act:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 8px 8px 18px rgba(0,0,0,0.55), -8px -8px 18px rgba(255,255,255,0.04) !important;
+  transform: translateY(-1px) !important;
+  border-color: #6d28d9 !important;
+  box-shadow: 0 0 22px rgba(139,92,246,0.3), 0 4px 24px rgba(0,0,0,0.5) !important;
 }
 .neo-page .act.done {
-  background: #1e2030 !important;
-  border: none !important;
-  box-shadow: inset 4px 4px 9px rgba(0,0,0,0.55), inset -4px -4px 9px rgba(255,255,255,0.03) !important;
+  border-color: #1e3d30 !important;
+  box-shadow: 0 0 10px rgba(93,202,165,0.1) !important;
+}
+.neo-page .act.done::before {
+  background: linear-gradient(90deg, transparent, #5dcaa5, transparent) !important;
 }
 .neo-page .act.done::after { display: none !important; }
 
-/* Emoji */
+/* ── Ícone ── */
 .neo-page .act-emoji {
-  background: #1e2030;
-  border: none;
-  border-radius: 0.75rem;
-  box-shadow: 3px 3px 7px rgba(0,0,0,0.45), -3px -3px 7px rgba(255,255,255,0.04);
+  background: #1a0f2e !important;
+  border: 1px solid #b388ff !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(179,136,255,0.4) !important;
 }
 .neo-page .act.done .act-emoji {
-  border-color: transparent;
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.03);
+  border-color: #5dcaa5 !important;
+  box-shadow: 0 0 8px rgba(93,202,165,0.3) !important;
 }
 
-/* Text */
+/* ── Texto ── */
 .neo-page .act-name {
-  color: #e4e6f0;
-  font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif;
+  color: #e0d0ff !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-size: 12px !important;
+  font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif !important;
 }
-.neo-page .act-freq { color: #9496b0; }
-.neo-page .freq-dot { background: #6366f1; }
-.neo-page .act-streak { color: var(--accent-gold); }
+.neo-page .act-freq {
+  color: #8a6db3 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  font-size: 9px !important;
+}
+.neo-page .freq-dot { background: #b388ff !important; }
+.neo-page .act-streak { color: #ffb84d !important; }
 
-/* Botão principal check-in */
+/* ── Botão check-in ── */
 .neo-page .btn-checkin {
   height: 28px !important;
   min-height: unset !important;
   padding: 0 14px !important;
-  background: #6366f1 !important;
+  background: linear-gradient(90deg, #6d28d9, #8b5cf6) !important;
   border: none !important;
-  color: #fff !important;
-  border-radius: 999px !important;
-  font-size: 11px !important;
+  color: #e0d0ff !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
   font-weight: 700 !important;
-  letter-spacing: .04em !important;
-  box-shadow: 3px 3px 8px rgba(0,0,0,0.4), -1px -1px 4px rgba(99,102,241,0.2) !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 0 10px rgba(109,40,217,0.5) !important;
   font-family: var(--font-jakarta, var(--font-space-grotesk)), sans-serif !important;
 }
 .neo-page .btn-checkin:hover:not(:disabled) {
-  background: #5558e8 !important;
-  box-shadow: 2px 2px 6px rgba(0,0,0,0.35), -1px -1px 3px rgba(99,102,241,0.18) !important;
+  background: linear-gradient(90deg, #7c3aed, #b388ff) !important;
+  box-shadow: 0 0 18px rgba(139,92,246,0.7) !important;
 }
 .neo-page .act.done .btn-checkin {
-  background: #1e2030 !important;
-  border: none !important;
-  color: #10b981 !important;
-  font-weight: 600 !important;
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.03) !important;
+  background: transparent !important;
+  border: 1px solid #1e3d30 !important;
+  color: #5dcaa5 !important;
+  box-shadow: none !important;
+  text-transform: uppercase !important;
 }
-.neo-page .btn-checkin:disabled { opacity: .5 !important; }
+.neo-page .btn-checkin:disabled { opacity: .45 !important; }
 
-/* Undo */
+/* ── Botão undo ── */
 .neo-page .btn-undo {
-  width: 28px !important;
-  height: 28px !important;
-  min-height: unset !important;
-  min-width: unset !important;
+  width: 28px !important; height: 28px !important;
+  min-height: unset !important; min-width: unset !important;
   padding: 0 !important;
-  background: #1e2030 !important;
-  border: none !important;
-  color: #666880 !important;
-  border-radius: 999px !important;
+  background: transparent !important;
+  border: 1px solid #3d2a5f !important;
+  color: #5a4580 !important;
+  border-radius: 4px !important;
   font-size: 13px !important;
-  box-shadow: 2px 2px 6px rgba(0,0,0,0.45), -2px -2px 6px rgba(255,255,255,0.04) !important;
+  box-shadow: none !important;
 }
 .neo-page .btn-undo:hover {
-  color: #ef4444 !important;
-  box-shadow: 1px 1px 4px rgba(0,0,0,0.4), -1px -1px 4px rgba(255,255,255,0.03) !important;
+  color: #f87171 !important;
+  border-color: rgba(248,113,113,0.4) !important;
+  box-shadow: 0 0 8px rgba(248,113,113,0.2) !important;
 }
 
-/* Progress bar — trilha afundada + fill sólido */
+/* ── Barra de progresso ── */
 .neo-page .hud-bar-track {
-  height: 8px !important;
-  background: #181a29 !important;
+  height: 6px !important;
+  background: #1a0f2e !important;
+  border: 1px solid #3d2a5f !important;
   border-radius: 999px !important;
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.55), inset -1px -1px 4px rgba(255,255,255,0.025) !important;
+  box-shadow: none !important;
   margin-top: 6px !important;
+  overflow: hidden !important;
 }
-.neo-page .hud-bar-fill.below { background: #6366f1 !important; box-shadow: none !important; }
-.neo-page .hud-bar-fill.at    { background: #10b981 !important; box-shadow: none !important; }
-.neo-page .hud-bar-fill.over  { background: #f59e0b !important; box-shadow: none !important; }
+.neo-page .hud-bar-fill.below {
+  background: linear-gradient(90deg, #6d28d9, #b388ff) !important;
+  box-shadow: 0 0 8px rgba(179,136,255,0.6) !important;
+}
+.neo-page .hud-bar-fill.at {
+  background: linear-gradient(90deg, #059669, #5dcaa5) !important;
+  box-shadow: 0 0 8px rgba(93,202,165,0.5) !important;
+}
+.neo-page .hud-bar-fill.over {
+  background: linear-gradient(90deg, #d97706, #ffb84d) !important;
+  box-shadow: 0 0 8px rgba(255,184,77,0.5) !important;
+}
 
-/* HUD inputs no contexto neo */
+/* ── HUD inputs ── */
 .neo-page .hud-input-row {
-  background: #181a29;
-  border: none;
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.025);
+  background: #1a0f2e !important;
+  border: 1px solid #3d2a5f !important;
+  box-shadow: none !important;
 }
 .neo-page .hud-input-row:focus-within {
-  box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.025), 0 0 0 2px rgba(99,102,241,0.35);
-  border-color: transparent;
+  border-color: #b388ff !important;
+  box-shadow: 0 0 0 2px rgba(179,136,255,0.2) !important;
 }
-.neo-page .hud-input-row input { color: #a5b4fc; }
+.neo-page .hud-input-row input { color: #b388ff !important; }
 
 @media (max-width: 767px) {
   .neo-page .btn-checkin { min-height: unset !important; height: 30px !important; font-size: 11px !important; }
@@ -1043,6 +1082,7 @@ a { color: var(--accent-blue); text-decoration: none; }
 /* Espaçamento compacto */
 .neo-page .act-grid {
   grid-template-columns: repeat(auto-fill, minmax(280px, 360px)) !important;
+  align-items: start !important;
   gap: 10px !important;
 }
 .neo-page .act {
