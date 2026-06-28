@@ -6,12 +6,16 @@ export const BALANCE = {
     tier3Min: 14,   tier3Mult: 2.00,
   },
   decay: {
-    ratePerDay:        0.03,  // 3% do XP total por dia parado
+    ratePerDay:        0.05,  // 5% do XP total por dia parado
     renascidoReduction: 0.5,  // título "renascido" reduz pela metade
   },
   penalty: {
-    perMissedDay:  24,  // XP perdido por dia sem check-in
+    perMissedDay:  24,  // XP perdido por dia sem nenhum check-in (usado para nx_week)
     maxMissedDays:  7,  // cap de dias verificados no fechamento
+    perMissedActivity: {
+      multiplier: 1.5,  // xp_base × 1.5 por atividade daily perdida
+      min:        20,   // mínimo mesmo para tarefas fáceis
+    },
     once: {
       min:              30,  // penalidade mínima de missão única falhada
       xpBaseMultiplier:  3,  // = xp_base * 3

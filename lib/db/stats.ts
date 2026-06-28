@@ -108,24 +108,31 @@ export async function aplicarDecaySeNecessario(tituloAtivoId: string | null): Pr
   return perda;
 }
 
-export async function fecharDiasPassados(xpPenalidade = BALANCE.penalty.perMissedDay): Promise<number> {
+export async function fecharDiasPassados(): Promise<number> {
   await init();
   const stats = await getUserStats();
-
   if (!stats.ultima_atividade) return 0;
 
-  const actRes = await pool.query(
-    `SELECT COUNT(*) as cnt FROM activities WHERE archived = 0 AND frequency IN ('daily','nx_week')`
+  // Atividades diárias ativas (penalizadas individualmente)
+  const dailyRes = await pool.query(
+    `SELECT id, xp_base FROM activities WHERE archived = 0 AND frequency = 'daily'`
   );
-  if (parseInt(actRes.rows[0].cnt) === 0) return 0;
+  // Atividades nx_week ativas (usam penalidade flat por dia sem check-in)
+  const nxRes = await pool.query(
+    `SELECT COUNT(*) as cnt FROM activities WHERE archived = 0 AND frequency = 'nx_week'`
+  );
 
-  const hojeStr  = localISOString().slice(0, 10);
-  const refStr   = stats.ultimo_fechamento ?? stats.ultima_atividade.slice(0, 10);
+  const dailyActs: { id: number; xp_base: number }[] = dailyRes.rows;
+  const temNxWeek = parseInt(nxRes.rows[0].cnt) > 0;
+
+  if (dailyActs.length === 0 && !temNxWeek) return 0;
+
+  const hojeStr = localISOString().slice(0, 10);
+  const refStr  = stats.ultimo_fechamento ?? stats.ultima_atividade.slice(0, 10);
 
   const diasParaVerificar: string[] = [];
   const cursor = new Date(refStr);
   cursor.setDate(cursor.getDate() + 1);
-
   while (cursor.toISOString().slice(0, 10) < hojeStr && diasParaVerificar.length < BALANCE.penalty.maxMissedDays) {
     diasParaVerificar.push(cursor.toISOString().slice(0, 10));
     cursor.setDate(cursor.getDate() + 1);
@@ -136,33 +143,51 @@ export async function fecharDiasPassados(xpPenalidade = BALANCE.penalty.perMisse
     return 0;
   }
 
-  let diasPerdidos = 0;
+  const { multiplier, min } = BALANCE.penalty.perMissedActivity;
+  let totalPenalidade = 0;
+  let atividadesPerdidas = 0;
+
   for (const dia of diasParaVerificar) {
-    const res = await pool.query(
-      `SELECT COUNT(*) as cnt FROM checkins WHERE LEFT(checked_at, 10) = $1`,
-      [dia]
-    );
-    if (parseInt(res.rows[0].cnt) === 0) diasPerdidos++;
+    // Penalidade por atividade daily não feita
+    for (const act of dailyActs) {
+      const res = await pool.query(
+        `SELECT COUNT(*) as cnt FROM checkins WHERE activity_id = $1 AND LEFT(checked_at, 10) = $2`,
+        [act.id, dia]
+      );
+      if (parseInt(res.rows[0].cnt) === 0) {
+        totalPenalidade += Math.max(min, Math.round(act.xp_base * multiplier));
+        atividadesPerdidas++;
+      }
+    }
+
+    // Para nx_week: penalidade flat por dia sem nenhum check-in
+    if (temNxWeek) {
+      const anyRes = await pool.query(
+        `SELECT COUNT(*) as cnt FROM checkins WHERE LEFT(checked_at, 10) = $1`,
+        [dia]
+      );
+      if (parseInt(anyRes.rows[0].cnt) === 0) {
+        totalPenalidade += BALANCE.penalty.perMissedDay;
+      }
+    }
   }
 
-  const penalidade = diasPerdidos * xpPenalidade;
-
-  if (penalidade > 0) {
-    const novoXP = Math.max(0, stats.total_xp - penalidade);
+  if (totalPenalidade > 0) {
+    const novoXP = Math.max(0, stats.total_xp - totalPenalidade);
     await pool.query(
       `UPDATE user_stats SET total_xp = $1, ultimo_fechamento = $2 WHERE id = 1`,
       [novoXP, hojeStr]
     );
     await registrarEvento(
       "nivel_down",
-      `Penalidade: ${diasPerdidos} dia${diasPerdidos > 1 ? "s" : ""} sem missões (−${penalidade} XP)`,
-      { penalidade, dias_perdidos: diasPerdidos }
+      `Penalidade: ${atividadesPerdidas} missão${atividadesPerdidas !== 1 ? "ões" : ""} perdida${atividadesPerdidas !== 1 ? "s" : ""} em ${diasParaVerificar.length} dia${diasParaVerificar.length > 1 ? "s" : ""} (−${totalPenalidade} XP)`,
+      { penalidade: totalPenalidade, atividades_perdidas: atividadesPerdidas, dias_verificados: diasParaVerificar.length }
     );
   } else {
     await pool.query(`UPDATE user_stats SET ultimo_fechamento = $1 WHERE id = 1`, [hojeStr]);
   }
 
-  return penalidade;
+  return totalPenalidade;
 }
 
 export async function equiparTitulo(id: string | null): Promise<void> {
