@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
-import { getPushSubscriptions, getActivitiesWithNotifyAt, getAgendaTasksForNotification, markAgendaTaskNotified } from "@/lib/db";
+import { getPushSubscriptions, getActivitiesWithNotifyAt, getAgendaTasksForNotification, markAgendaTaskNotified, getPendingDailyRiskXP } from "@/lib/db";
 
 function localISO(offsetHours: number): string {
   const now = new Date();
@@ -42,9 +42,12 @@ export async function POST(req: Request) {
     // ISO local para a query de janela de tempo da agenda
     const nowLocalISO = localISO(localOffset);
 
-    const [activities, agendaTasks] = await Promise.all([
+    const todayStr = nowLocalISO.slice(0, 10);
+
+    const [activities, agendaTasks, riskXP] = await Promise.all([
       getActivitiesWithNotifyAt(timeStr),
       getAgendaTasksForNotification(nowLocalISO),
+      localHour === 21 ? getPendingDailyRiskXP(todayStr) : Promise.resolve(null),
     ]);
 
     agendaTaskIds = agendaTasks.map((t) => t.id);
@@ -62,6 +65,12 @@ export async function POST(req: Request) {
         url: "/agenda",
         tag: `agenda-${t.id}`,
       })),
+      ...(riskXP && riskXP.count > 0 ? [{
+        title: "⚠️ Missões pendentes",
+        body: `${riskXP.count} missão${riskXP.count !== 1 ? "ões" : ""} sem completar · −${riskXP.xpAtRisk} XP em risco`,
+        url: "/",
+        tag: "xp-risk",
+      }] : []),
     ];
 
     if (notifications.length === 0) {

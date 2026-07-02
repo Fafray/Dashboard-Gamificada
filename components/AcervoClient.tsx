@@ -49,6 +49,10 @@ const EMPTY: FormState = {
   photo: null, photo_thumbnail: null, pyramid_image: null, pyramid_thumbnail: null,
 };
 
+function daysAgo(createdAt: string): number {
+  return Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+}
+
 export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[] }) {
   const [perfumes, setPerfumes] = useState(initialPerfumes);
   const [tab, setTab]   = useState<"owned" | "wishlist">("owned");
@@ -124,6 +128,15 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
       }
       await refresh(); setModal(null);
     } finally { setSaving(false); }
+  }
+
+  async function handleAcquire(id: number, e: React.MouseEvent) {
+    e.stopPropagation();
+    await fetch(`/api/perfumes/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "owned" }),
+    });
+    await refresh();
   }
 
   async function handleDelete(id: number) {
@@ -243,7 +256,7 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                   }}>{p.name[0]}</div>
                 )}
                 {p.status === "wishlist" && (
-                  <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10 }}>
                     <span style={{
                       background: "var(--col-primary-a)", backdropFilter: "blur(6px)",
                       border: "1px solid var(--col-primary-ring)",
@@ -251,6 +264,16 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                       letterSpacing: ".2em", textTransform: "uppercase",
                       color: "var(--col-primary)", padding: "5px 14px", borderRadius: 999,
                     }}>Desejado</span>
+                    <button
+                      onClick={(e) => handleAcquire(p.id, e)}
+                      style={{
+                        background: "var(--col-btn-bg)", color: "var(--col-btn-text)",
+                        border: "none", borderRadius: 999, cursor: "pointer",
+                        fontFamily: LABEL, fontSize: 9, fontWeight: 700,
+                        letterSpacing: ".12em", textTransform: "uppercase",
+                        padding: "5px 14px", boxShadow: "0 0 10px var(--col-btn-glow)",
+                      }}
+                    >✓ Adquiri</button>
                   </div>
                 )}
               </div>
@@ -262,6 +285,11 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                 {p.inspiration && (
                   <span style={{ fontFamily: LABEL, fontSize: 10, color: "var(--col-ink2)", marginTop: 5, display: "block", fontStyle: "italic", opacity: .75 }}>
                     ≈ {p.inspiration}
+                  </span>
+                )}
+                {p.status === "wishlist" && daysAgo(p.created_at) >= 7 && (
+                  <span style={{ fontFamily: LABEL, fontSize: 9, color: "var(--col-ink2)", opacity: .45, marginTop: 4, display: "block" }}>
+                    há {daysAgo(p.created_at)} dias na lista
                   </span>
                 )}
                 {p.rating != null && (
@@ -472,6 +500,35 @@ export function AcervoClient({ initialPerfumes }: { initialPerfumes: PerfumeRow[
                     <input type="text" value={form.inspiration} placeholder="Ex: Ambassador de Mont Blanc" style={inp}
                       onChange={(e) => setForm((f) => ({ ...f, inspiration: e.target.value }))} />
                   </div>
+
+                  {/* Cross-reference: outros perfumes que referenciam este como inspiração */}
+                  {editing && (() => {
+                    const dupes = perfumes.filter((p) =>
+                      p.id !== editing.id &&
+                      p.inspiration &&
+                      p.inspiration.toLowerCase().includes(editing.name.toLowerCase())
+                    );
+                    if (dupes.length === 0) return null;
+                    return (
+                      <div style={{ background: "var(--col-surface)", border: "1px solid var(--col-border)", borderRadius: 8, padding: "14px 16px" }}>
+                        <span style={{ ...lbl, marginBottom: 10 }}>Dupes conhecidos</span>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {dupes.map((d) => (
+                            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              {d.photo_thumbnail && (
+                                <img src={d.photo_thumbnail} alt={d.name} style={{ width: 28, height: 28, borderRadius: 4, objectFit: "cover", flexShrink: 0 }} />
+                              )}
+                              <div>
+                                <div style={{ fontFamily: DISPLAY, fontSize: 13, color: "var(--col-ink)", fontStyle: "italic" }}>{d.name}</div>
+                                {d.brand && <div style={{ fontFamily: LABEL, fontSize: 9, color: "var(--col-ink2)", letterSpacing: ".1em", textTransform: "uppercase" }}>{d.brand}</div>}
+                              </div>
+                              {d.rating && <div style={{ marginLeft: "auto" }}><Stars rating={d.rating} /></div>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div>
                     <span style={lbl}>Impressões</span>

@@ -4,11 +4,12 @@ import { useEffect, useRef } from "react";
 
 interface OverlayProps {
   show: boolean;
-  mode: "levelup" | "achievement";
+  mode: "levelup" | "achievement" | "perfect";
   level?: number;
   achievementEmoji?: string;
   achievementName?: string;
   achievementDesc?: string;
+  comboXp?: number;
   onClose: () => void;
 }
 
@@ -47,7 +48,7 @@ function buildRays(container: HTMLElement) {
 }
 
 export function LevelUpOverlay({
-  show, mode, level, achievementEmoji, achievementName, achievementDesc, onClose,
+  show, mode, level, achievementEmoji, achievementName, achievementDesc, comboXp, onClose,
 }: OverlayProps) {
   const burstRef = useRef<HTMLDivElement>(null);
 
@@ -55,9 +56,9 @@ export function LevelUpOverlay({
     if (!show) return;
     if (burstRef.current) buildRays(burstRef.current);
     const colors =
-      mode === "levelup"
-        ? ["#7c5cff", "#22d3ee", "#2fe0a6", "#f7b733"]
-        : ["#f7b733", "#f472b6", "#fbbf24", "#fff1c2"];
+      mode === "levelup"  ? ["#7c5cff", "#22d3ee", "#2fe0a6", "#f7b733"] :
+      mode === "perfect"  ? ["#2fd09a", "#22d3ee", "#f7b733", "#ffffff"] :
+                            ["#f7b733", "#f472b6", "#fbbf24", "#fff1c2"];
     launchConfetti(colors);
   }, [show, mode]);
 
@@ -70,12 +71,12 @@ export function LevelUpOverlay({
         <div className="burst" ref={burstRef} />
 
         <div className="eyebrow" style={{ marginBottom: "4px" }}>
-          {mode === "levelup" ? "Subiu de nível" : "Conquista desbloqueada"}
+          {mode === "levelup" ? "Subiu de nível" : mode === "perfect" ? "Dia Perfeito" : "Conquista desbloqueada"}
         </div>
 
         <div className="lvl-ring">
           <span className="n">
-            {mode === "levelup" ? level : achievementEmoji}
+            {mode === "levelup" ? level : mode === "perfect" ? "⚡" : achievementEmoji}
           </span>
         </div>
 
@@ -83,6 +84,11 @@ export function LevelUpOverlay({
           <>
             <h2>Nível <b>{level}</b> alcançado!</h2>
             <p>Sua jornada continua. Novas conquistas no horizonte.</p>
+          </>
+        ) : mode === "perfect" ? (
+          <>
+            <h2>Todas as missões concluídas!</h2>
+            <p>Dia perfeito desbloqueado{comboXp ? ` · +${comboXp} XP combo` : ""}. Consistência é poder.</p>
           </>
         ) : (
           <>

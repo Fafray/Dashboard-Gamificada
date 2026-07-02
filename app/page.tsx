@@ -35,6 +35,9 @@ export default async function DashboardPage() {
 
   // Fecha dias passados sem checkin (penalidade) e aplica decay por inatividade
   const statsPreDecay = await getUserStats();
+  const daysSinceLastActivity = statsPreDecay.ultima_atividade
+    ? Math.floor((Date.now() - new Date(statsPreDecay.ultima_atividade).getTime()) / 86400000)
+    : 0;
   await fecharDiasPassados().catch(() => {});
   await aplicarDecaySeNecessario(statsPreDecay.titulo_ativo_id);
   await penalizeExpiredOnce(todayStr).catch(() => {});
@@ -136,6 +139,7 @@ export default async function DashboardPage() {
       classeInfo={classeInfo}
       bonusMissionId={bonusMissionId}
       todayTasks={todayTasks}
+      daysSinceLastActivity={daysSinceLastActivity}
     />
   );
 }

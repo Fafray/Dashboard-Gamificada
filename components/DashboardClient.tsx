@@ -95,6 +95,7 @@ interface DashboardClientProps {
   classeInfo: ClasseInfo;
   bonusMissionId: number | null;
   todayTasks: TodayTask[];
+  daysSinceLastActivity: number;
 }
 
 export function DashboardClient({
@@ -107,6 +108,7 @@ export function DashboardClient({
   classeInfo: initialClasse,
   bonusMissionId,
   todayTasks,
+  daysSinceLastActivity,
 }: DashboardClientProps) {
   const [classeInfo, setClasseInfo] = useState(initialClasse);
   const [levelInfo, setLevelInfo] = useState(initialLevelInfo);
@@ -116,6 +118,8 @@ export function DashboardClient({
   const [bonusAwarded, setBonusAwarded]   = useState(false);
   const [bonusPop, setBonusPop]           = useState<number | null>(null);
   const [collapsed, setCollapsed]         = useState<Record<string, boolean>>({});
+  const [perfectDayShown, setPerfectDayShown] = useState(false);
+  const [showPerfectOverlay, setShowPerfectOverlay] = useState(false);
 
   const [doneSet, setDoneSet] = useState<Set<number>>(
     () => new Set(initialActivities.filter((a) => a.doneToday).map((a) => a.id))
@@ -178,6 +182,13 @@ export function DashboardClient({
     setTimeout(() => setBonusPop(null), 1200);
   }, [allDone, bonusAwarded, comboXp]);
 
+  // Overlay de dia perfeito — dispara uma vez por sessão quando todas as diárias são concluídas
+  useEffect(() => {
+    if (!allDailyDone || perfectDayShown) return;
+    setPerfectDayShown(true);
+    setShowPerfectOverlay(true);
+  }, [allDailyDone, perfectDayShown]);
+
   return (
     <>
       {levelUpLevel !== null && (
@@ -189,6 +200,15 @@ export function DashboardClient({
         />
       )}
 
+      {showPerfectOverlay && (
+        <LevelUpOverlay
+          show
+          mode="perfect"
+          comboXp={comboXp}
+          onClose={() => setShowPerfectOverlay(false)}
+        />
+      )}
+
       {pendingAchievements.length > 0 && (
         <AchievementToast
           achievements={pendingAchievements}
@@ -197,6 +217,25 @@ export function DashboardClient({
       )}
 
       <div className="page neo-page">
+        {/* Banner de retorno após ausência */}
+        {daysSinceLastActivity >= 2 && (
+          <div style={{
+            marginBottom: "16px", padding: "12px 16px", borderRadius: "12px",
+            background: "rgba(248,113,113,.07)", border: "1px solid rgba(248,113,113,.35)",
+            display: "flex", alignItems: "center", gap: "10px",
+          }}>
+            <span style={{ fontSize: "18px" }}>🔄</span>
+            <div>
+              <div style={{ fontSize: "11px", letterSpacing: ".14em", fontWeight: 700, color: "#f87171", textTransform: "uppercase" }}>
+                Bem-vindo de volta
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "1px" }}>
+                Você ficou {daysSinceLastActivity} dia{daysSinceLastActivity !== 1 ? "s" : ""} ausente · penalidades já aplicadas
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Cabeçalho */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
           <div>
@@ -301,7 +340,12 @@ export function DashboardClient({
                 return catKeys.map((cat) => {
                   const items = applyFiltro(initialActivities
                     .filter((a) => (a.categoria ?? SEM_CATEGORIA) === cat))
-                    .sort((a, b) => (doneSet.has(a.id) ? 1 : 0) - (doneSet.has(b.id) ? 1 : 0));
+                    .sort((a, b) => {
+                      const aDone = doneSet.has(a.id) ? 1 : 0;
+                      const bDone = doneSet.has(b.id) ? 1 : 0;
+                      if (aDone !== bDone) return aDone - bDone;
+                      return b.xp_base - a.xp_base;
+                    });
                   if (items.length === 0) return null;
 
                   const cor      = CATEGORIA_COR[cat] ?? "var(--accent-violet)";

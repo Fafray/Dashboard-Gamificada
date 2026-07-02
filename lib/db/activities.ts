@@ -137,6 +137,25 @@ export async function penalizeExpiredOnce(todayStr: string): Promise<void> {
   }
 }
 
+export async function getPendingDailyRiskXP(todayStr: string): Promise<{ count: number; xpAtRisk: number }> {
+  await init();
+  const { multiplier, min } = BALANCE.penalty.perMissedActivity;
+  const res = await pool.query(
+    `SELECT a.id, a.xp_base FROM activities a
+     WHERE a.archived = 0 AND a.frequency = 'daily'
+     AND NOT EXISTS (
+       SELECT 1 FROM checkins c WHERE c.activity_id = a.id AND LEFT(c.checked_at, 10) = $1
+     )`,
+    [todayStr]
+  );
+  const count = res.rows.length;
+  const xpAtRisk = res.rows.reduce(
+    (sum: number, act: { xp_base: number }) => sum + Math.max(min, Math.round(act.xp_base * multiplier)),
+    0
+  );
+  return { count, xpAtRisk };
+}
+
 export async function getActivitiesWithNotifyAt(timeStr: string): Promise<Activity[]> {
   await init();
   const res = await pool.query(

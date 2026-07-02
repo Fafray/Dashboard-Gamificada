@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { Book } from "@/lib/db";
 import { compressImage } from "@/lib/image";
 
@@ -55,6 +55,10 @@ const STATUS_OPTS = [
   { value: "read",    label: "Lido" },
 ] as const;
 
+function daysAgo(createdAt: string): number {
+  return Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+}
+
 export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) {
   const [books, setBooks]   = useState(initialBooks);
   const [tab, setTab]       = useState<"reading" | "want" | "read">("reading");
@@ -64,7 +68,15 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
   const [preview, setPreview]   = useState<string | null>(null);
+  const [justCompleted, setJustCompleted] = useState<string | null>(null);
+  const [inlineEditId, setInlineEditId]   = useState<number | null>(null);
+  const [inlinePage, setInlinePage]       = useState("");
+  const inlineRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inlineEditId !== null) inlineRef.current?.focus();
+  }, [inlineEditId]);
 
   const filtered = books.filter((b) => b.status === tab);
 
@@ -109,12 +121,26 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
         current_page: form.current_page ? Number(form.current_page) : 0,
       };
       if (modal === "edit" && editing) {
+        const wasntRead = editing.status !== "read";
         await fetch(`/api/books/${editing.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        if (wasntRead && form.status === "read") setJustCompleted(editing.title);
       } else {
         await fetch("/api/books", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       }
       await refresh(); setModal(null);
     } finally { setSaving(false); }
+  }
+
+  async function handleInlinePageSave(bookId: number) {
+    const page = parseInt(inlinePage);
+    if (!isNaN(page) && page >= 0) {
+      await fetch(`/api/books/${bookId}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ current_page: page }),
+      });
+      await refresh();
+    }
+    setInlineEditId(null);
   }
 
   async function handleDelete(id: number) {
@@ -237,8 +263,26 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                 {b.status === "reading" && (
                   <div style={{ marginTop: 10, paddingTop: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 700, color: "var(--col-progress)" }}>{pct}%</span>
-                      <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 500, color: "var(--col-ink2)", textTransform: "uppercase", letterSpacing: ".08em", opacity: .7 }}>Lendo</span>
+                      {inlineEditId === b.id ? (
+                        <input
+                          ref={inlineRef}
+                          type="number" min="0" value={inlinePage}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => setInlinePage(e.target.value)}
+                          onBlur={(e) => { e.stopPropagation(); handleInlinePageSave(b.id); }}
+                          onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); handleInlinePageSave(b.id); } if (e.key === "Escape") setInlineEditId(null); }}
+                          style={{ width: 60, fontSize: 11, padding: "2px 4px", background: "var(--col-surface)", border: "1px solid var(--col-primary)", borderRadius: 4, color: "var(--col-progress)", outline: "none" }}
+                        />
+                      ) : (
+                        <span
+                          title="Clique para atualizar página"
+                          onClick={(e) => { e.stopPropagation(); setInlineEditId(b.id); setInlinePage(b.current_page.toString()); }}
+                          style={{ fontFamily: LABEL, fontSize: 10, fontWeight: 700, color: "var(--col-progress)", cursor: "text", borderBottom: "1px dotted var(--col-progress)" }}
+                        >{pct}%</span>
+                      )}
+                      <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 500, color: "var(--col-ink2)", textTransform: "uppercase", letterSpacing: ".08em", opacity: .7 }}>
+                        {b.current_page}{b.total_pages ? ` / ${b.total_pages} pág` : " pág"}
+                      </span>
                     </div>
                     <div style={{ height: 3, background: "var(--col-progress-dim)", borderRadius: 999, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: "var(--col-progress)", borderRadius: 999 }} />
@@ -253,7 +297,12 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
                   </div>
                 )}
                 {b.status === "want" && (
-                  <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, color: "var(--col-ink2)", opacity: .55, letterSpacing: ".12em", textTransform: "uppercase", marginTop: 8, display: "block" }}>Pendente</span>
+                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, color: "var(--col-ink2)", opacity: .55, letterSpacing: ".12em", textTransform: "uppercase" }}>Na fila</span>
+                    {daysAgo(b.created_at) >= 7 && (
+                      <span style={{ fontFamily: LABEL, fontSize: 9, color: "var(--col-ink2)", opacity: .45 }}>há {daysAgo(b.created_at)} dias</span>
+                    )}
+                  </div>
                 )}
               </article>
             );
@@ -280,6 +329,36 @@ export function BibliotecaClient({ initialBooks }: { initialBooks: BookRow[] }) 
               <span style={{ fontFamily: LABEL, fontSize: 9, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: "var(--col-faint3)" }}>Catalogar livro</span>
             </div>
           </button>
+        </div>
+      )}
+
+      {/* Celebração de conclusão de livro */}
+      {justCompleted && (
+        <div onClick={() => setJustCompleted(null)} style={{
+          position: "fixed", inset: 0, zIndex: 200,
+          background: "rgba(0,0,0,.85)", backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer",
+        }}>
+          <div style={{ textAlign: "center", maxWidth: 360, padding: "0 24px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: 56, marginBottom: 16 }}>📖</div>
+            <div style={{ fontFamily: LABEL, fontSize: 11, fontWeight: 700, letterSpacing: ".2em", textTransform: "uppercase", color: "var(--col-secondary)", marginBottom: 12 }}>
+              Livro concluído
+            </div>
+            <h2 style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 700, color: "var(--col-ink)", margin: "0 0 12px", lineHeight: 1.2, fontStyle: "italic" }}>
+              {justCompleted}
+            </h2>
+            <p style={{ fontFamily: BODY, fontSize: 15, color: "var(--col-ink2)", fontStyle: "italic", lineHeight: 1.6, marginBottom: 28 }}>
+              Mais um volume na estante. O que você leva dele?
+            </p>
+            <button onClick={() => setJustCompleted(null)} style={{
+              background: "var(--col-btn-bg)", color: "var(--col-btn-text)", border: "none",
+              borderRadius: 6, padding: "12px 32px",
+              fontFamily: LABEL, fontSize: 11, fontWeight: 700,
+              letterSpacing: ".12em", textTransform: "uppercase", cursor: "pointer",
+              boxShadow: "0 0 16px var(--col-btn-glow)",
+            }}>Continuar</button>
+          </div>
         </div>
       )}
 
