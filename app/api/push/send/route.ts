@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const [activities, agendaTasks, riskXP] = await Promise.all([
       getActivitiesWithNotifyAt(timeStr),
       getAgendaTasksForNotification(nowLocalISO),
-      localHour === 21 ? getPendingDailyRiskXP(todayStr) : Promise.resolve(null),
+      localHour === 21 && localMin === 0 ? getPendingDailyRiskXP(todayStr) : Promise.resolve(null),
     ]);
 
     agendaTaskIds = agendaTasks.map((t) => t.id);
