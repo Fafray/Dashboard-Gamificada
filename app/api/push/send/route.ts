@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
-import { getPushSubscriptions, getActivitiesWithNotifyAt, getAgendaTasksForNotification, markAgendaTaskNotified } from "@/lib/db";
+import {
+  getPushSubscriptions,
+  getActivitiesWithNotifyAt,
+  getAgendaTasksForNotification,
+  markAgendaTaskNotified,
+  getPlannerEntriesForNotification,
+  markHourlyPlanNotified,
+} from "@/lib/db";
 
 function localISO(offsetHours: number): string {
   const now = new Date();
@@ -29,6 +36,7 @@ export async function POST(req: Request) {
 
   let notifications: { title: string; body: string; url: string; tag: string }[] = [];
   let agendaTaskIds: number[] = [];
+  let plannerIds: number[] = [];
 
   if (body.title) {
     notifications = [{ title: body.title, body: body.body || "", url: body.url || "/", tag: body.tag || "manual" }];
@@ -41,13 +49,16 @@ export async function POST(req: Request) {
 
     // ISO local para a query de janela de tempo da agenda
     const nowLocalISO = localISO(localOffset);
+    const todayStr = nowLocalISO.slice(0, 10);
 
-    const [activities, agendaTasks] = await Promise.all([
+    const [activities, agendaTasks, plannerEntries] = await Promise.all([
       getActivitiesWithNotifyAt(timeStr),
       getAgendaTasksForNotification(nowLocalISO),
+      localMin === 0 ? getPlannerEntriesForNotification(todayStr, localHour) : Promise.resolve([]),
     ]);
 
     agendaTaskIds = agendaTasks.map((t) => t.id);
+    plannerIds = plannerEntries.map((p) => p.id);
 
     notifications = [
       ...activities.map((a) => ({
@@ -61,6 +72,12 @@ export async function POST(req: Request) {
         body: t.notes ? t.notes : `Compromisso às ${timeStr}`,
         url: "/agenda",
         tag: `agenda-${t.id}`,
+      })),
+      ...plannerEntries.map((p) => ({
+        title: `🕒 ${p.text}`,
+        body: `Planner: ${String(localHour).padStart(2, "0")}:00`,
+        url: "/planner",
+        tag: `planner-${p.id}`,
       })),
     ];
 
@@ -86,9 +103,12 @@ export async function POST(req: Request) {
     }
   }
 
-  // Marca tarefas da agenda como notificadas para não reenviar
+  // Marca tarefas da agenda e blocos do planner como notificados para não reenviar
   if (sent > 0) {
-    await Promise.all(agendaTaskIds.map((id) => markAgendaTaskNotified(id)));
+    await Promise.all([
+      ...agendaTaskIds.map((id) => markAgendaTaskNotified(id)),
+      ...plannerIds.map((id) => markHourlyPlanNotified(id)),
+    ]);
   }
 
   return NextResponse.json({ sent, failed: failed.length });

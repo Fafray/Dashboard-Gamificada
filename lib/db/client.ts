@@ -167,6 +167,8 @@ export function init(): Promise<void> {
     // Planner — blocos com duração e conclusão
     await pool.query(`ALTER TABLE hourly_plans ADD COLUMN IF NOT EXISTS duration INTEGER NOT NULL DEFAULT 1`);
     await pool.query(`ALTER TABLE hourly_plans ADD COLUMN IF NOT EXISTS done BOOLEAN NOT NULL DEFAULT FALSE`);
+    // Planner — lembrete push no início do bloco
+    await pool.query(`ALTER TABLE hourly_plans ADD COLUMN IF NOT EXISTS notified_at TEXT`);
   })();
   return schemaReady;
 }

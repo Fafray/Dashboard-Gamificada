@@ -9,6 +9,11 @@ export interface HourlyPlan {
   done: boolean;
 }
 
+export interface HourlyPlanNotifyItem {
+  id: number;
+  text: string;
+}
+
 export async function getHourlyPlansForDate(date: string): Promise<HourlyPlan[]> {
   await init();
   const res = await pool.query(
@@ -45,4 +50,19 @@ export async function upsertHourlyPlan(
      ON CONFLICT (plan_date, hour) DO UPDATE SET text = $3, duration = $4, done = $5, updated_at = $6`,
     [date, hour, text, duration, done, now]
   );
+}
+
+export async function getPlannerEntriesForNotification(date: string, hour: number): Promise<HourlyPlanNotifyItem[]> {
+  await init();
+  const res = await pool.query(
+    `SELECT id, text FROM hourly_plans
+     WHERE plan_date = $1 AND hour = $2 AND done = FALSE AND notified_at IS NULL`,
+    [date, hour]
+  );
+  return res.rows;
+}
+
+export async function markHourlyPlanNotified(id: number): Promise<void> {
+  await init();
+  await pool.query(`UPDATE hourly_plans SET notified_at = $1 WHERE id = $2`, [localISOString(), id]);
 }
