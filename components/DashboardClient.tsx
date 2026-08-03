@@ -6,7 +6,7 @@ import { ActivityCard } from "./ActivityCard";
 import { NotificationSetup } from "./NotificationSetup";
 
 const CATEGORIA_COR: Record<string, string> = {
-  saude: "#25d99a", treino: "#f0556a", estudo: "#45cdf0", disciplina: "#ffce47", foco: "#8b5cf6",
+  saude: "#7f9d72", treino: "#b96a5c", estudo: "#7c8ba3", disciplina: "#b8925a", foco: "#8f7c96",
 };
 const CATEGORIA_LABELS: Record<string, string> = {
   saude: "Saúde", treino: "Treino", estudo: "Estudo", disciplina: "Disciplina", foco: "Foco",

@@ -39,19 +39,19 @@ const CATEGORY_SUGGESTIONS = [
 ];
 
 const URGENCY_CONFIG: Record<Urgency, { label: string; color: string; dimColor: string }> = {
-  overdue:  { label: "Atrasada",     color: "#f0556a", dimColor: "rgba(240,85,106,.10)" },
-  today:    { label: "Hoje",         color: "#45cdf0", dimColor: "rgba(69,205,240,.10)" },
-  tomorrow: { label: "Amanhã",       color: "#86a6c8", dimColor: "rgba(134,166,200,.08)" },
-  week:     { label: "Esta semana",  color: "#86a6c8", dimColor: "rgba(134,166,200,.06)" },
-  later:    { label: "Mais adiante", color: "#3a526e", dimColor: "rgba(58,82,110,.06)" },
+  overdue:  { label: "Atrasada",     color: "#b96a5c", dimColor: "rgba(185,106,92,.10)" },
+  today:    { label: "Hoje",         color: "#c9903f", dimColor: "rgba(201,144,63,.10)" },
+  tomorrow: { label: "Amanhã",       color: "#a89b85", dimColor: "rgba(168,155,133,.08)" },
+  week:     { label: "Esta semana",  color: "#a89b85", dimColor: "rgba(168,155,133,.06)" },
+  later:    { label: "Mais adiante", color: "#6e6555", dimColor: "rgba(110,101,85,.06)" },
 };
 
 // Kanban shows 4 columns: overdue | today | week (tomorrow+week) | later
 const KANBAN_COLS: { key: Urgency | "week_all"; label: string; color: string; urgencies: Urgency[] }[] = [
-  { key: "overdue",  label: "Atrasada",      color: "#f0556a", urgencies: ["overdue"] },
-  { key: "today",    label: "Hoje",          color: "#45cdf0", urgencies: ["today"] },
-  { key: "week_all", label: "Esta semana",   color: "#86a6c8", urgencies: ["tomorrow", "week"] },
-  { key: "later",    label: "Mais adiante",  color: "#3a526e", urgencies: ["later"] },
+  { key: "overdue",  label: "Atrasada",      color: "#b96a5c", urgencies: ["overdue"] },
+  { key: "today",    label: "Hoje",          color: "#c9903f", urgencies: ["today"] },
+  { key: "week_all", label: "Esta semana",   color: "#a89b85", urgencies: ["tomorrow", "week"] },
+  { key: "later",    label: "Mais adiante",  color: "#6e6555", urgencies: ["later"] },
 ];
 
 const EMOJI_GROUPS = [
@@ -208,7 +208,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
           onClick={() => openAdd()}
           style={{
             padding: "8px 18px", borderRadius: "10px", fontSize: "12.5px", fontWeight: 700,
-            background: "var(--accent-violet)", color: "#04121c",
+            background: "var(--accent-violet)", color: "#14120e",
             border: "none", cursor: "pointer",
             fontFamily: "var(--font-space-grotesk), sans-serif",
           }}
@@ -273,7 +273,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                   cursor: "pointer", position: "relative",
                   background: d.isToday ? "var(--accent-violet)" : d.isOverdue ? "rgba(240,85,106,.18)" : "transparent",
                   border: d.isToday ? "1px solid var(--accent-violet-bright)" : "1px solid transparent",
-                  color: d.isToday ? "#04121c" : d.isOverdue ? "#f0556a" : "var(--text-secondary)",
+                  color: d.isToday ? "#14120e" : d.isOverdue ? "#f0556a" : "var(--text-secondary)",
                   transition: "background .12s",
                 }}
               >
@@ -319,7 +319,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
                   {items.length > 0 && (
                     <span style={{
                       marginLeft: "auto", minWidth: "18px", height: "18px",
-                      background: col.color, color: "#04121c",
+                      background: col.color, color: "#14120e",
                       borderRadius: "999px", fontSize: "9px", fontWeight: 800,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       padding: "0 4px", fontFamily: "var(--font-space-grotesk)",
@@ -583,7 +583,7 @@ export function AgendaClient({ initialTasks }: AgendaClientProps) {
               <button
                 onClick={handleSave}
                 disabled={saving || !form.name.trim() || !form.due_date}
-                style={{ ...btnStyle, flex: 2, background: "var(--accent-violet)", border: "none", color: "#04121c", opacity: (saving || !form.name.trim() || !form.due_date) ? 0.5 : 1 }}
+                style={{ ...btnStyle, flex: 2, background: "var(--accent-violet)", border: "none", color: "#14120e", opacity: (saving || !form.name.trim() || !form.due_date) ? 0.5 : 1 }}
               >
                 {saving ? "Salvando..." : editingTask ? "Salvar" : "Criar tarefa"}
               </button>

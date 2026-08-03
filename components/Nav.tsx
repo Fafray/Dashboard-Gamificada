@@ -138,10 +138,10 @@ export function Nav() {
   const navBg         = isColecoes ? "#0d0b07"               : "var(--bg-surface)";
   const navBorder     = isColecoes ? "#3a2f1a"               : "var(--border)";
   const navActive     = isColecoes ? "rgba(198,160,80,0.15)" : "var(--accent-violet)";
-  const navActiveTxt  = isColecoes ? "#c6a050"               : "#04121c";
+  const navActiveTxt  = isColecoes ? "#c6a050"               : "#14120e";
   const navMuted      = isColecoes ? "#a08a5a"               : "var(--text-muted)";
   const navLogoTxt    = isColecoes ? "#c6a050"               : "var(--accent-violet-bright)";
-  const navActiveMob  = isColecoes ? "rgba(198,160,80,0.15)" : "rgba(0,240,192,.08)";
+  const navActiveMob  = isColecoes ? "rgba(198,160,80,0.15)" : "rgba(201,144,63,.10)";
   const navActiveTxtM = isColecoes ? "#c6a050"               : "var(--accent-teal)";
   const navMutedMob   = isColecoes ? "#a08a5a"               : "var(--text-muted)";
 
@@ -292,11 +292,10 @@ export function Nav() {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 8px", marginBottom: 20 }}>
         <div style={{
           width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-          background: "rgba(26,169,214,.1)",
-          border: "1px solid rgba(69,205,240,.45)",
+          background: "var(--bg-surface)",
+          border: "1px solid var(--border)",
           display: "grid", placeItems: "center",
           fontSize: 17,
-          boxShadow: "0 0 14px rgba(26,169,214,.2)",
         }}>◈</div>
         <div>
           <div style={{

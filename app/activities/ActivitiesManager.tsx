@@ -10,11 +10,11 @@ const CATEGORIA_LABELS: Record<string, string> = {
 };
 
 const CATEGORIA_COR: Record<string, string> = {
-  saude:      "#25d99a",
-  treino:     "#f0556a",
-  estudo:     "#45cdf0",
-  disciplina: "#ffce47",
-  foco:       "#8b5cf6",
+  saude:      "#7f9d72",
+  treino:     "#b96a5c",
+  estudo:     "#7c8ba3",
+  disciplina: "#b8925a",
+  foco:       "#8f7c96",
 };
 
 const CATEGORIAS_ORDEM = ["saude", "treino", "estudo", "disciplina", "foco"] as const;
@@ -155,7 +155,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
           style={{
             display: "flex", alignItems: "center", gap: "6px",
             padding: "8px 16px", borderRadius: "10px", fontSize: "12.5px", fontWeight: 700,
-            background: "var(--accent-violet)", color: "#04121c",
+            background: "var(--accent-violet)", color: "#14120e",
             border: "none", cursor: "pointer",
             fontFamily: "var(--font-space-grotesk), sans-serif",
           }}
@@ -179,7 +179,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
                   cursor: "pointer", transition: "all .15s",
                   background: isActive ? cor : `${cor}18`,
                   border: `1px solid ${isActive ? cor : `${cor}44`}`,
-                  color: isActive ? "#04121c" : cor,
+                  color: isActive ? "#14120e" : cor,
                   fontFamily: "var(--font-space-grotesk), sans-serif",
                 }}
               >
@@ -198,7 +198,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
             borderRadius: "var(--r-lg)", padding: "48px", textAlign: "center",
           }}
         >
-          <p style={{ fontSize: "36px", marginBottom: "12px" }}>⚔️</p>
+          <p style={{ fontSize: "36px", marginBottom: "12px" }}>○</p>
           <p style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px", fontFamily: "var(--font-space-grotesk)" }}>
             Nenhum hábito ainda
           </p>
@@ -209,7 +209,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
             onClick={() => setFormMode({ kind: "create" })}
             style={{
               padding: "9px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 700,
-              background: "var(--accent-violet)", color: "#04121c", border: "none", cursor: "pointer",
+              background: "var(--accent-violet)", color: "#14120e", border: "none", cursor: "pointer",
             }}
           >
             Criar hábito
@@ -341,10 +341,10 @@ function MissionCard({
         style={{
           position: "absolute", top: "10px", right: "10px",
           width: "24px", height: "24px", borderRadius: "6px",
-          background: confirming ? "rgba(240,85,106,.15)" : "transparent",
-          border: confirming ? "1px solid rgba(240,85,106,.4)" : "1px solid transparent",
+          background: confirming ? "rgba(185,106,92,.15)" : "transparent",
+          border: confirming ? "1px solid rgba(185,106,92,.4)" : "1px solid transparent",
           cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "13px", color: confirming ? "#f0556a" : "var(--text-muted)",
+          fontSize: "13px", color: confirming ? "#b96a5c" : "var(--text-muted)",
           transition: "all .15s",
         }}
       >
@@ -445,7 +445,7 @@ function ArchivedRow({
             padding: "5px 10px", borderRadius: "7px", fontSize: "11px", fontWeight: 600,
             cursor: "pointer", transition: "all .15s",
             ...(confirmingDelete
-              ? { background: "rgba(240,85,106,.15)", border: "1px solid rgba(240,85,106,.5)", color: "#f0556a" }
+              ? { background: "rgba(185,106,92,.15)", border: "1px solid rgba(185,106,92,.5)", color: "#b96a5c" }
               : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }),
           }}
         >
