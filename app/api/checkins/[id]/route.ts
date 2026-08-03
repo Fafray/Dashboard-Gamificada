@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { deleteCheckin, getUserStats } from "@/lib/db";
-import { getLevelInfo } from "@/lib/gamification";
+import { deleteCheckin } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -11,13 +10,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  const xpSubtracted = await deleteCheckin(checkinId);
-  if (xpSubtracted === 0) {
+  const deleted = await deleteCheckin(checkinId);
+  if (!deleted) {
     return NextResponse.json({ error: "Check-in not found" }, { status: 404 });
   }
 
-  const stats = await getUserStats();
-  const levelInfo = getLevelInfo(stats.total_xp);
-
-  return NextResponse.json({ xpSubtracted, levelInfo });
+  return NextResponse.json({ success: true });
 }

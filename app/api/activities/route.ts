@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActivities, createActivity, clearOtherKeystones } from "@/lib/db";
+import { getActivities, createActivity } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 
 export async function GET(req: Request) {
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   if (!(await isAuthed())) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   const body = await req.json();
-  const { name, frequency, xp_base, emoji, color } = body;
+  const { name, frequency, emoji, color } = body;
 
   if (!name || !frequency) {
     return NextResponse.json({ error: "name and frequency are required" }, { status: 400 });
@@ -22,30 +22,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "frequency must be daily, weekly, free, nx_week, or once" }, { status: 400 });
   }
 
-  const { weekly_target, target_value, target_unit, categoria, micro_version, anchor_context, is_keystone, scheduled_days, notify_at, due_date } = body;
+  const { weekly_target, target_value, target_unit, categoria, scheduled_days, notify_at, due_date } = body;
 
   const activity = await createActivity({
     name,
     frequency,
-    xp_base:        xp_base ?? 10,
     emoji:          emoji ?? null,
     color:          color ?? "#7c3aed",
     weekly_target:  weekly_target ?? null,
     target_value:   target_value ?? null,
     target_unit:    target_unit ?? null,
     categoria:      categoria ?? null,
-    micro_version:  micro_version ?? null,
-    anchor_context: anchor_context ?? null,
-    is_keystone:    is_keystone ?? false,
-    graduation_count: 0,
     scheduled_days: scheduled_days ?? null,
     notify_at:      notify_at ?? null,
     due_date:       due_date ?? null,
   });
-
-  if (activity.is_keystone) {
-    await clearOtherKeystones(activity.id);
-  }
 
   return NextResponse.json(activity, { status: 201 });
 }

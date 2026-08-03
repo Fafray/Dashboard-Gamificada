@@ -5,7 +5,7 @@ self.addEventListener('push', function (event) {
 
   const options = {
     body: data.body || '',
-    icon: '/characters/e-rank.jpg',
+    icon: '/icon.svg',
     badge: '/icon.svg',
     vibrate: [100, 50, 100],
     tag: data.tag || 'daily-quest',

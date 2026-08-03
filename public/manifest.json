@@ -1,7 +1,7 @@
 {
   "name": "Daily Quest",
   "short_name": "Daily Quest",
-  "description": "RPG de hábitos — vire o protagonista da sua vida",
+  "description": "Rastreador de hábitos diários",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -10,9 +10,9 @@
   "theme_color": "#7c3aed",
   "icons": [
     {
-      "src": "/characters/s-rank.jpg.png",
-      "type": "image/png",
-      "sizes": "512x512",
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
       "purpose": "any"
     },
     {
@@ -24,14 +24,14 @@
   ],
   "shortcuts": [
     {
-      "name": "Missões de hoje",
+      "name": "Hábitos de hoje",
       "url": "/",
-      "description": "Ver missões do dia"
+      "description": "Ver hábitos do dia"
     },
     {
-      "name": "Atividades",
-      "url": "/activities",
-      "description": "Gerenciar atividades"
+      "name": "Planner",
+      "url": "/planner",
+      "description": "Planner por horário"
     }
   ]
 }

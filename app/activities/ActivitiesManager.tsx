@@ -4,15 +4,9 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Activity } from "@/lib/db";
 import { ActivityForm } from "@/components/ActivityForm";
-import { MedidorEquilibrio } from "@/components/MedidorEquilibrio";
-import { CATEGORIA_ATRIBUTO, CATEGORIA_LABELS } from "@/lib/attributes";
 
-const COR_ATTR: Record<string, string> = {
-  FOR: "#f0556a",
-  VIT: "#25d99a",
-  AGI: "#ffce47",
-  INT: "#8b5cf6",
-  PER: "#45cdf0",
+const CATEGORIA_LABELS: Record<string, string> = {
+  saude: "Saúde", treino: "Treino", estudo: "Estudo", disciplina: "Disciplina", foco: "Foco",
 };
 
 const CATEGORIA_COR: Record<string, string> = {
@@ -27,13 +21,12 @@ const CATEGORIAS_ORDEM = ["saude", "treino", "estudo", "disciplina", "foco"] as 
 const SEM_CATEGORIA = "__sem_categoria__";
 
 function enrich(a: Activity) {
-  const attr = a.categoria ? CATEGORIA_ATRIBUTO[a.categoria] ?? null : null;
   const freqLabel =
     a.frequency === "nx_week" ? `${a.weekly_target}x/sem.` :
     a.frequency === "daily"   ? "Diária"      :
     a.frequency === "weekly"  ? "Semanal"     :
     a.frequency === "once"    ? "Missão única" : "Livre";
-  return { ...a, attr, freqLabel };
+  return { ...a, freqLabel };
 }
 
 interface ActivitiesManagerProps {
@@ -60,7 +53,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
   }, []);
 
   async function handleSave(values: {
-    name: string; frequency: string; xp_base: number; emoji: string; color: string;
+    name: string; frequency: string; emoji: string; color: string;
     weekly_target?: number; target_value?: number | null; target_unit?: string;
     categoria?: string | null; scheduled_days?: string; notify_at?: string;
   }) {
@@ -107,7 +100,7 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
     : enriched.filter((a) => (a.categoria ?? SEM_CATEGORIA) === filtro);
 
   // Group by category
-  const grupos: { key: string; label: string; cor: string; attr: string | null; items: ReturnType<typeof enrich>[] }[] = [];
+  const grupos: { key: string; label: string; cor: string; items: ReturnType<typeof enrich>[] }[] = [];
 
   // Ordered categories present in filtered list
   const catKeys = [
@@ -118,12 +111,10 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
   for (const cat of catKeys) {
     const items = filtered.filter((a) => (a.categoria ?? SEM_CATEGORIA) === cat);
     if (items.length === 0) continue;
-    const attrKey = cat !== SEM_CATEGORIA ? (CATEGORIA_ATRIBUTO[cat] ?? null) : null;
     grupos.push({
       key: cat,
       label: cat === SEM_CATEGORIA ? "Sem categoria" : (CATEGORIA_LABELS[cat] ?? cat),
       cor: CATEGORIA_COR[cat] ?? "var(--accent-violet)",
-      attr: attrKey,
       items,
     });
   }
@@ -152,11 +143,11 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
-            Missões
+            Hábitos
           </h1>
           <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "3px" }}>
-            {active.length} ativa{active.length !== 1 ? "s" : ""}
-            {archived.length > 0 && ` · ${archived.length} arquivada${archived.length !== 1 ? "s" : ""}`}
+            {active.length} ativo{active.length !== 1 ? "s" : ""}
+            {archived.length > 0 && ` · ${archived.length} arquivado${archived.length !== 1 ? "s" : ""}`}
           </p>
         </div>
         <button
@@ -169,16 +160,9 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
             fontFamily: "var(--font-space-grotesk), sans-serif",
           }}
         >
-          + Nova missão
+          + Novo hábito
         </button>
       </div>
-
-      {/* Medidor */}
-      {active.length > 0 && (
-        <div style={{ marginBottom: "20px" }}>
-          <MedidorEquilibrio atividades={active} />
-        </div>
-      )}
 
       {/* Filter tabs */}
       {active.length > 0 && (
@@ -216,10 +200,10 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
         >
           <p style={{ fontSize: "36px", marginBottom: "12px" }}>⚔️</p>
           <p style={{ fontWeight: 700, color: "var(--text-primary)", marginBottom: "6px", fontFamily: "var(--font-space-grotesk)" }}>
-            Nenhuma atividade ainda
+            Nenhum hábito ainda
           </p>
           <p style={{ fontSize: "12.5px", color: "var(--text-muted)", marginBottom: "20px" }}>
-            Crie sua primeira missão para começar a ganhar XP
+            Crie seu primeiro hábito para começar
           </p>
           <button
             onClick={() => setFormMode({ kind: "create" })}
@@ -228,12 +212,12 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
               background: "var(--accent-violet)", color: "#04121c", border: "none", cursor: "pointer",
             }}
           >
-            Criar missão
+            Criar hábito
           </button>
         </div>
       ) : grupos.length === 0 ? (
         <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
-          Nenhuma missão nesta categoria
+          Nenhum hábito nesta categoria
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
@@ -255,16 +239,6 @@ export function ActivitiesManager({ active: initialActive, archived: initialArch
                 }}>
                   {g.label}
                 </span>
-                {g.attr && (
-                  <span style={{
-                    fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "5px",
-                    background: `${COR_ATTR[g.attr]}22`, color: COR_ATTR[g.attr],
-                    border: `1px solid ${COR_ATTR[g.attr]}44`,
-                    fontFamily: "var(--font-space-grotesk)", letterSpacing: ".06em",
-                  }}>
-                    +{g.attr}
-                  </span>
-                )}
                 <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "2px" }}>
                   {g.items.length}
                 </span>
@@ -363,7 +337,7 @@ function MissionCard({
       {/* Archive icon — top-right */}
       <button
         onClick={requestArchive}
-        title={confirming ? "Confirmar arquivamento?" : "Arquivar missão"}
+        title={confirming ? "Confirmar arquivamento?" : "Arquivar hábito"}
         style={{
           position: "absolute", top: "10px", right: "10px",
           width: "24px", height: "24px", borderRadius: "6px",
@@ -396,7 +370,7 @@ function MissionCard({
           {a.name}
         </div>
         <div style={{ fontSize: "11px", color: "var(--text-secondary)", marginTop: "4px" }}>
-          {a.freqLabel} · +{a.xp_base} XP
+          {a.freqLabel}
           {a.target_value ? ` · meta ${a.target_value}${a.target_unit ?? ""}` : ""}
         </div>
       </div>
@@ -451,7 +425,7 @@ function ArchivedRow({
           {a.name}
         </div>
         <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "1px" }}>
-          {a.freqLabel} · +{a.xp_base} XP
+          {a.freqLabel}
         </div>
       </div>
       <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>

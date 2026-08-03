@@ -54,12 +54,12 @@ const jakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Sistema — Daily Quest",
-  description: "RPG de hábitos — vire o protagonista da sua vida",
+  title: "Daily Quest",
+  description: "Rastreador de hábitos diários",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Daily Quest" },
   icons: {
-    apple: "/characters/e-rank.jpg.png",
+    apple: "/icon.svg",
   },
 };
 

@@ -3,25 +3,18 @@ import { UnlockGate } from "@/components/UnlockGate";
 import { format, startOfISOWeek, endOfISOWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  getUserStats,
   getActivities,
   getCheckinDatesForActivity,
   hasCheckinToday,
   hasCheckinThisWeek,
   getWeeklyCheckinCount,
-  getXpEarnedToday,
   getTodayCheckinForActivity,
   getLastCheckinThisWeek,
-  aplicarDecaySeNecessario,
-  fecharDiasPassados,
-  penalizeExpiredOnce,
-  updateLevel,
+  archiveExpiredOnce,
   getScheduledTasks,
+  getHourlyPlansForDate,
 } from "@/lib/db";
-import { getLevelInfo, computeStreak, nivelDoXp } from "@/lib/gamification";
-import { derivarClasse } from "@/lib/attributes";
-import type { Atributos } from "@/lib/attributes";
-import { getDailyBonusMissionId } from "@/lib/perks";
+import { computeStreak } from "@/lib/streaks";
 import { DashboardClient } from "@/components/DashboardClient";
 
 export const dynamic = "force-dynamic";
@@ -33,30 +26,9 @@ export default async function DashboardPage() {
   const weekStart = format(startOfISOWeek(now), "yyyy-MM-dd");
   const weekEnd   = format(endOfISOWeek(now),   "yyyy-MM-dd");
 
-  // Fecha dias passados sem checkin (penalidade) e aplica decay por inatividade
-  const statsPreDecay = await getUserStats();
-  const daysSinceLastActivity = statsPreDecay.ultima_atividade
-    ? Math.floor((Date.now() - new Date(statsPreDecay.ultima_atividade).getTime()) / 86400000)
-    : 0;
-  await fecharDiasPassados().catch(() => {});
-  await aplicarDecaySeNecessario(statsPreDecay.titulo_ativo_id);
-  await penalizeExpiredOnce(todayStr).catch(() => {});
+  await archiveExpiredOnce(todayStr).catch(() => {});
 
-  const [rawStats, activities, xpToday] = await Promise.all([
-    getUserStats(),
-    getActivities(),
-    getXpEarnedToday(todayStr),
-  ]);
-
-  // Re-derivar nível após decay (pode ter caído)
-  const nivelAtual = nivelDoXp(rawStats.total_xp);
-  if (nivelAtual !== rawStats.level) await updateLevel(nivelAtual);
-
-  const atributos = (rawStats.atributos ?? { FOR: 0, VIT: 0, AGI: 0, INT: 0, PER: 0 }) as Atributos;
-  const classeInfo = derivarClasse(atributos);
-  const pontosDisponiveis = rawStats.pontos_disponiveis ?? 0;
-
-  const levelInfo = getLevelInfo(rawStats.total_xp);
+  const activities = await getActivities();
 
   const todayDow = now.getDay(); // 0=Dom ... 6=Sáb
 
@@ -94,8 +66,8 @@ export default async function DashboardPage() {
           : Promise.resolve(null),
       ]);
 
-      // Para hábitos diários com meta numérica SEM micro_version: "feito" quando acumulado >= meta
-      const doneRaw = (activity.frequency === "daily" && activity.target_value != null && !activity.micro_version)
+      // Para hábitos diários com meta numérica: "feito" quando acumulado >= meta
+      const doneRaw = (activity.frequency === "daily" && activity.target_value != null)
         ? (Number(todayCheckin?.actual_value ?? 0) >= activity.target_value)
         : doneRawBase;
 
@@ -111,19 +83,17 @@ export default async function DashboardPage() {
         streak,
         doneToday: doneRaw,
         todayCheckinId: todayCheckin?.id ?? null,
-        todayCheckinXP: todayCheckin?.xp_earned ?? null,
         todayCheckinValue: todayCheckin?.actual_value ?? null,
         weeklyCount: weeklyCount as number | null,
       };
     })
   );
 
-  const bonusMissionId = atributos.PER >= 5
-    ? getDailyBonusMissionId(activitiesWithStatus.map((a) => a.id), now)
-    : null;
-
   const allTasks = await getScheduledTasks(false);
   const todayTasks = allTasks.filter((t) => t.due_date <= todayStr);
+
+  const todayPlanRows = await getHourlyPlansForDate(todayStr);
+  const todayPlan = todayPlanRows.map((p) => ({ hour: p.hour, text: p.text }));
 
   const dateLabel = format(now, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR });
   const capitalizedDate = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
@@ -131,15 +101,9 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       activities={activitiesWithStatus}
-      levelInfo={levelInfo}
-      xpToday={xpToday}
       dateLabel={capitalizedDate}
-      atributos={atributos}
-      pontosDisponiveis={pontosDisponiveis}
-      classeInfo={classeInfo}
-      bonusMissionId={bonusMissionId}
       todayTasks={todayTasks}
-      daysSinceLastActivity={daysSinceLastActivity}
+      todayPlan={todayPlan}
     />
   );
 }

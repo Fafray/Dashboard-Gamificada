@@ -20,7 +20,6 @@ export function init(): Promise<void> {
         id           SERIAL  PRIMARY KEY,
         name         TEXT    NOT NULL,
         frequency    TEXT    NOT NULL DEFAULT 'daily',
-        xp_base      INTEGER NOT NULL DEFAULT 10,
         emoji        TEXT,
         color        TEXT    NOT NULL DEFAULT '#7c3aed',
         archived     INTEGER NOT NULL DEFAULT 0,
@@ -31,35 +30,13 @@ export function init(): Promise<void> {
       CREATE TABLE IF NOT EXISTS checkins (
         id          SERIAL  PRIMARY KEY,
         activity_id INTEGER NOT NULL REFERENCES activities(id),
-        checked_at  TEXT    NOT NULL,
-        xp_earned   INTEGER NOT NULL
+        checked_at  TEXT    NOT NULL
       )
     `);
     await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS uq_checkin_day
         ON checkins (activity_id, LEFT(checked_at, 10))
     `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS achievements (
-        id          SERIAL PRIMARY KEY,
-        key         TEXT   NOT NULL UNIQUE,
-        unlocked_at TEXT   NOT NULL
-      )
-    `);
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS user_stats (
-        id        INTEGER PRIMARY KEY,
-        total_xp  INTEGER NOT NULL DEFAULT 0,
-        level     INTEGER NOT NULL DEFAULT 1,
-        last_seen TEXT    NOT NULL
-      )
-    `);
-    await pool.query(
-      `INSERT INTO user_stats (id, total_xp, level, last_seen)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (id) DO NOTHING`,
-      [1, 0, 1, localISOString()]
-    );
 
     // ── Migrations ────────────────────────────────────────────────────────────
     // Rastreio numérico
@@ -68,39 +45,8 @@ export function init(): Promise<void> {
     await pool.query(`ALTER TABLE checkins   ADD COLUMN IF NOT EXISTS actual_value NUMERIC`);
     // Frequência Nx por semana
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS weekly_target INTEGER`);
-    // Atributos + Classe
+    // Categoria (tag livre de organização)
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS categoria TEXT`);
-    await pool.query(`
-      ALTER TABLE user_stats
-        ADD COLUMN IF NOT EXISTS atributos JSONB NOT NULL DEFAULT '{"FOR":0,"VIT":0,"AGI":0,"INT":0,"PER":0}'
-    `);
-    await pool.query(`
-      ALTER TABLE user_stats
-        ADD COLUMN IF NOT EXISTS pontos_disponiveis INTEGER NOT NULL DEFAULT 0
-    `);
-    // Hardcore / Títulos
-    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS nivel_maximo_atingido INTEGER NOT NULL DEFAULT 1`);
-    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS titulo_ativo_id TEXT`);
-    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS ultima_atividade TEXT`);
-    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS ultimo_fechamento TEXT`);
-    // Sistema de eventos (timeline / gráfico de nível)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS events (
-        id    SERIAL  PRIMARY KEY,
-        tipo  TEXT    NOT NULL,
-        texto TEXT    NOT NULL,
-        data  TEXT    NOT NULL,
-        extra JSONB
-      )
-    `);
-    // Perks passivos (VIT shield)
-    await pool.query(`ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS vit_shield_used_at TEXT`);
-    // Micro-hábitos
-    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS micro_version TEXT`);
-    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS anchor_context TEXT`);
-    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS is_keystone BOOLEAN NOT NULL DEFAULT FALSE`);
-    await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS graduation_count INTEGER NOT NULL DEFAULT 0`);
-    await pool.query(`ALTER TABLE checkins ADD COLUMN IF NOT EXISTS checkin_level VARCHAR(10)`);
     // Dias específicos da semana para atividades semanais
     await pool.query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS scheduled_days TEXT`);
     // Missão única com deadline
@@ -192,6 +138,32 @@ export function init(): Promise<void> {
     await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS pyramid_image     TEXT`);
     await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS pyramid_thumbnail TEXT`);
     await pool.query(`ALTER TABLE perfumes ADD COLUMN IF NOT EXISTS inspiration       TEXT`);
+
+    // ── Remoção do sistema RPG (XP, níveis, atributos, títulos, conquistas) ────
+    await pool.query(`DROP TABLE IF EXISTS achievements`);
+    await pool.query(`DROP TABLE IF EXISTS user_stats`);
+    await pool.query(`DROP TABLE IF EXISTS events`);
+    await pool.query(`DROP TABLE IF EXISTS portrait_overrides`);
+    await pool.query(`ALTER TABLE checkins   DROP COLUMN IF EXISTS xp_earned`);
+    await pool.query(`ALTER TABLE checkins   DROP COLUMN IF EXISTS checkin_level`);
+    await pool.query(`ALTER TABLE activities DROP COLUMN IF EXISTS xp_base`);
+    await pool.query(`ALTER TABLE activities DROP COLUMN IF EXISTS is_keystone`);
+    await pool.query(`ALTER TABLE activities DROP COLUMN IF EXISTS graduation_count`);
+    await pool.query(`ALTER TABLE activities DROP COLUMN IF EXISTS micro_version`);
+    await pool.query(`ALTER TABLE activities DROP COLUMN IF EXISTS anchor_context`);
+
+    // Planner por horário — uma linha de texto livre por hora do dia
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS hourly_plans (
+        id         SERIAL PRIMARY KEY,
+        plan_date  TEXT    NOT NULL,
+        hour       INTEGER NOT NULL,
+        text       TEXT    NOT NULL,
+        created_at TEXT    NOT NULL,
+        updated_at TEXT    NOT NULL,
+        UNIQUE(plan_date, hour)
+      )
+    `);
   })();
   return schemaReady;
 }

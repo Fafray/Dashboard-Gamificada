@@ -30,11 +30,11 @@ const EMOJI_GROUPS = [
 ];
 
 const CATEGORIA_OPTIONS = [
-  { value: "saude",      label: "Saúde",      attr: "VIT", emoji: "❤️" },
-  { value: "treino",     label: "Treino",      attr: "FOR", emoji: "💪" },
-  { value: "estudo",     label: "Estudo",      attr: "INT", emoji: "📚" },
-  { value: "disciplina", label: "Disciplina",  attr: "AGI", emoji: "⚡" },
-  { value: "foco",       label: "Foco",        attr: "PER", emoji: "🎯" },
+  { value: "saude",      label: "Saúde",      emoji: "❤️" },
+  { value: "treino",     label: "Treino",      emoji: "💪" },
+  { value: "estudo",     label: "Estudo",      emoji: "📚" },
+  { value: "disciplina", label: "Disciplina",  emoji: "⚡" },
+  { value: "foco",       label: "Foco",        emoji: "🎯" },
 ] as const;
 
 const DAYS = [
@@ -50,16 +50,12 @@ const DAYS = [
 interface FormValues {
   name: string;
   frequency: "daily" | "weekly" | "free" | "nx_week" | "once";
-  xp_base: number;
   emoji: string;
   color: string;
   weekly_target: number;
   target_value: number | null;
   target_unit: string;
   categoria: string | null;
-  micro_version: string;
-  anchor_context: string;
-  is_keystone: boolean;
   scheduled_days: string;
   notify_at: string;
   due_date: string;
@@ -81,22 +77,17 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
   const [values, setValues] = useState<FormValues>({
     name:           activity?.name ?? "",
     frequency:      (activity?.frequency as FormValues["frequency"]) ?? "daily",
-    xp_base:        activity?.xp_base ?? 10,
     emoji:          activity?.emoji ?? "",
     color:          activity?.color ?? "#7c3aed",
     weekly_target:  activity?.weekly_target ?? 3,
     target_value:   activity?.target_value ?? null,
     target_unit:    activity?.target_unit ?? "L",
     categoria:      activity?.categoria ?? null,
-    micro_version:  (activity as Activity & { micro_version?: string })?.micro_version ?? "",
-    anchor_context: (activity as Activity & { anchor_context?: string })?.anchor_context ?? "",
-    is_keystone:    (activity as Activity & { is_keystone?: boolean })?.is_keystone ?? false,
-    scheduled_days: (activity as Activity & { scheduled_days?: string })?.scheduled_days ?? "",
-    notify_at:      (activity as Activity & { notify_at?: string })?.notify_at ?? "",
-    due_date:       (activity as Activity & { due_date?: string })?.due_date ?? "",
+    scheduled_days: activity?.scheduled_days ?? "",
+    notify_at:      activity?.notify_at ?? "",
+    due_date:       activity?.due_date ?? "",
   });
   const [hasTarget, setHasTarget] = useState(!!activity?.target_value);
-  const [hasMicro, setHasMicro] = useState(!!(activity as Activity & { micro_version?: string })?.micro_version);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -113,12 +104,9 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
     try {
       await onSave({
         ...values,
-        target_value:   hasTarget && values.target_value ? values.target_value : null,
-        target_unit:    hasTarget ? values.target_unit : "",
-        categoria:      values.categoria ?? null,
-        micro_version:  hasMicro ? values.micro_version : "",
-        anchor_context: hasMicro ? values.anchor_context : "",
-        is_keystone:    hasMicro ? values.is_keystone : false,
+        target_value: hasTarget && values.target_value ? values.target_value : null,
+        target_unit:  hasTarget ? values.target_unit : "",
+        categoria:    values.categoria ?? null,
       });
     } catch {
       setError("Erro ao salvar. Tente novamente.");
@@ -144,13 +132,12 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
           border: "1px solid var(--border-light)",
           maxWidth: "440px",
           maxHeight: "90vh",
-          boxShadow: "0 0 60px rgba(124,92,255,.2), 0 24px 48px -16px rgba(0,0,0,.8)",
         }}
       >
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>
-            {activity ? "Editar atividade" : "Nova atividade"}
+            {activity ? "Editar hábito" : "Novo hábito"}
           </h2>
           <button onClick={onCancel} style={{ color: "var(--text-muted)", fontSize: "22px", lineHeight: 1 }}>×</button>
         </div>
@@ -234,7 +221,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
             {values.frequency === "once" && (
               <div className="mt-3 p-3 rounded-xl" style={{ background: "var(--bg-surface)", border: "1px solid var(--border)" }}>
                 <p style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "8px" }}>
-                  Prazo <span style={{ opacity: 0.6 }}>— se não concluir até esta data, perde XP</span>
+                  Prazo
                 </p>
                 <input
                   type="date"
@@ -300,10 +287,10 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
             )}
           </div>
 
-          {/* Categoria / Atributo */}
+          {/* Categoria */}
           <div>
             <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-              Categoria <span style={{ color: "var(--text-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— amplifica atributo</span>
+              Categoria <span style={{ color: "var(--text-muted)", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— só organiza</span>
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -331,7 +318,6 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                     }
                   >
                     {opt.emoji} {opt.label}
-                    <div style={{ fontSize: "10px", opacity: .6, marginTop: "1px" }}>+{opt.attr}</div>
                   </button>
                 );
               })}
@@ -402,101 +388,12 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
             )}
           </div>
 
-          {/* Micro-hábito */}
+          {/* Emoji */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                Versão mínima
-              </label>
-              <button
-                type="button"
-                onClick={() => setHasMicro((v) => !v)}
-                className="text-xs font-semibold px-2.5 py-1 rounded-lg transition-all"
-                style={hasMicro
-                  ? { background: "rgba(34,211,238,.15)", border: "1px solid rgba(34,211,238,.4)", color: "var(--accent-teal)" }
-                  : { background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-muted)" }
-                }
-              >
-                {hasMicro ? "✓ ativo" : "+ ativar"}
-              </button>
-            </div>
-
-            {hasMicro && (
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  value={values.micro_version}
-                  onChange={(e) => set("micro_version", e.target.value)}
-                  placeholder='Ex: "Colocar o tênis", "Abrir o livro"'
-                  className={inputClass}
-                  style={fieldStyle}
-                />
-                <input
-                  type="text"
-                  value={values.anchor_context}
-                  onChange={(e) => set("anchor_context", e.target.value)}
-                  placeholder='Faço isso depois de... (opcional)'
-                  className={inputClass}
-                  style={{ ...fieldStyle, fontSize: "12px" }}
-                />
-                <label
-                  className="flex items-center gap-3 p-3 rounded-xl cursor-pointer"
-                  style={{ background: "var(--bg-surface)", border: `1px solid ${values.is_keystone ? "rgba(239,165,39,.4)" : "var(--border)"}` }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={values.is_keystone}
-                    onChange={(e) => set("is_keystone", e.target.checked)}
-                    style={{ accentColor: "#efa527", width: "16px", height: "16px" }}
-                  />
-                  <div>
-                    <div className="text-sm font-semibold" style={{ color: values.is_keystone ? "#efa527" : "var(--text-secondary)" }}>
-                      ⚓ Hábito-âncora
-                    </div>
-                    <div className="text-xs" style={{ color: "var(--text-muted)" }}>
-                      Completo → +10% XP em todas as outras missões do dia. Só 1 permitido.
-                    </div>
-                  </div>
-                </label>
-              </div>
-            )}
-
-            {!hasMicro && (
-              <p style={{ fontSize: "11.5px", color: "var(--text-muted)", marginTop: "4px" }}>
-                Opcional — versão mínima inquebrável do hábito (BJ Fogg, Tiny Habits)
-              </p>
-            )}
-          </div>
-
-          {/* Emoji + XP */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                Emoji
-              </label>
-              <EmojiPicker value={values.emoji} onChange={(e) => set("emoji", e)} />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
-                XP Base
-              </label>
-              <div className="flex items-center gap-1">
-                <button type="button" onClick={() => set("xp_base", Math.max(1, values.xp_base - 5))}
-                  className="w-9 h-10 rounded-lg text-lg font-bold flex-shrink-0"
-                  style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>−</button>
-                <input
-                  type="number"
-                  value={values.xp_base}
-                  onChange={(e) => set("xp_base", Math.max(1, parseInt(e.target.value) || 1))}
-                  className="flex-1 px-2 py-2.5 rounded-lg text-sm text-center outline-none"
-                  style={fieldStyle}
-                  min={1} max={500}
-                />
-                <button type="button" onClick={() => set("xp_base", Math.min(500, values.xp_base + 5))}
-                  className="w-9 h-10 rounded-lg text-lg font-bold flex-shrink-0"
-                  style={{ background: "var(--bg-surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}>+</button>
-              </div>
-            </div>
+            <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+              Emoji
+            </label>
+            <EmojiPicker value={values.emoji} onChange={(e) => set("emoji", e)} />
           </div>
 
           {/* Lembrete */}
@@ -534,11 +431,11 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
             style={{ background: "var(--bg-surface)", border: `1px solid ${cardColor}40` }}>
             <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0"
               style={{ background: cardColor + "20", border: `1px solid ${cardColor}40` }}>
-              {values.emoji || "⚡"}
+              {values.emoji || "•"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate" style={{ color: "var(--text-primary)" }}>
-                {values.name || "Nome da atividade"}
+                {values.name || "Nome do hábito"}
               </p>
               <p className="text-xs" style={{ color: "var(--text-muted)" }}>
                 {values.frequency === "nx_week"
@@ -546,8 +443,6 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
                   : values.frequency === "once" && values.due_date
                   ? `Missão única · prazo ${values.due_date}`
                   : FREQ_OPTIONS.find(f => f.value === values.frequency)?.label}
-                {" · +"}
-                {values.xp_base} XP
                 {hasTarget && values.target_value
                   ? ` · meta ${values.target_value}${values.target_unit}`
                   : ""}
@@ -566,7 +461,7 @@ export function ActivityForm({ activity, onSave, onCancel }: ActivityFormProps) 
             <button type="submit" disabled={saving}
               className="flex-1 py-2.5 rounded-xl text-sm font-bold"
               style={{ background: saving ? cardColor + "60" : cardColor, color: "white" }}>
-              {saving ? "Salvando..." : activity ? "Salvar" : "Criar atividade"}
+              {saving ? "Salvando..." : activity ? "Salvar" : "Criar hábito"}
             </button>
           </div>
         </form>

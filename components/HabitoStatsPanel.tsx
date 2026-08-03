@@ -8,7 +8,6 @@ export interface HabitoStatItem {
   color: string;
   frequency: Frequency;
   total_checkins: number;
-  total_xp: number;
   last_checkin: string | null;
   current_streak: number;
   best_streak: number;
@@ -90,7 +89,7 @@ export function HabitoStatsPanel({ items }: { items: HabitoStatItem[] }) {
                     {item.name}
                   </div>
                   <div style={{ fontSize: "10px", color: "var(--text-muted)", marginTop: "1px" }}>
-                    {FREQ_LABEL[item.frequency]} · +{item.total_xp} XP
+                    {FREQ_LABEL[item.frequency]}
                   </div>
                 </div>
               </div>

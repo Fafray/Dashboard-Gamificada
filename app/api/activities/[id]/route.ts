@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActivity, updateActivity, archiveActivity, deleteActivityPermanently, clearOtherKeystones } from "@/lib/db";
+import { getActivity, updateActivity, archiveActivity, deleteActivityPermanently } from "@/lib/db";
 import { isAuthed } from "@/lib/auth";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -16,14 +16,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (body.frequency && !["daily", "weekly", "free", "nx_week", "once"].includes(body.frequency)) {
     return NextResponse.json({ error: "Invalid frequency" }, { status: 400 });
   }
-  if (body.xp_base !== undefined && (typeof body.xp_base !== "number" || body.xp_base < 1)) {
-    return NextResponse.json({ error: "xp_base must be a positive number" }, { status: 400 });
-  }
 
   const updated = await updateActivity(activityId, body);
-  if (body.is_keystone === true && updated) {
-    await clearOtherKeystones(updated.id);
-  }
   return NextResponse.json(updated);
 }
 

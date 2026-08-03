@@ -2,40 +2,24 @@ import { isAuthed } from "@/lib/auth";
 import { UnlockGate } from "@/components/UnlockGate";
 import {
   getCheckinsGroupedByDate,
-  getXpPerDay,
   getTotalCheckinsCount,
-  getUserStats,
   getActivities,
   getCheckinDatesForActivity,
-  getEvents,
-  getLevelHistory,
   getActivityStatsAll,
 } from "@/lib/db";
-import { computeStreak, getLevelInfo } from "@/lib/gamification";
+import { computeStreak } from "@/lib/streaks";
 import { Heatmap } from "@/components/Heatmap";
-import { XPChart } from "@/components/XPChart";
-import { EvolucaoNivel } from "@/components/EvolucaoNivel";
-import { RegistroSistema } from "@/components/RegistroSistema";
 import { HabitoStatsPanel, type HabitoStatItem } from "@/components/HabitoStatsPanel";
 
 export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
   if (!(await isAuthed())) return <UnlockGate />;
-  const [heatmapData, xpData, totalCheckins, rawStats, activities, actStats] = await Promise.all([
+  const [heatmapData, totalCheckins, activities, actStats] = await Promise.all([
     getCheckinsGroupedByDate(365),
-    getXpPerDay(30),
     getTotalCheckinsCount(),
-    getUserStats(),
     getActivities(false),
     getActivityStatsAll(),
-  ]);
-
-  const { level: currentLevel } = getLevelInfo(rawStats.total_xp);
-
-  const [eventos, levelHistory] = await Promise.all([
-    getEvents(60).catch(() => []),
-    getLevelHistory(currentLevel).catch(() => [{ date: new Date().toISOString().slice(0, 10), nivel: currentLevel }]),
   ]);
 
   const statsById = new Map(actStats.map((s) => [s.id, s]));
@@ -62,7 +46,6 @@ export default async function HistoryPage() {
         color: act.color,
         frequency: act.frequency,
         total_checkins: s.total_checkins,
-        total_xp: s.total_xp,
         last_checkin: s.last_checkin,
         current_streak: act.frequency === "free" || act.frequency === "once" ? 0 : current,
         best_streak: act.frequency === "free" || act.frequency === "once" ? 0 : longest,
@@ -71,13 +54,12 @@ export default async function HistoryPage() {
   }
 
   const activeDays = heatmapData.filter((d) => d.count > 0).length;
-  const xpLast30   = xpData.reduce((sum, d) => sum + d.xp, 0);
 
   const stats = [
-    { label: "Check-ins totais", value: totalCheckins,           color: "var(--accent-teal)" },
-    { label: "Dias ativos",      value: activeDays,              color: "var(--accent-green)" },
-    { label: "Maior streak",     value: `${bestStreak}d`,        color: "var(--accent-gold)" },
-    { label: "XP últimos 30d",   value: `+${xpLast30}`,          color: "var(--accent-violet-bright)" },
+    { label: "Check-ins totais", value: totalCheckins,     color: "var(--accent-teal)" },
+    { label: "Dias ativos",      value: activeDays,        color: "var(--accent-green)" },
+    { label: "Maior streak",     value: `${bestStreak}d`,  color: "var(--accent-gold)" },
+    { label: "Hábitos ativos",   value: activities.length, color: "var(--accent-violet-bright)" },
   ];
 
   return (
@@ -120,30 +102,7 @@ export default async function HistoryPage() {
       </div>
 
       <div className="section">
-        <div className="card panel">
-          <div className="panel-head">
-            <div>
-              <h3>XP por dia</h3>
-              <p className="panel-help">Últimos 30 dias</p>
-            </div>
-            <div className="heat-stats">
-              <div className="hs"><b>+{xpLast30}</b><span>XP no período</span></div>
-            </div>
-          </div>
-          <XPChart data={xpData} />
-        </div>
-      </div>
-
-      <div className="section">
         <HabitoStatsPanel items={habitoItems} />
-      </div>
-
-      <div className="section">
-        <EvolucaoNivel historico={levelHistory} />
-      </div>
-
-      <div className="section">
-        <RegistroSistema eventos={eventos} />
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 const links = [
   {
-    href: "/", label: "Sistema",
+    href: "/", label: "Hoje",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
@@ -15,7 +15,7 @@ const links = [
     ),
   },
   {
-    href: "/activities", label: "Missões",
+    href: "/activities", label: "Hábitos",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -32,10 +32,10 @@ const links = [
     ),
   },
   {
-    href: "/achievements", label: "Títulos",
+    href: "/planner", label: "Planner",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+        <circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>
       </svg>
     ),
   },
@@ -60,14 +60,6 @@ const extraLinks = [
       </svg>
     ),
   },
-  {
-    href: "/configuracoes", label: "Config.",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
-    ),
-  },
 ];
 
 const SunIcon = () => (
@@ -86,19 +78,12 @@ const MoonIcon = () => (
   </svg>
 );
 
-interface PlayerStatus {
-  level: number;
-  progress: number;
-  rank: string;
-}
-
 export function Nav() {
   const path = usePathname();
   const router = useRouter();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [agendaCount, setAgendaCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const [playerStatus, setPlayerStatus] = useState<PlayerStatus | null>(null);
   const [authed, setAuthed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -118,10 +103,6 @@ export function Nav() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/player/status")
-      .then((r) => r.json())
-      .then((d) => { if (d) setPlayerStatus(d); })
-      .catch(() => {});
     fetch("/api/auth/status")
       .then((r) => r.json())
       .then((d) => setAuthed(d.authed === true))
@@ -138,7 +119,6 @@ export function Nav() {
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     setAuthed(false);
-    setPlayerStatus(null);
     router.refresh();
   }
 
@@ -323,10 +303,7 @@ export function Nav() {
             fontFamily: "var(--font-space-grotesk), sans-serif",
             fontSize: 11.5, fontWeight: 700, letterSpacing: ".18em",
             color: navLogoTxt, lineHeight: 1,
-          }}>SISTEMA</div>
-          <div style={{ fontSize: 9, color: navMuted, letterSpacing: ".1em", marginTop: 2, textTransform: "uppercase" }}>
-            v2.0
-          </div>
+          }}>DAILY QUEST</div>
         </div>
       </div>
 
@@ -391,6 +368,7 @@ export function Nav() {
 
       {/* Theme toggle */}
       <button onClick={toggleTheme} title="Alternar tema" style={{
+        marginTop: "auto",
         display: "flex", alignItems: "center", gap: 9,
         height: 40, padding: "0 10px", borderRadius: 10,
         background: "transparent", border: "none", cursor: "pointer",
@@ -423,38 +401,6 @@ export function Nav() {
             Sair
           </span>
         </button>
-      )}
-
-      {/* User profile card */}
-      {playerStatus && (
-        <div style={{
-          marginTop: "auto",
-          padding: "12px", borderRadius: 10,
-          background: isColecoes ? "#17130c" : "var(--bg-card)",
-          border: `1px solid ${navBorder}`,
-        }}>
-          <div style={{
-            fontFamily: "var(--font-space-grotesk), sans-serif",
-            fontSize: 11, fontWeight: 700, color: isColecoes ? "#f0e6d2" : "var(--text-primary)", letterSpacing: ".08em",
-          }}>
-            FABRICIO
-          </div>
-          <div style={{ fontSize: 10, color: navMuted, marginTop: 1 }}>
-            {playerStatus.rank} · LV.{playerStatus.level}
-          </div>
-          <div style={{ height: 4, background: navBorder, borderRadius: 999, marginTop: 8, overflow: "hidden", position: "relative" }}>
-            <div style={{
-              position: "absolute", inset: 0,
-              width: `${playerStatus.progress}%`,
-              background: isColecoes ? "linear-gradient(90deg, #b08840, #c6a050)" : "linear-gradient(90deg, #1888c8, var(--accent-teal))",
-              borderRadius: 999,
-              transition: "width .6s ease",
-            }} />
-          </div>
-          <div style={{ fontSize: 10, color: navMuted, marginTop: 4, textAlign: "right" }}>
-            {playerStatus.progress}%
-          </div>
-        </div>
       )}
     </nav>
   );
