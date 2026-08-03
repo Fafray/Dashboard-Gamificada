@@ -32,10 +32,6 @@ interface ActivityCardProps {
   onUndo: () => void;
 }
 
-const FREQ_LABEL: Record<string, string> = {
-  daily: "Diária", weekly: "Semanal", free: "Livre", nx_week: "/ sem.",
-};
-
 function defaultIncrement(unit: string | null): number {
   if (!unit) return 1;
   const u = unit.toUpperCase();
@@ -165,17 +161,6 @@ export function ActivityCard({ activity, initialAccumulated, onCheckin, onUndo }
         <div className="act-emoji">{activity.emoji || "•"}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div className="act-name">{activity.name}</div>
-          <div className="act-freq">
-            <span className="freq-dot" />
-            {isNxWeek
-              ? `${weekTarget}x ${FREQ_LABEL.nx_week}`
-              : isOnce ? "Missão única" : FREQ_LABEL[activity.frequency]}
-            {hasTarget && (
-              <span style={{ marginLeft: "6px" }}>
-                · meta {activity.target_value}{activity.target_unit}
-              </span>
-            )}
-          </div>
         </div>
         {!isOnce && !isNxWeek && streak > 0 && (
           <div className="act-streak">

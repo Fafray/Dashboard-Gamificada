@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -9,33 +9,58 @@ interface HourlyPlan {
   plan_date: string;
   hour: number;
   text: string;
+  duration: number;
+  done: boolean;
+}
+
+export interface HourSuggestion {
+  emoji: string;
+  text: string;
+  source: "agenda" | "habito";
 }
 
 const START_HOUR = 6;
 const END_HOUR = 23; // inclusive
 
+interface RowValue {
+  text: string;
+  duration: number;
+  done: boolean;
+}
+
 interface PlannerClientProps {
   initialDate: string;
   initialRows: HourlyPlan[];
+  initialSuggestions: Record<number, HourSuggestion[]>;
 }
 
-function rowsToMap(rows: HourlyPlan[]): Record<number, string> {
-  const map: Record<number, string> = {};
-  for (const r of rows) map[r.hour] = r.text;
+function rowsToMap(rows: HourlyPlan[]): Record<number, RowValue> {
+  const map: Record<number, RowValue> = {};
+  for (const r of rows) map[r.hour] = { text: r.text, duration: r.duration, done: r.done };
   return map;
 }
 
-export function PlannerClient({ initialDate, initialRows }: PlannerClientProps) {
+export function PlannerClient({ initialDate, initialRows, initialSuggestions }: PlannerClientProps) {
   const [date, setDate] = useState(initialDate);
-  const [values, setValues] = useState<Record<number, string>>(() => rowsToMap(initialRows));
+  const [values, setValues] = useState<Record<number, RowValue>>(() => rowsToMap(initialRows));
+  const [suggestions, setSuggestions] = useState<Record<number, HourSuggestion[]>>(initialSuggestions);
   const [loading, setLoading] = useState(false);
+  const [now, setNow] = useState(new Date());
+  const currentHourRef = useRef<HTMLDivElement>(null);
+  const scrolledRef = useRef(false);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   const loadDate = useCallback(async (d: string) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/planner?date=${d}`);
-      const rows: HourlyPlan[] = await res.json();
-      setValues(rowsToMap(rows));
+      const data: { rows: HourlyPlan[]; suggestions: Record<number, HourSuggestion[]> } = await res.json();
+      setValues(rowsToMap(data.rows));
+      setSuggestions(data.suggestions ?? {});
     } finally {
       setLoading(false);
     }
@@ -47,31 +72,76 @@ export function PlannerClient({ initialDate, initialRows }: PlannerClientProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 
+  useEffect(() => {
+    if (scrolledRef.current) return;
+    if (!isToday(parseISO(date))) return;
+    if (currentHourRef.current) {
+      currentHourRef.current.scrollIntoView({ block: "center", behavior: "smooth" });
+      scrolledRef.current = true;
+    }
+  }, [date, values]);
+
   function goTo(d: Date) {
     setDate(format(d, "yyyy-MM-dd"));
   }
 
-  async function saveHour(hour: number, text: string) {
+  async function persist(hour: number, patch: { text?: string; duration?: number; done?: boolean }) {
     await fetch("/api/planner", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, hour, text }),
+      body: JSON.stringify({ date, hour, ...patch }),
     });
   }
 
-  function handleChange(hour: number, text: string) {
-    setValues((prev) => ({ ...prev, [hour]: text }));
+  function handleTextChange(hour: number, text: string) {
+    setValues((prev) => ({ ...prev, [hour]: { text, duration: prev[hour]?.duration ?? 1, done: prev[hour]?.done ?? false } }));
   }
 
-  function handleBlur(hour: number) {
-    saveHour(hour, values[hour] ?? "");
+  function handleTextBlur(hour: number) {
+    const v = values[hour];
+    persist(hour, { text: v?.text ?? "" });
+  }
+
+  function handleDurationChange(hour: number, duration: number) {
+    setValues((prev) => ({ ...prev, [hour]: { ...prev[hour], duration } }));
+    persist(hour, { duration });
+  }
+
+  function handleToggleDone(hour: number) {
+    const v = values[hour];
+    if (!v?.text) return;
+    const done = !v.done;
+    setValues((prev) => ({ ...prev, [hour]: { ...prev[hour], done } }));
+    persist(hour, { done });
+  }
+
+  function useSuggestion(hour: number, s: HourSuggestion) {
+    setValues((prev) => ({ ...prev, [hour]: { text: s.text, duration: 1, done: false } }));
+    persist(hour, { text: s.text, duration: 1 });
+  }
+
+  // Maior duração possível a partir de `hour` sem invadir uma hora que já tem texto próprio
+  function maxDurationForHour(hour: number): number {
+    let d = 1;
+    while (hour + d <= END_HOUR && !(values[hour + d]?.text)) d++;
+    return d;
   }
 
   const dateObj = parseISO(date);
+  const viewingToday = isToday(dateObj);
+  const currentHour = viewingToday ? now.getHours() : -1;
   const dateLabel = format(dateObj, "EEEE, d 'de' MMMM", { locale: ptBR });
   const capitalizedDate = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
-  const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+  // Horas cobertas por um bloco anterior de duração > 1
+  const covered = new Set<number>();
+  for (const [hourStr, v] of Object.entries(values)) {
+    const hour = Number(hourStr);
+    for (let i = 1; i < (v.duration ?? 1); i++) covered.add(hour + i);
+  }
+
+  const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i)
+    .filter((h) => !covered.has(h));
 
   return (
     <div className="page">
@@ -84,7 +154,7 @@ export function PlannerClient({ initialDate, initialRows }: PlannerClientProps) 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <button onClick={() => goTo(subDays(dateObj, 1))} style={navBtnStyle} title="Dia anterior">‹</button>
-          {!isToday(dateObj) && (
+          {!viewingToday && (
             <button onClick={() => goTo(new Date())} style={{ ...navBtnStyle, width: "auto", padding: "0 12px", fontSize: "12px" }}>
               Hoje
             </button>
@@ -94,34 +164,105 @@ export function PlannerClient({ initialDate, initialRows }: PlannerClientProps) 
       </div>
 
       <div className="card" style={{ padding: "8px 20px", opacity: loading ? 0.6 : 1, transition: "opacity .15s" }}>
-        {hours.map((hour) => (
-          <div
-            key={hour}
-            style={{
-              display: "flex", alignItems: "center", gap: "14px",
-              padding: "10px 0", borderBottom: "1px solid var(--border)",
-            }}
-          >
-            <span style={{
-              fontFamily: "var(--font-space-grotesk)", fontSize: "12.5px", fontWeight: 700,
-              color: "var(--text-muted)", minWidth: "44px", flexShrink: 0,
-            }}>
-              {String(hour).padStart(2, "0")}:00
-            </span>
-            <input
-              type="text"
-              value={values[hour] ?? ""}
-              onChange={(e) => handleChange(hour, e.target.value)}
-              onBlur={() => handleBlur(hour)}
-              onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-              placeholder="—"
+        {hours.map((hour) => {
+          const v = values[hour];
+          const duration = v?.duration ?? 1;
+          const endHour = hour + duration;
+          const isCurrent = hour === currentHour;
+          const hourSuggestions = (suggestions[hour] ?? []).filter(() => !v?.text);
+          const maxDuration = maxDurationForHour(hour);
+
+          return (
+            <div
+              key={hour}
+              ref={isCurrent ? currentHourRef : undefined}
               style={{
-                flex: 1, background: "transparent", border: "none", outline: "none",
-                color: "var(--text-primary)", fontSize: "14px", padding: "4px 0",
+                padding: "10px 0", borderBottom: "1px solid var(--border)",
+                borderLeft: isCurrent ? "2px solid var(--accent-violet)" : "2px solid transparent",
+                paddingLeft: isCurrent ? "10px" : "0",
+                marginLeft: isCurrent ? "-12px" : "0",
+                background: isCurrent ? "var(--bg-surface)" : "transparent",
+                transition: "background .2s",
               }}
-            />
-          </div>
-        ))}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span style={{
+                  fontFamily: "var(--font-space-grotesk)", fontSize: "12px", fontWeight: 700,
+                  color: isCurrent ? "var(--accent-violet)" : "var(--text-muted)", minWidth: "88px", flexShrink: 0,
+                }}>
+                  {String(hour).padStart(2, "0")}:00–{String(endHour).padStart(2, "0")}:00
+                </span>
+                <input
+                  type="text"
+                  value={v?.text ?? ""}
+                  onChange={(e) => handleTextChange(hour, e.target.value)}
+                  onBlur={() => handleTextBlur(hour)}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  placeholder="—"
+                  style={{
+                    flex: 1, background: "transparent", border: "none", outline: "none",
+                    color: v?.done ? "var(--text-muted)" : "var(--text-primary)",
+                    textDecoration: v?.done ? "line-through" : "none",
+                    fontSize: "14px", padding: "4px 0",
+                  }}
+                />
+                {!!v?.text && maxDuration > 1 && (
+                  <select
+                    value={duration}
+                    onChange={(e) => handleDurationChange(hour, Number(e.target.value))}
+                    title="Até que horas?"
+                    style={{
+                      background: "var(--bg-surface)", border: "1px solid var(--border)",
+                      color: "var(--text-secondary)", fontSize: "11px", borderRadius: "6px",
+                      padding: "3px 5px", flexShrink: 0,
+                    }}
+                  >
+                    {Array.from({ length: maxDuration }, (_, i) => i + 1).map((d) => (
+                      <option key={d} value={d}>até {String(hour + d).padStart(2, "0")}:00</option>
+                    ))}
+                  </select>
+                )}
+                <button
+                  onClick={() => handleToggleDone(hour)}
+                  disabled={!v?.text}
+                  title={v?.done ? "Marcar como pendente" : "Marcar como concluído"}
+                  style={{
+                    width: "22px", height: "22px", borderRadius: "6px", flexShrink: 0,
+                    background: v?.done ? "var(--accent-green)" : "transparent",
+                    border: `1px solid ${v?.done ? "var(--accent-green)" : "var(--border)"}`,
+                    color: v?.done ? "var(--bg-base)" : "var(--text-muted)",
+                    cursor: v?.text ? "pointer" : "default", opacity: v?.text ? 1 : 0.4,
+                    fontSize: "11px", display: "flex", alignItems: "center", justifyContent: "center",
+                  }}
+                >
+                  {v?.done ? "✓" : ""}
+                </button>
+              </div>
+
+              {hourSuggestions.length > 0 && (
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px", marginLeft: "98px" }}>
+                  {hourSuggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => useSuggestion(hour, s)}
+                      title="Usar no planner"
+                      style={{
+                        display: "flex", alignItems: "center", gap: "5px",
+                        fontSize: "11px", padding: "3px 8px", borderRadius: "999px",
+                        background: "var(--bg-surface)", border: "1px solid var(--border)",
+                        color: "var(--text-secondary)", cursor: "pointer",
+                      }}
+                    >
+                      <span>{s.emoji}</span>
+                      <span>{s.text}</span>
+                      <span style={{ color: "var(--text-muted)", fontSize: "10px" }}>+ usar</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
