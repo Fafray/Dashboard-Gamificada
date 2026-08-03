@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -46,6 +46,7 @@ export function PlannerClient({ initialDate, initialRows, initialSuggestions }: 
   const [suggestions, setSuggestions] = useState<Record<number, HourSuggestion[]>>(initialSuggestions);
   const [loading, setLoading] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [datesWithEntries, setDatesWithEntries] = useState<Set<string>>(new Set());
   const currentHourRef = useRef<HTMLDivElement>(null);
   const scrolledRef = useRef(false);
 
@@ -80,6 +81,21 @@ export function PlannerClient({ initialDate, initialRows, initialSuggestions }: 
       scrolledRef.current = true;
     }
   }, [date, values]);
+
+  const weekWindow = useMemo(() => {
+    const center = parseISO(date);
+    return Array.from({ length: 7 }, (_, i) => addDays(center, i - 3));
+  }, [date]);
+
+  useEffect(() => {
+    const start = format(weekWindow[0], "yyyy-MM-dd");
+    const end = format(weekWindow[6], "yyyy-MM-dd");
+    fetch(`/api/planner/summary?start=${start}&end=${end}`)
+      .then((r) => r.json())
+      .then((dates: string[]) => setDatesWithEntries(new Set(dates)))
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekWindow]);
 
   function goTo(d: Date) {
     setDate(format(d, "yyyy-MM-dd"));
@@ -161,6 +177,47 @@ export function PlannerClient({ initialDate, initialRows, initialSuggestions }: 
           )}
           <button onClick={() => goTo(addDays(dateObj, 1))} style={navBtnStyle} title="Próximo dia">›</button>
         </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "6px", marginBottom: "20px" }}>
+        {weekWindow.map((d) => {
+          const dStr = format(d, "yyyy-MM-dd");
+          const isSelected = dStr === date;
+          const isTodayDay = isToday(d);
+          const hasEntries = dStr === date
+            ? Object.values(values).some((v) => v.text)
+            : datesWithEntries.has(dStr);
+          return (
+            <button
+              key={dStr}
+              onClick={() => setDate(dStr)}
+              style={{
+                flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+                padding: "8px 4px", borderRadius: "10px", cursor: "pointer",
+                background: isSelected ? "var(--accent-violet)" : "transparent",
+                border: `1px solid ${isSelected ? "var(--accent-violet)" : "var(--border)"}`,
+                transition: "background .15s, border-color .15s",
+              }}
+            >
+              <span style={{
+                fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em",
+                color: isSelected ? "var(--bg-base)" : "var(--text-muted)",
+              }}>
+                {format(d, "EEEEE", { locale: ptBR })}
+              </span>
+              <span style={{
+                fontSize: "14px", fontWeight: 700, fontFamily: "var(--font-space-grotesk)",
+                color: isSelected ? "var(--bg-base)" : isTodayDay ? "var(--accent-violet)" : "var(--text-primary)",
+              }}>
+                {d.getDate()}
+              </span>
+              <span style={{
+                width: "4px", height: "4px", borderRadius: "50%",
+                background: hasEntries ? (isSelected ? "var(--bg-base)" : "var(--accent-violet)") : "transparent",
+              }} />
+            </button>
+          );
+        })}
       </div>
 
       <div className="card" style={{ padding: "8px 20px", opacity: loading ? 0.6 : 1, transition: "opacity .15s" }}>

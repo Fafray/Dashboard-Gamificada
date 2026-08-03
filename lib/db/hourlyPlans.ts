@@ -66,3 +66,12 @@ export async function markHourlyPlanNotified(id: number): Promise<void> {
   await init();
   await pool.query(`UPDATE hourly_plans SET notified_at = $1 WHERE id = $2`, [localISOString(), id]);
 }
+
+export async function getDatesWithEntriesInRange(startDate: string, endDate: string): Promise<string[]> {
+  await init();
+  const res = await pool.query(
+    `SELECT DISTINCT plan_date FROM hourly_plans WHERE plan_date >= $1 AND plan_date <= $2`,
+    [startDate, endDate]
+  );
+  return res.rows.map((r: { plan_date: string }) => r.plan_date);
+}
