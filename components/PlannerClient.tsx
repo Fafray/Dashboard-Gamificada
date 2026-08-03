@@ -185,13 +185,39 @@ export function PlannerClient({ initialDate, initialRows, initialSuggestions }: 
                 transition: "background .2s",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                 <span style={{
                   fontFamily: "var(--font-space-grotesk)", fontSize: "12px", fontWeight: 700,
-                  color: isCurrent ? "var(--accent-violet)" : "var(--text-muted)", minWidth: "88px", flexShrink: 0,
+                  color: isCurrent ? "var(--accent-violet)" : "var(--text-muted)", flexShrink: 0,
                 }}>
-                  {String(hour).padStart(2, "0")}:00–{String(endHour).padStart(2, "0")}:00
+                  {String(hour).padStart(2, "0")}:00
                 </span>
+                <span style={{ fontSize: "11px", color: "var(--text-muted)", flexShrink: 0 }}>até</span>
+                {maxDuration > 1 ? (
+                  <select
+                    value={duration}
+                    onChange={(e) => handleDurationChange(hour, Number(e.target.value))}
+                    title="Editar até que horas vai este bloco"
+                    style={{
+                      fontFamily: "var(--font-space-grotesk)", fontSize: "12px", fontWeight: 700,
+                      color: isCurrent ? "var(--accent-violet)" : "var(--text-muted)",
+                      background: "transparent", border: "none", borderBottom: "1px dashed var(--border-light)",
+                      cursor: "pointer", flexShrink: 0, padding: "0 2px",
+                    }}
+                  >
+                    {Array.from({ length: maxDuration }, (_, i) => i + 1).map((d) => (
+                      <option key={d} value={d}>{String(hour + d).padStart(2, "0")}:00</option>
+                    ))}
+                  </select>
+                ) : (
+                  <span style={{
+                    fontFamily: "var(--font-space-grotesk)", fontSize: "12px", fontWeight: 700,
+                    color: isCurrent ? "var(--accent-violet)" : "var(--text-muted)", flexShrink: 0,
+                  }}>
+                    {String(endHour).padStart(2, "0")}:00
+                  </span>
+                )}
+                <span style={{ width: "6px", flexShrink: 0 }} />
                 <input
                   type="text"
                   value={v?.text ?? ""}
@@ -206,22 +232,6 @@ export function PlannerClient({ initialDate, initialRows, initialSuggestions }: 
                     fontSize: "14px", padding: "4px 0",
                   }}
                 />
-                {!!v?.text && maxDuration > 1 && (
-                  <select
-                    value={duration}
-                    onChange={(e) => handleDurationChange(hour, Number(e.target.value))}
-                    title="Até que horas?"
-                    style={{
-                      background: "var(--bg-surface)", border: "1px solid var(--border)",
-                      color: "var(--text-secondary)", fontSize: "11px", borderRadius: "6px",
-                      padding: "3px 5px", flexShrink: 0,
-                    }}
-                  >
-                    {Array.from({ length: maxDuration }, (_, i) => i + 1).map((d) => (
-                      <option key={d} value={d}>até {String(hour + d).padStart(2, "0")}:00</option>
-                    ))}
-                  </select>
-                )}
                 <button
                   onClick={() => handleToggleDone(hour)}
                   disabled={!v?.text}
@@ -240,7 +250,7 @@ export function PlannerClient({ initialDate, initialRows, initialSuggestions }: 
               </div>
 
               {hourSuggestions.length > 0 && (
-                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px", marginLeft: "98px" }}>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px", marginLeft: "50px" }}>
                   {hourSuggestions.map((s, i) => (
                     <button
                       key={i}
